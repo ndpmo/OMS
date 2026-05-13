@@ -1767,6 +1767,56 @@
         border-color: rgba(255, 119, 119, 0.36);
       }
 
+      .assessment-section-row td {
+        padding: 13px 12px;
+        border-top: 1px solid rgba(242, 198, 106, 0.28);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(242, 198, 106, 0.08);
+      }
+
+      .assessment-section-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        color: #fff;
+        font-weight: 900;
+      }
+
+      .assessment-section-title span {
+        color: var(--gold-soft);
+        font-size: 0.72rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .signature-status {
+        display: inline-flex;
+        align-items: center;
+        min-height: 22px;
+        margin-top: 6px;
+        padding: 3px 8px;
+        border: 1px solid rgba(255, 119, 119, 0.58);
+        border-radius: 999px;
+        color: #ffb5b5;
+        background: rgba(255, 119, 119, 0.11);
+        font-size: 0.72rem;
+        font-weight: 850;
+        letter-spacing: 0;
+      }
+
+      .signature-status.is-signed {
+        border-color: rgba(96, 255, 178, 0.48);
+        color: #8fffd0;
+        background: rgba(96, 255, 178, 0.08);
+      }
+
+      .assessment-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
       .link-button {
         text-decoration: none;
       }
@@ -2268,7 +2318,7 @@
             </label>
 
             <label>
-              1st Follow up Remarks
+              1st Assessment Remarks
               <textarea id="firstAssessmentRemarks" rows="4" placeholder="輸入第一次評估 remarks"></textarea>
             </label>
 
@@ -3075,6 +3125,23 @@
         return String(assessment?.willingJoin || "").trim().toUpperCase();
       }
 
+      function hasSignedForm(assessment) {
+        return Boolean(
+          String(assessment?.signedFormUrl || "").trim() ||
+          String(assessment?.signedFormFileId || "").trim()
+        );
+      }
+
+      function signatureStatusLabel(assessment) {
+        if (participationValue(assessment) !== "Y") return "";
+        if (hasSignedForm(assessment)) return `<span class="signature-status is-signed">已簽署文件</span>`;
+        return `<span class="signature-status">尚未簽署文件</span>`;
+      }
+
+      function needsSignatureDocument(assessment) {
+        return participationValue(assessment) === "Y" && !hasSignedForm(assessment);
+      }
+
       function renderParticipationSummary() {
         const assessments = Object.values(state.assessments);
         const agreed = assessments.filter((assessment) => participationValue(assessment) === "Y").length;
@@ -3337,6 +3404,7 @@
       }
 
       function renderPersonalDetails(person, assessmentContext = {}) {
+        const alreadyAssessed = hasAssessment(person);
         const profileDetails = [
           ["年資", `${formatPlain(person.serviceMonths)} 月`],
           ["入職日", person.lastJoinDate || "-"],
@@ -3372,7 +3440,7 @@
           <div class="personal-details">
             <div class="details-actions">
               <button class="details-toggle" type="button" aria-expanded="false">Performance Data</button>
-              <button type="button" class="assessment-button" onclick="openAssessmentForm('${person.staffId}', '${assessmentContext.suggestedTier || ''}', ${assessmentContext.currentCount || 0})">評估</button>
+              ${alreadyAssessed ? "" : `<button type="button" class="assessment-button" onclick="openAssessmentForm('${person.staffId}', '${assessmentContext.suggestedTier || ''}', ${assessmentContext.currentCount || 0})">評估</button>`}
             </div>
             <div class="detail-panels">
               ${renderDetailGroup("個人資料", profileDetails)}
@@ -3414,6 +3482,97 @@
         return `<div class="kpi-grid">${items.map(([label, value]) => `<div><span>${label}</span><strong>${value}</strong></div>`).join("")}</div>`;
       }
 
+      function renderAssessmentActions(person, assessment) {
+        const actions = [
+          `<button class="secondary-button history-button" type="button" data-history="${person.staffId}">View History</button>`
+        ];
+
+        if (needsSignatureDocument(assessment)) {
+          actions.push(`<button class="secondary-button" type="button" data-resubmit-doc="${person.staffId}">補交文件</button>`);
+        }
+
+        if (participationValue(assessment) === "N") {
+          actions.push(`<button class="secondary-button" type="button" data-revise-decision="${person.staffId}">改變決定</button>`);
+        } else {
+          actions.push(`<button class="secondary-button" type="button" data-followup="${person.staffId}">Follow Up</button>`);
+        }
+
+        return `<div class="assessment-actions">${actions.join("")}</div>`;
+      }
+
+      function renderAssessmentSection(title, label, rows) {
+        if (!rows.length) return "";
+
+        return `
+          <tr class="assessment-section-row">
+            <td colspan="13">
+              <div class="assessment-section-title">
+                <strong>${title}</strong>
+                <span>${rows.length} records · ${label}</span>
+              </div>
+            </td>
+          </tr>
+          ${rows.map(renderAssessmentRow).join("")}
+        `;
+      }
+
+      function renderAssessmentRow(person) {
+        const coaching = state.coaching[person.staffId];
+        const assessment = state.assessments[person.staffId] || {};
+
+        let teamSizeStr = "-";
+        const role = normalizeRole(person.position);
+        if (["S", "AS"].includes(role)) {
+          const hc = staff.filter(p => p.as === person.as && !["S", "AS"].includes(normalizeRole(p.position))).length;
+          teamSizeStr = `HC: ${hc}`;
+        } else if (role === "TL") {
+          const e1s = staff.filter(p => p.team === person.team && normalizeRole(p.position) === "E1").length;
+          teamSizeStr = `E1: ${e1s}`;
+        }
+        const offerTarget = parseNumber(assessment.offerTarget);
+        const offerTargetCompletion = offerTarget > 0
+          ? `${Math.floor((person.offerSinceMay2026 / offerTarget) * 100)}%`
+          : "-";
+        const locationText = person.floor && person.floor !== person.center
+          ? `${person.center} | ${person.floor}`
+          : person.center;
+
+        return `
+          <tr class="${isFlagged(person) ? "flagged-row" : ""}">
+            <td>
+              <div class="staff-name">${person.therapist}</div>
+              <div class="staff-meta">${person.staffId} | ${person.serviceMonths} months | joined ${person.lastJoinDate}</div>
+              ${isFlagged(person) ? `<span class="role-chip">高潛人才</span>` : ""}
+              ${assessmentLabel(person)}
+              ${signatureStatusLabel(assessment)}
+            </td>
+            <td>${person.brand}<br><span class="staff-meta">${locationText}</span></td>
+            <td>${person.position}<br><span class="staff-meta">HR: ${person.hrTitle}</span>${person.misMismatch ? `<br>${titleMismatchLabel(person)}` : ""}</td>
+            <td>${teamSizeStr}</td>
+            <td><strong class="${salesStatusClass(person.mayMtd ?? salesPercent(person))}">${formatPercent(person.mayMtd ?? salesPercent(person))}</strong></td>
+            <td>
+              <div class="staff-meta">
+                M-1: <strong class="${salesStatusClass(person.apr)}">${formatPercent(person.apr)}</strong><br>
+                M-2: <strong class="${salesStatusClass(person.mar)}">${formatPercent(person.mar)}</strong><br>
+                M-3: <strong class="${salesStatusClass(person.feb)}">${formatPercent(person.feb)}</strong>
+              </div>
+            </td>
+            <td><strong style="color: #fff;">${assessment.offerTarget !== undefined && assessment.offerTarget !== "" ? assessment.offerTarget : "-"}</strong></td>
+            <td>
+              <div class="staff-meta">
+                CV: ${formatPlain(person.cvSinceMay2026)}<br>
+                Offer: ${formatPlain(person.offerSinceMay2026)}<br>
+                On board: ${formatPlain(person.onboardSinceMay2026)}
+              </div>
+            </td>
+            <td><strong style="color: #fff;">${offerTargetCompletion}</strong></td>
+            <td><span class="staff-meta">${assessment.assessmentDateTime || "-"}</span></td>
+            <td><span class="staff-meta">${assessment.carriedOutBy || "-"}</span></td>
+            <td colspan="2">${renderAssessmentActions(person, assessment)}</td>
+          </tr>
+        `;
+      }
+
       function renderStaffTable() {
         const query = elements.searchInput.value.trim().toLowerCase();
         const rows = staff.filter((person) => {
@@ -3433,62 +3592,15 @@
           return;
         }
 
-        elements.staffTable.innerHTML = rows.map((person) => {
-          const coaching = state.coaching[person.staffId];
-          const assessment = state.assessments[person.staffId] || {};
+        const agreedRows = rows.filter((person) => participationValue(state.assessments[person.staffId]) === "Y");
+        const rejectedRows = rows.filter((person) => participationValue(state.assessments[person.staffId]) === "N");
+        const otherRows = rows.filter((person) => !["Y", "N"].includes(participationValue(state.assessments[person.staffId])));
 
-          let teamSizeStr = "-";
-          const role = normalizeRole(person.position);
-          if (["S", "AS"].includes(role)) {
-            const hc = staff.filter(p => p.as === person.as && !["S", "AS"].includes(normalizeRole(p.position))).length;
-            teamSizeStr = `HC: ${hc}`;
-          } else if (role === "TL") {
-            const e1s = staff.filter(p => p.team === person.team && normalizeRole(p.position) === "E1").length;
-            teamSizeStr = `E1: ${e1s}`;
-          }
-          const offerTarget = parseNumber(assessment.offerTarget);
-          const offerTargetCompletion = offerTarget > 0
-            ? `${Math.floor((person.offerSinceMay2026 / offerTarget) * 100)}%`
-            : "-";
-          const locationText = person.floor && person.floor !== person.center
-            ? `${person.center} | ${person.floor}`
-            : person.center;
-
-          return `
-            <tr class="${isFlagged(person) ? "flagged-row" : ""}">
-              <td>
-                <div class="staff-name">${person.therapist}</div>
-                <div class="staff-meta">${person.staffId} | ${person.serviceMonths} months | joined ${person.lastJoinDate}</div>
-                ${isFlagged(person) ? `<span class="role-chip">高潛人才</span>` : ""}
-                ${assessmentLabel(person)}
-              </td>
-              <td>${person.brand}<br><span class="staff-meta">${locationText}</span></td>
-              <td>${person.position}<br><span class="staff-meta">HR: ${person.hrTitle}</span>${person.misMismatch ? `<br>${titleMismatchLabel(person)}` : ""}</td>
-              <td>${teamSizeStr}</td>
-              <td><strong class="${salesStatusClass(person.mayMtd ?? salesPercent(person))}">${formatPercent(person.mayMtd ?? salesPercent(person))}</strong></td>
-              <td>
-                <div class="staff-meta">
-                  M-1: <strong class="${salesStatusClass(person.apr)}">${formatPercent(person.apr)}</strong><br>
-                  M-2: <strong class="${salesStatusClass(person.mar)}">${formatPercent(person.mar)}</strong><br>
-                  M-3: <strong class="${salesStatusClass(person.feb)}">${formatPercent(person.feb)}</strong>
-                </div>
-              </td>
-              <td><strong style="color: #fff;">${assessment.offerTarget !== undefined && assessment.offerTarget !== "" ? assessment.offerTarget : "-"}</strong></td>
-              <td>
-                <div class="staff-meta">
-                  CV: ${formatPlain(person.cvSinceMay2026)}<br>
-                  Offer: ${formatPlain(person.offerSinceMay2026)}<br>
-                  On board: ${formatPlain(person.onboardSinceMay2026)}
-                </div>
-              </td>
-              <td><strong style="color: #fff;">${offerTargetCompletion}</strong></td>
-              <td><span class="staff-meta">${assessment.assessmentDateTime || "-"}</span></td>
-              <td><span class="staff-meta">${assessment.carriedOutBy || "-"}</span></td>
-              <td><button class="secondary-button history-button" type="button" data-history="${person.staffId}">View History</button></td>
-              <td><button class="secondary-button" type="button" data-followup="${person.staffId}">Follow Up</button></td>
-            </tr>
-          `;
-        }).join("");
+        elements.staffTable.innerHTML = [
+          renderAssessmentSection("願意參與", "Agreed to participate", agreedRows),
+          renderAssessmentSection("拒絕參與", "Refused to participate", rejectedRows),
+          renderAssessmentSection("未設定參與意願", "No participation value", otherRows)
+        ].join("");
       }
 
 
@@ -3570,7 +3682,7 @@
                     ${historyField("Assessment Date Time", record.assessmentDateTime)}
                     ${historyField("1st Follow up Date", record.firstAssessmentDate)}
                     ${historyField("Carried out by", record.carriedOutBy)}
-                    ${historyField("1st Follow up Remarks", record.firstRemarks, "history-note")}
+                    ${historyField("1st Assessment Remarks", record.firstRemarks, "history-note")}
                     ${renderSignedFormButton(record)}
                   </dl>
                 </section>
@@ -3598,10 +3710,7 @@
         if (!person || !history.length) return;
 
         elements.historyTitle.textContent = `${person.therapist} | ${staffId}`;
-        elements.historyContent.innerHTML = history.map((record, index) => renderHistoryCard({
-          ...record,
-          signedFormName: record.signedFormName || `${sanitizeDriveName(staffId)}_${sanitizeDriveName(person.brand)}`
-        }, index)).join("");
+        elements.historyContent.innerHTML = history.map(renderHistoryCard).join("");
         elements.historyDialog.showModal();
       }
 
@@ -3619,7 +3728,7 @@
           ["Offer target", assessment.offerTarget || "-"],
           ["Assessment date time", assessment.assessmentDateTime || "-"],
           ["Carried out by", assessment.carriedOutBy || "-"],
-          ["1st Follow up Remarks", assessment.firstRemarks || "-"],
+          ["1st Assessment Remarks", assessment.firstRemarks || "-"],
           ["1st Follow up Date", assessment.firstAssessmentDate || "-"]
         ];
         return items.map(([label, value]) => `<div><dt>${label}</dt><dd>${value}</dd></div>`).join("");
@@ -3771,6 +3880,107 @@
         if (elements.signedUploadStatus) elements.signedUploadStatus.textContent = message || "";
       }
 
+      function currentDateParts() {
+        const now = new Date();
+        const date = now.getFullYear() + '-' +
+          String(now.getMonth() + 1).padStart(2, '0') + '-' +
+          String(now.getDate()).padStart(2, '0');
+        const dateTime = date + ' ' +
+          String(now.getHours()).padStart(2, '0') + ':' +
+          String(now.getMinutes()).padStart(2, '0');
+        return { date, dateTime };
+      }
+
+      function assessmentPayloadData(staffId, person, assessment, assessmentDateTime) {
+        return {
+          "Staff No.": staffId,
+          "Brand": person.brand,
+          "Join": assessment.willingJoin || "Y",
+          "Commitment Tier": assessment.targetTierLabel || tierLabel(assessment.targetTier),
+          "Offer Gap": assessment.offerGap || "",
+          "Enroll date": assessment.enrollDate || assessmentDateTime.slice(0, 10),
+          "Target completion Date": assessment.targetCompletionDate || "",
+          "Current Team size": assessment.currentTeamSize || assessment.currentCount || "",
+          "Target team size": assessment.targetTeamSize || "",
+          "Offer target": assessment.offerTarget || "",
+          "Assessment date time": assessmentDateTime,
+          "Carried out by": assessment.carriedOutBy || "",
+          "1st Follow up Remarks": assessment.firstRemarks || "",
+          "1st Follow up Date": assessment.firstAssessmentDate || assessmentDateTime
+        };
+      }
+
+      async function postAppsScriptPayload(payload) {
+        await fetch(SHEET_CONFIG.appsScriptUrl, {
+          method: "POST",
+          mode: "no-cors",
+          headers: {
+            "Content-Type": "text/plain;charset=utf-8"
+          },
+          body: JSON.stringify(payload)
+        });
+      }
+
+      async function resubmitSignedDocument(staffId) {
+        const person = staff.find((item) => item.staffId === staffId);
+        const assessment = state.assessments[staffId] || {};
+        if (!person || !assessment.staffId) return;
+
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = "application/pdf,image/*";
+        input.addEventListener("change", async () => {
+          const signedFile = input.files?.[0];
+          if (!signedFile) return;
+
+          const signedFormBase64 = await fileToBase64(signedFile);
+          const signedFormFileName = `${sanitizeDriveName(staffId)}_${sanitizeDriveName(person.brand)}${safeFileExtension(signedFile)}`;
+          const { dateTime } = currentDateParts();
+          const payload = {
+            action: "saveAssessment",
+            sheetName: "enrollment detail",
+            data: assessmentPayloadData(staffId, person, assessment, dateTime),
+            file: {
+              name: signedFormFileName,
+              originalName: signedFile.name,
+              mimeType: signedFile.type || "application/octet-stream",
+              base64: signedFormBase64
+            }
+          };
+
+          try {
+            await ensureAppsScriptReachable();
+            await postAppsScriptPayload(payload);
+            const nextRecord = {
+              ...assessment,
+              assessmentDateTime: dateTime,
+              signedFormName: signedFormFileName,
+              updatedAt: new Date().toISOString()
+            };
+
+            try {
+              const uploadedFile = await confirmSignedFormUploaded(signedFormFileName);
+              nextRecord.signedFormUrl = uploadedFile.url;
+              nextRecord.signedFormFileId = uploadedFile.id;
+              alert("已補交文件。");
+            } catch (confirmError) {
+              console.warn("補交文件後未能確認 Drive 檔案：", confirmError);
+              alert("已記錄補交文件；Drive 檔案尚未確認。");
+            }
+
+            state.assessments[staffId] = nextRecord;
+            state.assessmentHistory[staffId] = [nextRecord, ...(state.assessmentHistory[staffId] || [])];
+            saveJson("programAssessments", state.assessments);
+            saveJson("programAssessmentHistory", state.assessmentHistory);
+            renderAll();
+          } catch (error) {
+            console.error("補交文件失敗：", error);
+            alert(error.message || "補交文件失敗。");
+          }
+        }, { once: true });
+        input.click();
+      }
+
       elements.testSignedUpload?.addEventListener("click", async () => {
         const button = elements.testSignedUpload;
         const originalText = button.textContent;
@@ -3801,13 +4011,6 @@
         const person = window.currentAssessmentPerson;
         const signedFile = elements.assSignedFormUpload?.files?.[0];
         const willingJoin = elements.assWillingJoin.value;
-        const requiresSignedForm = willingJoin === "Y";
-
-        if (requiresSignedForm && !signedFile) {
-          alert("請先上載已簽署表格副本，才可儲存評估。");
-          elements.assSignedFormUpload?.focus();
-          return;
-        }
 
         updateOfferGap();
 
@@ -3863,12 +4066,12 @@
         try {
           await ensureAppsScriptReachable();
           submitBtn.textContent = signedFile ? "正在上載簽署表格..." : "正在同步至 Google 表格...";
-          setUploadStatus(signedFile ? "正在上載簽署表格..." : "選擇 N，毋須上載簽署表格。");
+          setUploadStatus(signedFile ? "正在上載簽署表格..." : (willingJoin === "Y" ? "尚未簽署文件，先儲存評估。" : "選擇 N，毋須上載簽署表格。"));
 
           // 2. 透過 POST 傳送至 Google Apps Script 寫入 enrollment detail 分頁
           if (SHEET_CONFIG.appsScriptUrl) {
             const payload = {
-              action: "saveAssessment",
+              action: signedFile ? "saveAssessment" : "saveAssessmentPendingSignature",
               sheetName: "enrollment detail",
               data: {
                 "Staff No.": staffId,
@@ -3911,9 +4114,14 @@
           if (signedFile) {
             submitBtn.textContent = "正在確認 Drive 檔案...";
             setUploadStatus("正在確認 Drive 檔案...");
-            uploadedFile = await confirmSignedFormUploaded(signedFormFileName);
-            assessmentData.signedFormUrl = uploadedFile.url;
-            assessmentData.signedFormFileId = uploadedFile.id;
+            try {
+              uploadedFile = await confirmSignedFormUploaded(signedFormFileName);
+              assessmentData.signedFormUrl = uploadedFile.url;
+              assessmentData.signedFormFileId = uploadedFile.id;
+            } catch (confirmError) {
+              console.warn("Drive 檔案確認失敗，評估會先以尚未簽署文件儲存：", confirmError);
+              setUploadStatus("已儲存評估；Drive 檔案尚未確認。");
+            }
           }
 
           // 3. 遠端要求送出後才更新本地狀態，避免壞 URL 時畫面誤標為已完成。
@@ -3922,7 +4130,7 @@
           saveJson("programAssessments", state.assessments);
           saveJson("programAssessmentHistory", state.assessmentHistory);
 
-          setUploadStatus(uploadedFile ? `已上載：${uploadedFile.name}` : "已儲存：選擇 N，沒有上載檔案。");
+          setUploadStatus(uploadedFile ? `已上載：${uploadedFile.name}` : (willingJoin === "Y" ? "已儲存：尚未簽署文件。" : "已儲存：選擇 N，沒有上載檔案。"));
           closeAssessmentForm();
         } catch (error) {
           console.error("同步至試算表時發生錯誤：", error);
@@ -3971,6 +4179,8 @@
           const editButton = event.target.closest("[data-edit]");
           const followUpButton = event.target.closest("[data-followup]");
           const historyButton = event.target.closest("[data-history]");
+          const resubmitDocButton = event.target.closest("[data-resubmit-doc]");
+          const reviseDecisionButton = event.target.closest("[data-revise-decision]");
           const branchButton = event.target.closest("[data-branch-toggle]");
           if (branchButton) {
             const branch = branchButton.closest(".org-tree, .team-branch");
@@ -3993,6 +4203,12 @@
           }
           if (historyButton) openAssessmentHistory(historyButton.dataset.history);
           if (followUpButton) openFollowUpDialog(followUpButton.dataset.followup);
+          if (resubmitDocButton) resubmitSignedDocument(resubmitDocButton.dataset.resubmitDoc);
+          if (reviseDecisionButton) {
+            const staffId = reviseDecisionButton.dataset.reviseDecision;
+            const person = staff.find((item) => item.staffId === staffId);
+            if (person) openAssessmentForm(staffId, assessmentContextForPerson(person).suggestedTier, assessmentContextForPerson(person).currentCount);
+          }
           if (editButton) openCoachDialog(editButton.dataset.edit);
         });
 
