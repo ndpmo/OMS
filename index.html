@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NEODERM 次世代領袖培育計劃</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <canvas id="campaignCanvas" aria-hidden="true"></canvas>
+    <header class="hero">
+      <nav class="topbar" aria-label="Campaign navigation">
+        <a class="brand-lockup" href="#top" aria-label="NEODERM campaign home">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span>
+            <strong>NEODERM</strong>
+            <small>次世代領袖培育計劃</small>
+          </span>
+        </a>
+        <div class="nav-actions">
+          <a href="#leaders">領袖地圖</a>
+          <a href="#assessment">評估</a>
+        </div>
+      </nav>
+
+      <section id="top" class="hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow">領導・同步・複製・主導</p>
+          <h1>NEODERM 次世代領袖培育計劃</h1>
+          <p class="hero-lede">
+            一站式識別高潛人才、檢視團隊架構，並追蹤評估、教練及承諾進度。
+          </p>
+          <div class="hero-metrics" aria-label="Program headline metrics">
+            <div>
+              <strong id="metricPotential">0</strong>
+              <span>已標記人才</span>
+            </div>
+            <div>
+              <strong id="metricTeams">0</strong>
+              <span>現有團隊</span>
+            </div>
+            <div>
+              <strong id="metricReadiness">0%</strong>
+              <span>平均準備度</span>
+            </div>
+          </div>
+        </div>
+        <aside class="mission-panel" aria-label="Program focus">
+          <h2>計劃重點</h2>
+          <ul>
+            <li><span>01</span> 識別核心領袖及未來人才池</li>
+            <li><span>02</span> 對比現有團隊與理想架構</li>
+            <li><span>03</span> 記錄評估、教練及承諾進度</li>
+          </ul>
+        </aside>
+      </section>
+    </header>
+
+    <main>
+      <section id="leaders" class="section">
+        <div class="section-heading">
+          <p class="eyebrow">第一部分</p>
+          <h2>識別核心領袖</h2>
+          <p>以組織圖方式檢視關鍵 KPI、現有團隊架構，並標記高潛人才作下一階段規劃。</p>
+        </div>
+
+        <div class="control-row" aria-label="Leader controls">
+          <label>
+            品牌
+            <select id="brandFilter"></select>
+          </label>
+          <label>
+            中心
+            <select id="centerFilter"></select>
+          </label>
+          <label>
+            檢視
+            <select id="viewFilter">
+              <option value="all">全部領袖</option>
+              <option value="flagged">只顯示已標記人才</option>
+              <option value="mismatch">只顯示職位不一致</option>
+            </select>
+          </label>
+          <label>
+            銷售表現
+            <select id="performanceMetricFilter">
+              <option value="all">全部指標</option>
+              <option value="thisMonth">本月銷售 %</option>
+              <option value="m1">M-1 Sales %</option>
+              <option value="m2">M-2 Sales %</option>
+              <option value="m3">M-3 Sales %</option>
+              <option value="m4">M-4 Sales %</option>
+            </select>
+          </label>
+          <label>
+            狀態
+            <select id="performanceStatusFilter">
+              <option value="all">全部狀態</option>
+              <option value="good">綠色 >= 100%</option>
+              <option value="watch">黃色 90-99%</option>
+              <option value="risk">紅色 < 90%</option>
+            </select>
+          </label>
+          <div class="data-status" role="status" aria-live="polite">
+            <span id="dataStatus">需要 Apps Script URL</span>
+            <button id="setAppsScriptUrl" type="button">設定 Script URL</button>
+            <button id="refreshData" type="button">重新整理</button>
+          </div>
+        </div>
+
+        <section class="formation-panel" aria-label="Ideal team structure">
+          <div class="panel-heading">
+            <p class="eyebrow">理想架構</p>
+            <h3>AS -> TL -> Therapist (E1)</h3>
+          </div>
+          <div class="ratio-grid">
+            <div>
+              <span class="ratio-icon">AS</span>
+              <strong>2 隊 TL</strong>
+              <small>14 HC 不包括本人</small>
+            </div>
+            <div>
+              <span class="ratio-icon">TL</span>
+              <strong>6 E1</strong>
+              <small>6 E1 不包括本人</small>
+            </div>
+          </div>
+          <div id="formationSummary" class="formation-summary"></div>
+        </section>
+
+        <section class="org-zone" aria-label="Organization chart">
+          <div id="orgChart" class="org-chart"></div>
+        </section>
+      </section>
+
+      <section id="assessment" class="section">
+        <div class="section-heading">
+          <p class="eyebrow">第二部分</p>
+          <h2>評估及承諾</h2>
+          <p>TA 團隊可檢視已完成評估的人員，並按職位、品牌及樓層篩選及跟進。</p>
+        </div>
+
+        <div class="control-row" aria-label="Assessment filters">
+          <label>
+            職位
+            <select id="positionFilter"></select>
+          </label>
+          <label>
+            品牌
+            <select id="assessmentBrandFilter"></select>
+          </label>
+          <label>
+            樓層
+            <select id="floorFilter"></select>
+          </label>
+          <label class="search-field">
+            搜尋
+            <input id="searchInput" type="search" placeholder="姓名、員工編號、團隊">
+          </label>
+        </div>
+
+        <div class="table-shell">
+          <table>
+            <thead>
+              <tr>
+                <th>人才</th>
+                <th>品牌 / 中心</th>
+                <th>職位</th>
+                <th>團隊</th>
+                <th>KPI</th>
+                <th>本月銷售</th>
+                <th>銷售趨勢</th>
+                <th>Cat 1/2</th>
+                <th>跟進</th>
+              </tr>
+            </thead>
+            <tbody id="staffTable"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <dialog id="coachDialog" class="coach-dialog">
+      <form method="dialog" id="coachForm">
+        <div class="dialog-head">
+          <div>
+            <p class="eyebrow">TA 教練輸入</p>
+            <h2 id="dialogTitle">員工資料</h2>
+          </div>
+          <button class="icon-button" value="cancel" aria-label="Close dialog" type="submit">x</button>
+        </div>
+        <input type="hidden" id="coachStaffId">
+        <label>
+          評估結果
+          <select id="assessmentResult">
+            <option>已準備晉升下一層級</option>
+            <option>於現職繼續發展</option>
+            <option>觀察 3 個月</option>
+            <option>現階段未適合</option>
+          </select>
+        </label>
+        <label>
+          承諾目標
+          <input id="commitmentTarget" type="text" placeholder="例：2026 年 7 月前建立 2 位 E1 接班人">
+        </label>
+        <label>
+          教練備註
+          <textarea id="coachNotes" rows="5" placeholder="TA 教練觀察、行動計劃及跟進日期"></textarea>
+        </label>
+        <div class="dialog-actions">
+          <button class="secondary-button" value="cancel" type="submit">取消</button>
+          <button id="saveCoach" class="primary-button" value="default" type="button">儲存</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="app.js?v=20260512-zh-titles"></script>
+  </body>
+</html>
