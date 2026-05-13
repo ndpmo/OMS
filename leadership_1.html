@@ -1767,6 +1767,27 @@
         border-color: rgba(255, 119, 119, 0.36);
       }
 
+      .signature-status {
+        display: inline-flex;
+        align-items: center;
+        min-height: 22px;
+        margin-top: 6px;
+        padding: 3px 8px;
+        border: 1px solid rgba(255, 119, 119, 0.58);
+        border-radius: 999px;
+        color: #ffb5b5;
+        background: rgba(255, 119, 119, 0.11);
+        font-size: 0.72rem;
+        font-weight: 850;
+        letter-spacing: 0;
+      }
+
+      .signature-status.is-signed {
+        border-color: rgba(96, 255, 178, 0.48);
+        color: #8fffd0;
+        background: rgba(96, 255, 178, 0.08);
+      }
+
       .link-button {
         text-decoration: none;
       }
@@ -3075,6 +3096,19 @@
         return String(assessment?.willingJoin || "").trim().toUpperCase();
       }
 
+      function hasSignedForm(assessment) {
+        return Boolean(
+          String(assessment?.signedFormUrl || "").trim() ||
+          String(assessment?.signedFormFileId || "").trim()
+        );
+      }
+
+      function signatureStatusLabel(assessment) {
+        if (participationValue(assessment) !== "Y") return "";
+        if (hasSignedForm(assessment)) return `<span class="signature-status is-signed">已簽署文件</span>`;
+        return `<span class="signature-status">尚未簽署文件</span>`;
+      }
+
       function renderParticipationSummary() {
         const assessments = Object.values(state.assessments);
         const agreed = assessments.filter((assessment) => participationValue(assessment) === "Y").length;
@@ -3461,6 +3495,7 @@
                 <div class="staff-meta">${person.staffId} | ${person.serviceMonths} months | joined ${person.lastJoinDate}</div>
                 ${isFlagged(person) ? `<span class="role-chip">高潛人才</span>` : ""}
                 ${assessmentLabel(person)}
+                ${signatureStatusLabel(assessment)}
               </td>
               <td>${person.brand}<br><span class="staff-meta">${locationText}</span></td>
               <td>${person.position}<br><span class="staff-meta">HR: ${person.hrTitle}</span>${person.misMismatch ? `<br>${titleMismatchLabel(person)}` : ""}</td>
@@ -3801,13 +3836,6 @@
         const person = window.currentAssessmentPerson;
         const signedFile = elements.assSignedFormUpload?.files?.[0];
         const willingJoin = elements.assWillingJoin.value;
-        const requiresSignedForm = willingJoin === "Y";
-
-        if (requiresSignedForm && !signedFile) {
-          alert("請先上載已簽署表格副本，才可儲存評估。");
-          elements.assSignedFormUpload?.focus();
-          return;
-        }
 
         updateOfferGap();
 
@@ -3863,7 +3891,7 @@
         try {
           await ensureAppsScriptReachable();
           submitBtn.textContent = signedFile ? "正在上載簽署表格..." : "正在同步至 Google 表格...";
-          setUploadStatus(signedFile ? "正在上載簽署表格..." : "選擇 N，毋須上載簽署表格。");
+          setUploadStatus(signedFile ? "正在上載簽署表格..." : (willingJoin === "Y" ? "尚未簽署文件，先儲存評估。" : "選擇 N，毋須上載簽署表格。"));
 
           // 2. 透過 POST 傳送至 Google Apps Script 寫入 enrollment detail 分頁
           if (SHEET_CONFIG.appsScriptUrl) {
@@ -3922,7 +3950,7 @@
           saveJson("programAssessments", state.assessments);
           saveJson("programAssessmentHistory", state.assessmentHistory);
 
-          setUploadStatus(uploadedFile ? `已上載：${uploadedFile.name}` : "已儲存：選擇 N，沒有上載檔案。");
+          setUploadStatus(uploadedFile ? `已上載：${uploadedFile.name}` : (willingJoin === "Y" ? "已儲存：尚未簽署文件。" : "已儲存：選擇 N，沒有上載檔案。"));
           closeAssessmentForm();
         } catch (error) {
           console.error("同步至試算表時發生錯誤：", error);

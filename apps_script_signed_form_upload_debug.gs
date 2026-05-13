@@ -164,9 +164,10 @@ function doPost(event) {
       throw new Error('Missing Staff No.');
     }
 
-    // For first enrollment / first assessment, signed form upload is mandatory.
+    // Signed form upload is optional; missing Y forms are highlighted in the dashboard.
     let signedForm = null;
-    if (action === 'saveAssessment') {
+    const hasSignedForm = payload.file && payload.file.base64;
+    if (action === 'saveAssessment' && hasSignedForm) {
       signedForm = saveSignedForm_(payload.file, staffNo, data);
       data['Signed Form Name'] = signedForm.name;
       data['Signed Form File ID'] = signedForm.id;
