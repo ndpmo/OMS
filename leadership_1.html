@@ -812,6 +812,16 @@
         background: var(--line-strong);
       }
 
+      .org-chart.is-tl-view,
+      .org-chart.is-e1-view {
+        grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+        align-items: start;
+      }
+
+      .org-chart.is-tl-view .team-branch::before {
+        display: none;
+      }
+
       .empty-branch {
         min-height: 54px;
         padding: 14px;
@@ -3077,7 +3087,10 @@
 
       function renderOrgChart() {
         const source = leaderFilteredStaff();
-        const byAs = groupBy(source, "as");
+        const showTlLevel = isTlLevelFilterActive();
+        const showE1Level = isE1LevelFilterActive();
+        elements.orgChart.classList.toggle("is-tl-view", showTlLevel);
+        elements.orgChart.classList.toggle("is-e1-view", showE1Level);
         renderFormationSummary(source);
 
         if (!source.length) {
@@ -3086,6 +3099,17 @@
           return;
         }
 
+        if (showE1Level) {
+          renderE1LevelChart(source);
+          return;
+        }
+
+        if (showTlLevel) {
+          renderTlLevelChart(source);
+          return;
+        }
+
+        const byAs = groupBy(source, "as");
         elements.orgChart.innerHTML = Object.entries(byAs).map(([asName, asMembers]) => {
           const branchMembers = asMembers.filter((person) => (isTeamLeader(person) || isTherapistContributor(person)) && hasTlAssignment(person));
           const directReports = asMembers.filter((person) => isTherapistContributor(person) && !hasTlAssignment(person));
@@ -3128,6 +3152,42 @@
             </article>
           `;
         }).join("");
+      }
+
+      function isTlLevelFilterActive() {
+        return normalizeRole(elements.leaderPositionFilter.value) === "TL" ||
+          displayRole(elements.hrPositionFilter.value) === "TL";
+      }
+
+      function isE1LevelFilterActive() {
+        return normalizeRole(elements.leaderPositionFilter.value) === "E1" ||
+          displayRole(elements.hrPositionFilter.value) === "E1";
+      }
+
+      function renderTlLevelChart(source) {
+        const teamMembers = source.filter((person) => (isTeamLeader(person) || isTherapistContributor(person)) && hasTlAssignment(person));
+        const teams = Object.entries(groupBy(teamMembers, "team"))
+          .filter(([, members]) => members.some((person) => isTeamLeader(person) && matchesLeaderRoleFilters(person)));
+
+        if (!teams.length) {
+          elements.orgChart.innerHTML = `<div class="org-tree"><div class="org-node as-node">沒有 TL 符合目前篩選條件。</div></div>`;
+          return;
+        }
+
+        elements.orgChart.innerHTML = teams.map(([teamName, members]) => renderTeamCard(teamName, members)).join("");
+      }
+
+      function renderE1LevelChart(source) {
+        const members = source
+          .filter((person) => isTherapistContributor(person) && matchesLeaderRoleFilters(person))
+          .sort((a, b) => String(a.team || "").localeCompare(String(b.team || "")) || String(a.therapist || "").localeCompare(String(b.therapist || "")));
+
+        if (!members.length) {
+          elements.orgChart.innerHTML = `<div class="org-tree"><div class="org-node as-node">沒有 E1 符合目前篩選條件。</div></div>`;
+          return;
+        }
+
+        elements.orgChart.innerHTML = members.map(renderTherapistNode).join("");
       }
 
       function membersMeta(members) {
