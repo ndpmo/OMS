@@ -813,7 +813,8 @@
       }
 
       .org-chart.is-tl-view,
-      .org-chart.is-e1-view {
+      .org-chart.is-e1-view,
+      .org-chart.is-compact-view {
         grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
         align-items: start;
       }
@@ -1726,6 +1727,46 @@
         color: #dff6ff;
       }
 
+      .participation-summary {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        margin: 0 0 16px;
+      }
+
+      .participation-card {
+        min-width: 0;
+        padding: 12px 14px;
+        border: 1px solid rgba(255, 255, 255, 0.085);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.04);
+      }
+
+      .participation-card span {
+        display: block;
+        color: var(--muted);
+        font-size: 0.68rem;
+        font-weight: 850;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .participation-card strong {
+        display: block;
+        margin-top: 4px;
+        color: #fff;
+        font-size: clamp(1.35rem, 2vw, 1.9rem);
+        line-height: 1;
+      }
+
+      .participation-card.agreed {
+        border-color: rgba(96, 255, 178, 0.34);
+      }
+
+      .participation-card.rejected {
+        border-color: rgba(255, 119, 119, 0.36);
+      }
+
       .link-button {
         text-decoration: none;
       }
@@ -2048,7 +2089,17 @@
             <p>TA 團隊可檢視已完成評估的人員，並按職位、品牌及樓層篩選及跟進。</p>
           </div>
 
+          <div id="participationSummary" class="participation-summary" aria-label="Assessment participation summary"></div>
+
           <div class="control-row" aria-label="Assessment filters">
+            <label>
+              參與意願
+              <select id="participationFilter">
+                <option value="All">全部</option>
+                <option value="Y">願意參與</option>
+                <option value="N">已拒絕</option>
+              </select>
+            </label>
             <label>
               職位
               <select id="positionFilter"></select>
@@ -2222,9 +2273,9 @@
             </label>
 
             <label class="upload-field">
-              已簽署表格副本 <span class="required-note">必須上載才可儲存</span>
-              <input id="signedFormUpload" type="file" accept="application/pdf,image/*" required>
-              <small class="upload-help">檔案會自動上載至指定 Google Drive，命名格式：StaffNo_Brand，例如 16674_dermes。</small>
+              已簽署表格副本 <span class="required-note">選擇 Y 時必須上載</span>
+              <input id="signedFormUpload" type="file" accept="application/pdf,image/*">
+              <small class="upload-help">選擇 N 可不需上載。選擇 Y 時檔案會自動上載至指定 Google Drive，命名格式：StaffNo_Brand，例如 16674_dermes。</small>
               <span class="upload-actions">
                 <button id="testSignedUpload" class="upload-test-button" type="button">測試 Drive 上載</button>
                 <small id="signedUploadStatus" class="upload-status"></small>
@@ -2347,6 +2398,8 @@
         performanceStatusFilter: document.querySelector("#performanceStatusFilter"),
         orgChart: document.querySelector("#orgChart"),
         formationSummary: document.querySelector("#formationSummary"),
+        participationSummary: document.querySelector("#participationSummary"),
+        participationFilter: document.querySelector("#participationFilter"),
         positionFilter: document.querySelector("#positionFilter"),
         assessmentBrandFilter: document.querySelector("#assessmentBrandFilter"),
         floorFilter: document.querySelector("#floorFilter"),
@@ -3018,6 +3071,23 @@
         elements.metricSignupAs.textContent = signedToAs;
       }
 
+      function participationValue(assessment) {
+        return String(assessment?.willingJoin || "").trim().toUpperCase();
+      }
+
+      function renderParticipationSummary() {
+        const assessments = Object.values(state.assessments);
+        const agreed = assessments.filter((assessment) => participationValue(assessment) === "Y").length;
+        const rejected = assessments.filter((assessment) => participationValue(assessment) === "N").length;
+        const total = assessments.length;
+
+        elements.participationSummary.innerHTML = `
+          <div class="participation-card agreed"><span>Agreed to participate</span><strong>${agreed}</strong></div>
+          <div class="participation-card rejected"><span>Rejected</span><strong>${rejected}</strong></div>
+          <div class="participation-card"><span>Total assessed</span><strong>${total}</strong></div>
+        `;
+      }
+
       function renderFormationSummary(source) {
         const teamMembers = source.filter((person) => (isTeamLeader(person) || isTherapistContributor(person)) && hasTlAssignment(person));
         const teams = groupBy(teamMembers, "team");
@@ -3087,10 +3157,10 @@
 
       function renderOrgChart() {
         const source = leaderFilteredStaff();
-        const showTlLevel = isTlLevelFilterActive();
-        const showE1Level = isE1LevelFilterActive();
-        elements.orgChart.classList.toggle("is-tl-view", showTlLevel);
-        elements.orgChart.classList.toggle("is-e1-view", showE1Level);
+        const showCompactLevel = isLeaderRoleFilterActive();
+        elements.orgChart.classList.toggle("is-tl-view", false);
+        elements.orgChart.classList.toggle("is-e1-view", false);
+        elements.orgChart.classList.toggle("is-compact-view", showCompactLevel);
         renderFormationSummary(source);
 
         if (!source.length) {
@@ -3099,13 +3169,8 @@
           return;
         }
 
-        if (showE1Level) {
-          renderE1LevelChart(source);
-          return;
-        }
-
-        if (showTlLevel) {
-          renderTlLevelChart(source);
+        if (showCompactLevel) {
+          renderCompactLevelChart(source);
           return;
         }
 
@@ -3154,40 +3219,25 @@
         }).join("");
       }
 
-      function isTlLevelFilterActive() {
-        return normalizeRole(elements.leaderPositionFilter.value) === "TL" ||
-          displayRole(elements.hrPositionFilter.value) === "TL";
+      function isLeaderRoleFilterActive() {
+        return elements.leaderPositionFilter.value !== "All" || elements.hrPositionFilter.value !== "All";
       }
 
-      function isE1LevelFilterActive() {
-        return normalizeRole(elements.leaderPositionFilter.value) === "E1" ||
-          displayRole(elements.hrPositionFilter.value) === "E1";
-      }
-
-      function renderTlLevelChart(source) {
-        const teamMembers = source.filter((person) => (isTeamLeader(person) || isTherapistContributor(person)) && hasTlAssignment(person));
-        const teams = Object.entries(groupBy(teamMembers, "team"))
-          .filter(([, members]) => members.some((person) => isTeamLeader(person) && matchesLeaderRoleFilters(person)));
-
-        if (!teams.length) {
-          elements.orgChart.innerHTML = `<div class="org-tree"><div class="org-node as-node">沒有 TL 符合目前篩選條件。</div></div>`;
-          return;
-        }
-
-        elements.orgChart.innerHTML = teams.map(([teamName, members]) => renderTeamCard(teamName, members)).join("");
-      }
-
-      function renderE1LevelChart(source) {
+      function renderCompactLevelChart(source) {
         const members = source
-          .filter((person) => isTherapistContributor(person) && matchesLeaderRoleFilters(person))
-          .sort((a, b) => String(a.team || "").localeCompare(String(b.team || "")) || String(a.therapist || "").localeCompare(String(b.therapist || "")));
+          .filter(matchesLeaderRoleFilters)
+          .sort((a, b) =>
+            String(a.as || "").localeCompare(String(b.as || "")) ||
+            String(a.team || "").localeCompare(String(b.team || "")) ||
+            String(a.therapist || "").localeCompare(String(b.therapist || ""))
+          );
 
         if (!members.length) {
-          elements.orgChart.innerHTML = `<div class="org-tree"><div class="org-node as-node">沒有 E1 符合目前篩選條件。</div></div>`;
+          elements.orgChart.innerHTML = `<div class="org-tree"><div class="org-node as-node">沒有員工符合目前職級篩選條件。</div></div>`;
           return;
         }
 
-        elements.orgChart.innerHTML = members.map(renderTherapistNode).join("");
+        elements.orgChart.innerHTML = members.map(renderCompactPersonNode).join("");
       }
 
       function membersMeta(members) {
@@ -3250,6 +3300,40 @@
             })}
           </div>
         `;
+      }
+
+      function renderCompactPersonNode(person) {
+        const context = assessmentContextForPerson(person);
+        const contextLine = [person.position, person.staffId, person.center].filter(Boolean).join(" | ");
+        return `
+          <div class="therapist-node ${isFlagged(person) ? "is-flagged" : ""} ${person.misMismatch ? "mismatch" : ""}">
+            <span class="node-dot" aria-hidden="true"></span>
+            <div class="therapist-copy">
+              <strong>${person.therapist}</strong>
+              <small>${contextLine}</small>
+            </div>
+            <div class="mini-kpis">
+              <span class="${salesStatusClass(person.mayMtd ?? salesPercent(person))}">銷售 ${formatPercent(person.mayMtd ?? salesPercent(person))}</span>
+            </div>
+            ${titleMismatchLabel(person)}
+            ${assessmentLabel(person)}
+            ${renderPersonalDetails(person, context)}
+          </div>
+        `;
+      }
+
+      function assessmentContextForPerson(person) {
+        if (isTopLeader(person)) {
+          const asHcCount = staff.filter((item) => item.as === person.as && !isTopLeader(item)).length;
+          return { suggestedTier: "as", currentCount: asHcCount };
+        }
+
+        if (isTeamLeader(person)) {
+          const e1Count = staff.filter((item) => item.team === person.team && isTherapistContributor(item)).length;
+          return { suggestedTier: "tl", currentCount: e1Count };
+        }
+
+        return { suggestedTier: "tl", currentCount: 0 };
       }
 
       function renderPersonalDetails(person, assessmentContext = {}) {
@@ -3333,12 +3417,14 @@
       function renderStaffTable() {
         const query = elements.searchInput.value.trim().toLowerCase();
         const rows = staff.filter((person) => {
+          const assessment = state.assessments[person.staffId] || {};
           const assessmentMatch = hasAssessment(person);
+          const participationMatch = elements.participationFilter.value === "All" || participationValue(assessment) === elements.participationFilter.value;
           const positionMatch = elements.positionFilter.value === "All" || person.position === elements.positionFilter.value;
           const brandMatch = elements.assessmentBrandFilter.value === "All" || person.brand === elements.assessmentBrandFilter.value;
           const floorMatch = elements.floorFilter.value === "All" || person.floor === elements.floorFilter.value;
           const queryMatch = !query || [person.therapist, person.staffId, person.team, person.center].join(" ").toLowerCase().includes(query);
-          return assessmentMatch && positionMatch && brandMatch && floorMatch && queryMatch;
+          return assessmentMatch && participationMatch && positionMatch && brandMatch && floorMatch && queryMatch;
         });
 
         if (!rows.length) {
@@ -3714,8 +3800,10 @@
         const count = window.currentAssessmentCount;
         const person = window.currentAssessmentPerson;
         const signedFile = elements.assSignedFormUpload?.files?.[0];
+        const willingJoin = elements.assWillingJoin.value;
+        const requiresSignedForm = willingJoin === "Y";
 
-        if (!signedFile) {
+        if (requiresSignedForm && !signedFile) {
           alert("請先上載已簽署表格副本，才可儲存評估。");
           elements.assSignedFormUpload?.focus();
           return;
@@ -3739,8 +3827,10 @@
             String(now.getHours()).padStart(2, '0') + ':' +
             String(now.getMinutes()).padStart(2, '0');
 
-        const signedFormBase64 = await fileToBase64(signedFile);
-        const signedFormFileName = `${sanitizeDriveName(staffId)}_${sanitizeDriveName(person.brand)}${safeFileExtension(signedFile)}`;
+        const signedFormBase64 = signedFile ? await fileToBase64(signedFile) : "";
+        const signedFormFileName = signedFile
+          ? `${sanitizeDriveName(staffId)}_${sanitizeDriveName(person.brand)}${safeFileExtension(signedFile)}`
+          : "";
 
         const assessmentData = {
           staffId,
@@ -3748,7 +3838,7 @@
           staffPosition: person.position,
           staffBrand: person.brand,
           staffCenter: person.center,
-          willingJoin: elements.assWillingJoin.value,
+          willingJoin,
           targetTier: elements.assTargetTier.value,
           targetTierLabel: tierLabel(elements.assTargetTier.value),
           currentCount: count,
@@ -3772,8 +3862,8 @@
 
         try {
           await ensureAppsScriptReachable();
-          submitBtn.textContent = "正在上載簽署表格...";
-          setUploadStatus("正在上載簽署表格...");
+          submitBtn.textContent = signedFile ? "正在上載簽署表格..." : "正在同步至 Google 表格...";
+          setUploadStatus(signedFile ? "正在上載簽署表格..." : "選擇 N，毋須上載簽署表格。");
 
           // 2. 透過 POST 傳送至 Google Apps Script 寫入 enrollment detail 分頁
           if (SHEET_CONFIG.appsScriptUrl) {
@@ -3783,7 +3873,7 @@
               data: {
                 "Staff No.": staffId,
                 "Brand": person.brand,
-                "Join": elements.assWillingJoin.value,
+                "Join": willingJoin,
                 "Commitment Tier": tierLabel(elements.assTargetTier.value),
                 "Offer Gap": elements.assOfferGap.value.trim(),
                 "Enroll date": enrollDate,
@@ -3795,14 +3885,17 @@
                 "Carried out by": elements.assCarriedOutBy.value.trim(),
                 "1st Follow up Remarks": elements.assFirstRemarks.value.trim(),
                 "1st Follow up Date": assessmentDateTime
-              },
-              file: {
+              }
+            };
+
+            if (signedFile) {
+              payload.file = {
                 name: signedFormFileName,
                 originalName: signedFile.name,
                 mimeType: signedFile.type || "application/octet-stream",
                 base64: signedFormBase64
-              }
-            };
+              };
+            }
 
             await fetch(SHEET_CONFIG.appsScriptUrl, {
               method: "POST",
@@ -3814,11 +3907,14 @@
             });
           }
 
-          submitBtn.textContent = "正在確認 Drive 檔案...";
-          setUploadStatus("正在確認 Drive 檔案...");
-          const uploadedFile = await confirmSignedFormUploaded(signedFormFileName);
-          assessmentData.signedFormUrl = uploadedFile.url;
-          assessmentData.signedFormFileId = uploadedFile.id;
+          let uploadedFile = null;
+          if (signedFile) {
+            submitBtn.textContent = "正在確認 Drive 檔案...";
+            setUploadStatus("正在確認 Drive 檔案...");
+            uploadedFile = await confirmSignedFormUploaded(signedFormFileName);
+            assessmentData.signedFormUrl = uploadedFile.url;
+            assessmentData.signedFormFileId = uploadedFile.id;
+          }
 
           // 3. 遠端要求送出後才更新本地狀態，避免壞 URL 時畫面誤標為已完成。
           state.assessments[staffId] = assessmentData;
@@ -3826,7 +3922,7 @@
           saveJson("programAssessments", state.assessments);
           saveJson("programAssessmentHistory", state.assessmentHistory);
 
-          setUploadStatus(`已上載：${uploadedFile.name}`);
+          setUploadStatus(uploadedFile ? `已上載：${uploadedFile.name}` : "已儲存：選擇 N，沒有上載檔案。");
           closeAssessmentForm();
         } catch (error) {
           console.error("同步至試算表時發生錯誤：", error);
@@ -3856,6 +3952,7 @@
           elements.viewFilter,
           elements.performanceMetricFilter,
           elements.performanceStatusFilter,
+          elements.participationFilter,
           elements.positionFilter,
           elements.floorFilter
         ].forEach((element) => element.addEventListener("change", renderAll));
@@ -4003,6 +4100,7 @@
 
       function renderAll() {
         renderMetrics();
+        renderParticipationSummary();
         renderOrgChart();
         renderStaffTable();
       }
