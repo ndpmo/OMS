@@ -812,7 +812,8 @@
         background: var(--line-strong);
       }
 
-      .org-chart.is-tl-view {
+      .org-chart.is-tl-view,
+      .org-chart.is-e1-view {
         grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
         align-items: start;
       }
@@ -3087,12 +3088,19 @@
       function renderOrgChart() {
         const source = leaderFilteredStaff();
         const showTlLevel = isTlLevelFilterActive();
+        const showE1Level = isE1LevelFilterActive();
         elements.orgChart.classList.toggle("is-tl-view", showTlLevel);
+        elements.orgChart.classList.toggle("is-e1-view", showE1Level);
         renderFormationSummary(source);
 
         if (!source.length) {
           const message = isLoading ? "正在載入資料..." : "沒有員工符合目前篩選條件。";
           elements.orgChart.innerHTML = `<div class="org-tree"><div class="org-node as-node">${message}</div></div>`;
+          return;
+        }
+
+        if (showE1Level) {
+          renderE1LevelChart(source);
           return;
         }
 
@@ -3151,6 +3159,11 @@
           displayRole(elements.hrPositionFilter.value) === "TL";
       }
 
+      function isE1LevelFilterActive() {
+        return normalizeRole(elements.leaderPositionFilter.value) === "E1" ||
+          displayRole(elements.hrPositionFilter.value) === "E1";
+      }
+
       function renderTlLevelChart(source) {
         const teamMembers = source.filter((person) => (isTeamLeader(person) || isTherapistContributor(person)) && hasTlAssignment(person));
         const teams = Object.entries(groupBy(teamMembers, "team"))
@@ -3162,6 +3175,19 @@
         }
 
         elements.orgChart.innerHTML = teams.map(([teamName, members]) => renderTeamCard(teamName, members)).join("");
+      }
+
+      function renderE1LevelChart(source) {
+        const members = source
+          .filter((person) => isTherapistContributor(person) && matchesLeaderRoleFilters(person))
+          .sort((a, b) => String(a.team || "").localeCompare(String(b.team || "")) || String(a.therapist || "").localeCompare(String(b.therapist || "")));
+
+        if (!members.length) {
+          elements.orgChart.innerHTML = `<div class="org-tree"><div class="org-node as-node">沒有 E1 符合目前篩選條件。</div></div>`;
+          return;
+        }
+
+        elements.orgChart.innerHTML = members.map(renderTherapistNode).join("");
       }
 
       function membersMeta(members) {
