@@ -535,6 +535,38 @@
         flex: 1;
       }
 
+      .metric-checkbox-group {
+        display: grid;
+        gap: 6px;
+        max-height: 168px;
+        overflow: auto;
+        padding: 8px 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.055);
+      }
+
+      .metric-checkbox-group label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 24px;
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: #efeaf8;
+      }
+
+      .metric-checkbox-group input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        min-width: 16px;
+        min-height: 16px;
+        margin: 0;
+        padding: 0;
+        flex: 0 0 auto;
+        accent-color: var(--gold);
+      }
+
       .data-status {
         display: flex;
         align-items: center;
@@ -2152,14 +2184,14 @@
             </label>
             <label>
               銷售表現
-              <select id="performanceMetricFilter">
-                <option value="all">全部指標</option>
-                <option value="thisMonth">本月銷售 %</option>
-                <option value="m1">M-1 Sales %</option>
-                <option value="m2">M-2 Sales %</option>
-                <option value="m3">M-3 Sales %</option>
-                <option value="m4">M-4 Sales %</option>
-              </select>
+              <div id="performanceMetricFilter" class="metric-checkbox-group">
+                <label><input type="checkbox" value="all" checked> 全部指標</label>
+                <label><input type="checkbox" value="thisMonth"> 本月銷售 %</label>
+                <label><input type="checkbox" value="m1"> M-1 Sales %</label>
+                <label><input type="checkbox" value="m2"> M-2 Sales %</label>
+                <label><input type="checkbox" value="m3"> M-3 Sales %</label>
+                <label><input type="checkbox" value="m4"> M-4 Sales %</label>
+              </div>
             </label>
             <label>
               狀態
@@ -3147,15 +3179,16 @@
       }
 
       function matchesPerformanceFilter(person) {
-        const metric = elements.performanceMetricFilter.value;
+        const selectedMetrics = selectedPerformanceMetrics();
         const status = elements.performanceStatusFilter.value;
-        if (metric === "all" && status === "all") return true;
+        const useAllMetrics = selectedMetrics.length === 0 || selectedMetrics.includes("all");
+        if (useAllMetrics && status === "all") return true;
 
-        const metrics = metric === "all"
+        const metrics = useAllMetrics
           ? ["thisMonth", "m1", "m2", "m3", "m4"]
-          : [metric];
+          : selectedMetrics;
 
-        return metrics.some((metricKey) => {
+        return metrics.every((metricKey) => {
           const value = performanceValue(person, metricKey);
           if (!Number.isFinite(value)) return false;
           if (status === "all") return true;
@@ -3172,6 +3205,18 @@
           m4: person.jan
         };
         return Number(values[metricKey]);
+      }
+
+      function selectedPerformanceMetrics() {
+        return Array.from(elements.performanceMetricFilter.querySelectorAll('input[type="checkbox"]:checked'))
+          .map((input) => input.value);
+      }
+
+      function isPerformanceFilterActive() {
+        const selectedMetrics = selectedPerformanceMetrics();
+        const metricsNotAll = !(selectedMetrics.length === 0 || selectedMetrics.includes("all"));
+        const statusNotAll = String(elements.performanceStatusFilter?.value || "all") !== "all";
+        return metricsNotAll || statusNotAll;
       }
 
       function renderMetrics() {
@@ -3287,6 +3332,8 @@
       function renderOrgChart() {
         const source = leaderFilteredStaff();
         const showCompactLevel = isLeaderRoleFilterActive();
+        const hasSearchQuery = Boolean(String(elements.leaderSearchInput?.value || "").trim());
+        const shouldAutoExpand = hasSearchQuery || isPerformanceFilterActive();
         elements.orgChart.classList.toggle("is-tl-view", false);
         elements.orgChart.classList.toggle("is-e1-view", false);
         elements.orgChart.classList.toggle("is-compact-view", showCompactLevel);
@@ -3310,7 +3357,7 @@
           const teams = groupBy(branchMembers, "team");
           const asMismatch = asMembers.some((person) => person.misMismatch);
           const asFlagged = asMembers.some(isFlagged);
-          const teamCards = Object.entries(teams).map(([teamName, members]) => renderTeamCard(teamName, members)).join("");
+          const teamCards = Object.entries(teams).map(([teamName, members]) => renderTeamCard(teamName, members, shouldAutoExpand)).join("");
           const teamCount = Object.keys(teams).length;
           const e1Count = asMembers.filter(isTherapistContributor).length;
           const topLeader = asMembers.find(isTopLeader);
@@ -3322,7 +3369,7 @@
             ? "需建立 TL 梯隊"
             : (asHcGapStatus || "符合 AS 比例");
           return `
-            <article class="org-tree ${asFlagged ? "is-flagged" : ""} ${asMismatch ? "mismatch" : ""}">
+            <article class="org-tree ${asFlagged ? "is-flagged" : ""} ${asMismatch ? "mismatch" : ""} ${shouldAutoExpand ? "is-expanded" : ""}">
               <div class="org-node as-node">
                 <div class="node-copy">
                   <span class="role-chip">${roleLabel}</span>
@@ -3334,7 +3381,7 @@
                   <span>HC ${asHcCount}/${asHcTarget}</span>
                 </div>
                 <span class="status-chip ${teamCount < 2 || asHcCount < asHcTarget ? "warning" : ""}">${asStatus}</span>
-                <button class="branch-toggle" type="button" data-branch-toggle="as" aria-expanded="false">TL ${teamCount} / E1 ${e1Count}</button>
+                <button class="branch-toggle" type="button" data-branch-toggle="as" aria-expanded="${shouldAutoExpand ? "true" : "false"}">TL ${teamCount} / E1 ${e1Count}</button>
                 ${topLeader ? assessmentLabel(topLeader) : ""}
                 ${topLeader ? renderPersonalDetails(topLeader, {
                   suggestedTier: "as",
@@ -3375,7 +3422,7 @@
         return `${brands} | ${centers}`;
       }
 
-      function renderTeamCard(teamName, members) {
+      function renderTeamCard(teamName, members, isExpanded = false) {
         const leader = members.find(isTeamLeader);
         const childMembers = members.filter(isTherapistContributor);
         const teamMismatch = members.some((person) => person.misMismatch);
@@ -3386,7 +3433,7 @@
           ? (hcGapStatus(e1Count, tlHcTarget) || "符合 TL 比例")
           : "需指定 TL";
         return `
-          <article class="team-branch ${flagged ? "is-flagged" : ""} ${teamMismatch ? "mismatch" : ""}">
+          <article class="team-branch ${flagged ? "is-flagged" : ""} ${teamMismatch ? "mismatch" : ""} ${isExpanded ? "is-expanded" : ""}">
             <div class="org-node tl-node">
               <div class="node-copy">
                 <span class="role-chip">TL</span>
@@ -3398,7 +3445,7 @@
                 <span>E1 ${e1Count}/${tlHcTarget}</span>
               </div>
               <span class="status-chip ${e1Count < tlHcTarget || !leader ? "warning" : ""}">${tlStatus}</span>
-              ${childMembers.length ? `<button class="branch-toggle" type="button" data-branch-toggle="tl" aria-expanded="false">Therapists ${e1Count}</button>` : ""}
+              ${childMembers.length ? `<button class="branch-toggle" type="button" data-branch-toggle="tl" aria-expanded="${isExpanded ? "true" : "false"}">Therapists ${e1Count}</button>` : ""}
               ${leader ? assessmentLabel(leader) : ""}
               ${leader ? renderPersonalDetails(leader, {
                 suggestedTier: "tl",
@@ -3747,17 +3794,22 @@
                   <dl class="history-grid">
                     ${historyField("Enroll Date", record.enrollDate)}
                     ${historyField("Assessment Date Time", record.assessmentDateTime)}
-                    ${historyField("1st Follow up Date", record.firstAssessmentDate)}
                     ${historyField("Carried out by", record.carriedOutBy)}
-                    ${historyField("1st Assessment Remarks", record.firstRemarks, "history-note")}
+                    ${historyField("Assessment Remarks", record.firstRemarks, "history-note")}
                     ${renderSignedFormButton(record)}
                   </dl>
                 </section>
                 <section class="history-occasion">
-                  <div class="history-occasion-title"><span>2</span> Second Follow Up</div>
+                  <div class="history-occasion-title"><span>2</span> 1st Follow Up</div>
+                  <dl class="history-grid">
+                    ${historyField("1st Follow up Date", record.firstAssessmentDate)}
+                    ${historyField("1st Follow up Remarks", record.firstFollowUpRemarks, "history-note")}
+                  </dl>
+                </section>
+                <section class="history-occasion">
+                  <div class="history-occasion-title"><span>3</span> 2nd Follow Up</div>
                   <dl class="history-grid">
                     ${historyField("2nd Follow up Date", record.secondCommitmentDate)}
-                    ${historyField("Target Completion Date", record.targetCompletionDate)}
                     ${historyField("2nd Follow Remarks", record.secondRemarks, "history-note")}
                   </dl>
                 </section>
@@ -4256,12 +4308,31 @@
           elements.leaderPositionFilter,
           elements.hrPositionFilter,
           elements.viewFilter,
-          elements.performanceMetricFilter,
           elements.performanceStatusFilter,
           elements.participationFilter,
           elements.positionFilter,
           elements.floorFilter
         ].forEach((element) => element.addEventListener("change", renderAll));
+
+        elements.performanceMetricFilter.addEventListener("change", (event) => {
+          const checkboxes = Array.from(elements.performanceMetricFilter.querySelectorAll('input[type="checkbox"]'));
+          const allBox = checkboxes.find((input) => input.value === "all");
+          const metricBoxes = checkboxes.filter((input) => input.value !== "all");
+          const changed = event.target;
+
+          if (changed.value === "all" && changed.checked) {
+            metricBoxes.forEach((input) => { input.checked = false; });
+          } else if (changed.value !== "all" && changed.checked && allBox) {
+            allBox.checked = false;
+          }
+
+          const selectedMetricCount = metricBoxes.filter((input) => input.checked).length;
+          if (allBox && !allBox.checked && selectedMetricCount === 0) {
+            allBox.checked = true;
+          }
+
+          renderAll();
+        });
         
         elements.leaderSearchInput.addEventListener("input", renderOrgChart);
         elements.searchInput.addEventListener("input", renderStaffTable);
