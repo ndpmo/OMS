@@ -3597,8 +3597,9 @@
           teamSizeStr = `E1: ${e1s}`;
         }
         const offerTarget = parseNumber(assessment.offerTarget);
+        const totalConverted = parseNumber(person.offerSinceMay2026) + parseNumber(person.onboardSinceMay2026);
         const offerTargetCompletion = offerTarget > 0
-          ? `${Math.floor((person.offerSinceMay2026 / offerTarget) * 100)}%`
+          ? `${Math.floor((totalConverted / offerTarget) * 100)}%`
           : "-";
         const locationText = person.floor && person.floor !== person.center
           ? `${person.center} | ${person.floor}`
