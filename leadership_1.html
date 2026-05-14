@@ -311,10 +311,10 @@
 
       .hero-metrics {
         display: grid;
-        grid-template-columns: repeat(3, minmax(150px, 1fr));
+        grid-template-columns: repeat(4, minmax(150px, 1fr));
         gap: 10px;
         margin-top: 8px;
-        max-width: 620px;
+        max-width: 100%;
       }
 
       .hero-dashboard-label {
@@ -2161,6 +2161,21 @@
                 </div>
               </div>
               <div class="metric-card">
+                <span class="metric-card-title">Considering</span>
+                <div class="metric-row">
+                  <strong id="metricConsideringAs">0</strong>
+                  <span>AS</span>
+                </div>
+                <div class="metric-row">
+                  <strong id="metricConsideringTl">0</strong>
+                  <span>TL</span>
+                </div>
+                <div class="metric-row">
+                  <strong id="metricConsideringEligibleE1">0</strong>
+                  <span>Eligible E1</span>
+                </div>
+              </div>
+              <div class="metric-card">
                 <span class="metric-card-title">Not Yet Assessed</span>
                 <div class="metric-row">
                   <strong id="metricPendingAs">0</strong>
@@ -2293,6 +2308,7 @@
                 <option value="All">全部</option>
                 <option value="Y">願意參與</option>
                 <option value="N">已拒絕</option>
+                <option value="C">考慮中</option>
               </select>
             </label>
             <label>
@@ -2433,6 +2449,7 @@
                 <option value="">請選擇 Y/N</option>
                 <option value="Y">Y</option>
                 <option value="N">N</option>
+                <option value="C">考慮中</option>
               </select>
             </label>
 
@@ -2604,6 +2621,9 @@
         metricRejectAs: document.querySelector("#metricRejectAs"),
         metricRejectTl: document.querySelector("#metricRejectTl"),
         metricRejectEligibleE1: document.querySelector("#metricRejectEligibleE1"),
+        metricConsideringAs: document.querySelector("#metricConsideringAs"),
+        metricConsideringTl: document.querySelector("#metricConsideringTl"),
+        metricConsideringEligibleE1: document.querySelector("#metricConsideringEligibleE1"),
         metricPendingAs: document.querySelector("#metricPendingAs"),
         metricPendingTl: document.querySelector("#metricPendingTl"),
         metricPendingEligibleE1: document.querySelector("#metricPendingEligibleE1"),
@@ -2787,7 +2807,9 @@
         const keyCurrentTeamSize = headers[normHeaders.findIndex(h => h.includes("current team size"))];
         const keyTargetTeamSize = headers[normHeaders.findIndex(h => h.includes("target team size"))];
         const keyFirstAssessmentRemarks = headers[normHeaders.findIndex(h =>
-          h.includes("1st") && h.includes("assessment") && (h.includes("remarks") || h.includes("reamarks"))
+          (h.includes("assessment remarks")) ||
+          (h.includes("assessment") && (h.includes("remarks") || h.includes("reamarks")) && !h.includes("follow")) ||
+          (h.includes("1st") && h.includes("assessment") && (h.includes("remarks") || h.includes("reamarks")))
         )];
         const keyFirstFollowRemarks = headers[normHeaders.findIndex(h =>
           h.includes("1st") && h.includes("follow") && (h.includes("remarks") || h.includes("reamarks"))
@@ -3301,6 +3323,9 @@
         const rejectAs = asStaff.filter((person) => participationValue(assessmentByStaff.get(person.staffId)) === "N").length;
         const rejectTl = tlStaff.filter((person) => participationValue(assessmentByStaff.get(person.staffId)) === "N").length;
         const rejectEligibleE1 = eligibleE1Staff.filter((person) => participationValue(assessmentByStaff.get(person.staffId)) === "N").length;
+        const consideringAs = asStaff.filter((person) => participationValue(assessmentByStaff.get(person.staffId)) === "C").length;
+        const consideringTl = tlStaff.filter((person) => participationValue(assessmentByStaff.get(person.staffId)) === "C").length;
+        const consideringEligibleE1 = eligibleE1Staff.filter((person) => participationValue(assessmentByStaff.get(person.staffId)) === "C").length;
 
         const pendingAs = asStaff.filter((person) => !hasAssessment(person)).length;
         const pendingTl = tlStaff.filter((person) => !hasAssessment(person)).length;
@@ -3311,6 +3336,9 @@
         elements.metricRejectAs.textContent = rejectAs;
         elements.metricRejectTl.textContent = rejectTl;
         elements.metricRejectEligibleE1.textContent = rejectEligibleE1;
+        elements.metricConsideringAs.textContent = consideringAs;
+        elements.metricConsideringTl.textContent = consideringTl;
+        elements.metricConsideringEligibleE1.textContent = consideringEligibleE1;
         elements.metricPendingAs.textContent = pendingAs;
         elements.metricPendingTl.textContent = pendingTl;
         elements.metricPendingEligibleE1.textContent = pendingEligibleE1;
@@ -3341,10 +3369,12 @@
         const assessments = Object.values(state.assessments);
         const agreed = assessments.filter((assessment) => participationValue(assessment) === "Y").length;
         const rejected = assessments.filter((assessment) => participationValue(assessment) === "N").length;
+        const considering = assessments.filter((assessment) => participationValue(assessment) === "C").length;
         const total = assessments.length;
 
         elements.participationSummary.innerHTML = `
           <div class="participation-card agreed"><span>Agreed to participate</span><strong>${agreed}</strong></div>
+          <div class="participation-card"><span>Considering</span><strong>${considering}</strong></div>
           <div class="participation-card rejected"><span>Rejected</span><strong>${rejected}</strong></div>
           <div class="participation-card"><span>Total assessed</span><strong>${total}</strong></div>
         `;
@@ -3796,10 +3826,12 @@
 
         const agreedRows = rows.filter((person) => participationValue(state.assessments[person.staffId]) === "Y");
         const rejectedRows = rows.filter((person) => participationValue(state.assessments[person.staffId]) === "N");
-        const otherRows = rows.filter((person) => !["Y", "N"].includes(participationValue(state.assessments[person.staffId])));
+        const consideringRows = rows.filter((person) => participationValue(state.assessments[person.staffId]) === "C");
+        const otherRows = rows.filter((person) => !["Y", "N", "C"].includes(participationValue(state.assessments[person.staffId])));
 
         elements.staffTable.innerHTML = [
           renderAssessmentSection("願意參與", "Agreed to participate", agreedRows, "agreed"),
+          renderAssessmentSection("考慮中", "Considering", consideringRows, "neutral"),
           renderAssessmentSection("拒絕參與", "Refused to participate", rejectedRows, "rejected"),
           renderAssessmentSection("未設定參與意願", "No participation value", otherRows, "neutral")
         ].join("");
@@ -4303,7 +4335,15 @@
         try {
           await ensureAppsScriptReachable();
           submitBtn.textContent = signedFile ? "正在上載簽署表格..." : "正在同步至 Google 表格...";
-          setUploadStatus(signedFile ? "正在上載簽署表格..." : (willingJoin === "Y" ? "尚未簽署文件，先儲存評估。" : "選擇 N，毋須上載簽署表格。"));
+          setUploadStatus(
+            signedFile
+              ? "正在上載簽署表格..."
+              : (willingJoin === "Y"
+                ? "尚未簽署文件，先儲存評估。"
+                : willingJoin === "N"
+                  ? "選擇 N，毋須上載簽署表格。"
+                  : "選擇考慮中，先儲存評估。")
+          );
 
           // 2. 透過 POST 傳送至 Google Apps Script 寫入 enrollment detail 分頁
           if (SHEET_CONFIG.appsScriptUrl) {
@@ -4368,7 +4408,15 @@
           saveJson("programAssessments", state.assessments);
           saveJson("programAssessmentHistory", state.assessmentHistory);
 
-          setUploadStatus(uploadedFile ? `已上載：${uploadedFile.name}` : (willingJoin === "Y" ? "已儲存：尚未簽署文件。" : "已儲存：選擇 N，沒有上載檔案。"));
+          setUploadStatus(
+            uploadedFile
+              ? `已上載：${uploadedFile.name}`
+              : (willingJoin === "Y"
+                ? "已儲存：尚未簽署文件。"
+                : willingJoin === "N"
+                  ? "已儲存：選擇 N，沒有上載檔案。"
+                  : "已儲存：選擇考慮中。")
+          );
           closeAssessmentForm();
         } catch (error) {
           console.error("同步至試算表時發生錯誤：", error);
