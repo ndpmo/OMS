@@ -14,13 +14,16 @@ const ENROLLMENT_HEADERS = [
   'Offer target',
   'Assessment date time',
   'Carried out by',
+  'Assessment Remarks',
   '1st Follow up Remarks',
   '1st Follow up Date',
   '2nd Follow Remarks',
   '2nd Follow up Date',
   'Signed Form Name',
   'Signed Form File ID',
-  'Signed Form URL'
+  'Signed Form URL',
+  'Signed Form Status',
+  'Signed Form Error'
 ];
 
 const HEADER_ALIASES = {
@@ -28,8 +31,10 @@ const HEADER_ALIASES = {
   'Staff Number': 'Staff No.',
   'Staff ID': 'Staff No.',
 
-  '1st assessment Reamarks': '1st Follow up Remarks',
-  '1st assessment Remarks': '1st Follow up Remarks',
+  'Assessment Remarks': 'Assessment Remarks',
+  'Assessment Remark': 'Assessment Remarks',
+  '1st assessment Reamarks': 'Assessment Remarks',
+  '1st assessment Remarks': 'Assessment Remarks',
   '1st Follow up Reamarks': '1st Follow up Remarks',
   '1st Follow up Remark': '1st Follow up Remarks',
   '1st assessment Date': '1st Follow up Date',
@@ -167,11 +172,24 @@ function doPost(event) {
     // Signed form upload is optional; missing Y forms are highlighted in the dashboard.
     let signedForm = null;
     const hasSignedForm = payload.file && payload.file.base64;
-    if (action === 'saveAssessment' && hasSignedForm) {
-      signedForm = saveSignedForm_(payload.file, staffNo, data);
-      data['Signed Form Name'] = signedForm.name;
-      data['Signed Form File ID'] = signedForm.id;
-      data['Signed Form URL'] = signedForm.url;
+    const isAssessmentAction = action === 'saveAssessment' || action === 'saveAssessmentPendingSignature';
+    if (isAssessmentAction && hasSignedForm) {
+      data['Signed Form Name'] = payload.file.name || '';
+      try {
+        signedForm = saveSignedForm_(payload.file, staffNo, data);
+        data['Signed Form File ID'] = signedForm.id;
+        data['Signed Form URL'] = signedForm.url;
+        data['Signed Form Status'] = 'Uploaded';
+        data['Signed Form Error'] = '';
+      } catch (uploadError) {
+        data['Signed Form Status'] = 'Pending signature';
+        data['Signed Form Error'] = uploadError.message;
+      }
+    } else if (isAssessmentAction) {
+      data['Signed Form Status'] = String(data.Join || '').trim().toUpperCase() === 'Y'
+        ? 'Pending signature'
+        : 'Not required';
+      data['Signed Form Error'] = '';
     }
 
     const rowIndex = findOrCreateStaffRow_(sheet, headers, staffNo);

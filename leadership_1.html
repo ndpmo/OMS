@@ -1318,7 +1318,7 @@
 
       table {
         width: 100%;
-        min-width: 1760px;
+        min-width: 1440px;
         border-collapse: collapse;
         table-layout: fixed;
       }
@@ -1334,7 +1334,7 @@
 
       th {
         color: var(--gold);
-        font-size: 0.68rem;
+        font-size: 0.76rem;
         text-transform: uppercase;
         letter-spacing: 0.06em;
         background: rgba(255, 255, 255, 0.05);
@@ -1342,59 +1342,69 @@
 
       td {
         color: #efeaf8;
-        font-size: 0.88rem;
+        font-size: 1rem;
+        vertical-align: middle;
       }
 
       th:nth-child(1),
-      td:nth-child(1) { width: 220px; }
+      td:nth-child(1) { width: 260px; }
 
       th:nth-child(2),
-      td:nth-child(2) { width: 170px; }
+      td:nth-child(2) { width: 190px; }
 
       th:nth-child(3),
-      td:nth-child(3) { width: 120px; }
+      td:nth-child(3) { width: 200px; }
 
       th:nth-child(4),
-      td:nth-child(4) { width: 105px; }
+      td:nth-child(4) { width: 240px; }
 
       th:nth-child(5),
-      td:nth-child(5) { width: 105px; }
+      td:nth-child(5) { width: 130px; }
 
       th:nth-child(6),
-      td:nth-child(6) { width: 150px; }
+      td:nth-child(6) { width: 170px; }
 
       th:nth-child(7),
-      td:nth-child(7) { width: 125px; }
+      td:nth-child(7) { width: 220px; }
 
       th:nth-child(8),
-      td:nth-child(8) { width: 150px; }
+      td:nth-child(8) { width: 190px; }
 
       th:nth-child(9),
-      td:nth-child(9) { width: 165px; }
+      td:nth-child(9) { width: 150px; }
 
       th:nth-child(10),
-      td:nth-child(10) { width: 180px; }
+      td:nth-child(10) { width: 145px; }
 
       th:nth-child(11),
-      td:nth-child(11) { width: 140px; }
+      td:nth-child(11) { width: 280px; }
 
-      th:nth-child(12),
-      td:nth-child(12),
-      th:nth-child(13),
-      td:nth-child(13) { width: 135px; }
-
-      th:nth-child(12),
-      th:nth-child(13) {
+      th:nth-child(10),
+      th:nth-child(11) {
         white-space: nowrap;
       }
 
-      td:nth-child(12) .secondary-button,
-      td:nth-child(13) .secondary-button {
+      td:nth-child(11) .secondary-button {
         width: 100%;
         min-height: 38px;
         padding: 0 10px;
         white-space: nowrap;
         font-size: 0.78rem;
+      }
+
+      .kpi-offer-target-completion {
+        display: inline-block;
+        color: #fff;
+        font-size: clamp(1.8rem, 3.4vw, 2.8rem);
+        font-weight: 900;
+        line-height: 1;
+        letter-spacing: 0.01em;
+        text-shadow: 0 0 12px rgba(255, 255, 255, 0.24);
+      }
+
+      .staff-meta {
+        font-size: 1.02rem;
+        line-height: 1.35;
       }
 
       tr.flagged-row td {
@@ -1513,12 +1523,34 @@
 
       .followup-readonly {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 10px;
+        gap: 12px;
         padding: 12px;
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 8px;
         background: rgba(255, 255, 255, 0.04);
+      }
+
+      .followup-group {
+        display: grid;
+        gap: 8px;
+        padding: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      .followup-group-title {
+        color: var(--gold-soft);
+        font-size: 0.72rem;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .followup-group-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
       }
 
       .followup-readonly div {
@@ -1537,6 +1569,10 @@
         color: #fff;
         font-weight: 750;
         overflow-wrap: anywhere;
+      }
+
+      .followup-note {
+        grid-column: 1 / -1;
       }
 
       .assessment-form .dialog-actions {
@@ -1760,11 +1796,48 @@
       }
 
       .participation-card.agreed {
-        border-color: rgba(96, 255, 178, 0.34);
+        border-color: rgba(96, 255, 178, 0.7);
+        background: linear-gradient(145deg, rgba(32, 94, 72, 0.42), rgba(17, 42, 34, 0.28));
+        box-shadow: inset 0 0 0 1px rgba(96, 255, 178, 0.28);
       }
 
       .participation-card.rejected {
-        border-color: rgba(255, 119, 119, 0.36);
+        border-color: rgba(255, 119, 119, 0.72);
+        background: linear-gradient(145deg, rgba(124, 42, 54, 0.45), rgba(58, 17, 24, 0.3));
+        box-shadow: inset 0 0 0 1px rgba(255, 119, 119, 0.28);
+      }
+
+      .assessment-section-row.agreed-section td {
+        border-top-color: rgba(96, 255, 178, 0.58);
+        background: linear-gradient(90deg, rgba(34, 93, 73, 0.34), rgba(16, 44, 34, 0.2));
+      }
+
+      .assessment-section-row.rejected-section td {
+        border-top-color: rgba(255, 119, 119, 0.58);
+        background: linear-gradient(90deg, rgba(116, 39, 51, 0.36), rgba(58, 16, 24, 0.22));
+      }
+
+      .assessment-section-row td {
+        padding: 13px 12px;
+        border-top: 1px solid rgba(242, 198, 106, 0.28);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(242, 198, 106, 0.08);
+      }
+
+      .assessment-section-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        color: #fff;
+        font-weight: 900;
+      }
+
+      .assessment-section-title span {
+        color: var(--gold-soft);
+        font-size: 0.72rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
       }
 
       .signature-status {
@@ -1786,6 +1859,12 @@
         border-color: rgba(96, 255, 178, 0.48);
         color: #8fffd0;
         background: rgba(96, 255, 178, 0.08);
+      }
+
+      .assessment-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
       }
 
       .link-button {
@@ -2091,6 +2170,10 @@
                 <option value="risk">紅色 &lt; 90%</option>
               </select>
             </label>
+            <label class="search-field">
+              搜尋
+              <input id="leaderSearchInput" type="search" placeholder="姓名、員工編號、團隊">
+            </label>
             <div class="data-status" role="status" aria-live="polite">
               <span id="dataStatus">已連接 Apps Script</span>
               <button id="setAppsScriptUrl" type="button">重新設定 Script URL</button>
@@ -2145,10 +2228,8 @@
                 <tr>
                   <th>名</th>
                   <th>Brand / Center</th>
-                  <th>職位</th>
-                  <th>Team Size</th>
-                  <th>本月成績</th>
-                  <th>對上 3個月成績</th>
+                  <th>職位 / Team Size</th>
+                  <th>銷售表現 (本月 + 對上3個月)</th>
                   <th>Offer target</th>
                   <th>2026 5月後招聘</th>
                   <th>Offer target completion</th>
@@ -2210,11 +2291,11 @@
           <input type="hidden" id="followUpStaffId">
           <dl id="followUpReadonly" class="followup-readonly"></dl>
           <label>
-            2nd Follow Remarks
+            <span id="followUpRemarksLabel">1st Follow up Remarks</span>
             <textarea id="followUpRemarks" rows="4" placeholder="輸入 2nd follow-up remarks"></textarea>
           </label>
           <label>
-            2nd Follow up Date
+            <span id="followUpDateLabel">1st Follow up Date</span>
             <input id="followUpDate" type="date">
           </label>
           <div class="dialog-actions">
@@ -2289,7 +2370,7 @@
             </label>
 
             <label>
-              1st Follow up Remarks
+              1st Assessment Remarks
               <textarea id="firstAssessmentRemarks" rows="4" placeholder="輸入第一次評估 remarks"></textarea>
             </label>
 
@@ -2417,6 +2498,7 @@
         viewFilter: document.querySelector("#viewFilter"),
         performanceMetricFilter: document.querySelector("#performanceMetricFilter"),
         performanceStatusFilter: document.querySelector("#performanceStatusFilter"),
+        leaderSearchInput: document.querySelector("#leaderSearchInput"),
         orgChart: document.querySelector("#orgChart"),
         formationSummary: document.querySelector("#formationSummary"),
         participationSummary: document.querySelector("#participationSummary"),
@@ -2461,6 +2543,8 @@
         followUpReadonly: document.querySelector("#followUpReadonly"),
         followUpRemarks: document.querySelector("#followUpRemarks"),
         followUpDate: document.querySelector("#followUpDate"),
+        followUpRemarksLabel: document.querySelector("#followUpRemarksLabel"),
+        followUpDateLabel: document.querySelector("#followUpDateLabel"),
         saveFollowUp: document.querySelector("#saveFollowUp"),
         historyDialog: document.querySelector("#historyDialog"),
         historyTitle: document.querySelector("#historyTitle"),
@@ -2605,11 +2689,14 @@
         const keyAssessmentDateTime = headers[normHeaders.findIndex(h => h.includes("assessment date time"))];
         const keyCurrentTeamSize = headers[normHeaders.findIndex(h => h.includes("current team size"))];
         const keyTargetTeamSize = headers[normHeaders.findIndex(h => h.includes("target team size"))];
-        const keyFirstRemarks = headers[normHeaders.findIndex(h =>
-          h.includes("1st") && (h.includes("follow") || h.includes("assessment")) && (h.includes("remarks") || h.includes("reamarks"))
+        const keyFirstAssessmentRemarks = headers[normHeaders.findIndex(h =>
+          h.includes("1st") && h.includes("assessment") && (h.includes("remarks") || h.includes("reamarks"))
         )];
-        const keyFirstAssessmentDate = headers[normHeaders.findIndex(h =>
-          h.includes("1st") && (h.includes("follow") || h.includes("assessment")) && h.includes("date")
+        const keyFirstFollowRemarks = headers[normHeaders.findIndex(h =>
+          h.includes("1st") && h.includes("follow") && (h.includes("remarks") || h.includes("reamarks"))
+        )];
+        const keyFirstFollowDate = headers[normHeaders.findIndex(h =>
+          h.includes("1st") && h.includes("follow") && h.includes("date")
         )];
         const keySignedFormName = headers[normHeaders.findIndex(h =>
           (h.includes("signed") || h.includes("uploaded")) && (h.includes("form") || h.includes("contract")) && h.includes("name")
@@ -2654,8 +2741,9 @@
             assessmentDateTime: keyAssessmentDateTime ? (row[keyAssessmentDateTime] || "") : "",
             currentTeamSize: keyCurrentTeamSize ? (row[keyCurrentTeamSize] || "") : "",
             targetTeamSize: keyTargetTeamSize ? (row[keyTargetTeamSize] || "") : "",
-            firstRemarks: keyFirstRemarks ? (row[keyFirstRemarks] || "") : "",
-            firstAssessmentDate: keyFirstAssessmentDate ? (row[keyFirstAssessmentDate] || "") : "",
+            firstRemarks: keyFirstAssessmentRemarks ? (row[keyFirstAssessmentRemarks] || "") : "",
+            firstFollowUpRemarks: keyFirstFollowRemarks ? (row[keyFirstFollowRemarks] || "") : "",
+            firstAssessmentDate: keyFirstFollowDate ? (row[keyFirstFollowDate] || "") : "",
             signedFormName: keySignedFormName ? (row[keySignedFormName] || "") : "",
             signedFormFileId: keySignedFormFileId ? (row[keySignedFormFileId] || "") : "",
             signedFormUrl: keySignedFormUrl ? (row[keySignedFormUrl] || "") : "",
@@ -3027,12 +3115,14 @@
       }
 
       function leaderFilteredStaff() {
+        const query = String(elements.leaderSearchInput?.value || "").trim().toLowerCase();
         const baseMatches = staff.filter((person) => {
           const brandMatch = elements.brandFilter.value === "All" || person.brand === elements.brandFilter.value;
           const centerMatch = elements.centerFilter.value === "All" || person.center === elements.centerFilter.value;
           const mismatchMatch = elements.viewFilter.value !== "mismatch" || person.misMismatch;
           const performanceMatch = matchesPerformanceFilter(person);
-          return brandMatch && centerMatch && mismatchMatch && performanceMatch;
+          const queryMatch = !query || [person.therapist, person.staffId, person.team].join(" ").toLowerCase().includes(query);
+          return brandMatch && centerMatch && mismatchMatch && performanceMatch && queryMatch;
         });
 
         const positionSelected = elements.leaderPositionFilter.value !== "All";
@@ -3086,8 +3176,9 @@
 
       function renderMetrics() {
         const assessments = Object.values(state.assessments);
-        const signedToTl = assessments.filter((item) => item.targetTier === "tl").length;
-        const signedToAs = assessments.filter((item) => item.targetTier === "as").length;
+        const agreed = assessments.filter((item) => participationValue(item) === "Y");
+        const signedToTl = agreed.filter((item) => item.targetTier === "tl").length;
+        const signedToAs = agreed.filter((item) => item.targetTier === "as").length;
         elements.metricSignupTl.textContent = signedToTl;
         elements.metricSignupAs.textContent = signedToAs;
       }
@@ -3107,6 +3198,10 @@
         if (participationValue(assessment) !== "Y") return "";
         if (hasSignedForm(assessment)) return `<span class="signature-status is-signed">已簽署文件</span>`;
         return `<span class="signature-status">尚未簽署文件</span>`;
+      }
+
+      function needsSignatureDocument(assessment) {
+        return participationValue(assessment) === "Y" && !hasSignedForm(assessment);
       }
 
       function renderParticipationSummary() {
@@ -3371,6 +3466,7 @@
       }
 
       function renderPersonalDetails(person, assessmentContext = {}) {
+        const alreadyAssessed = hasAssessment(person);
         const profileDetails = [
           ["年資", `${formatPlain(person.serviceMonths)} 月`],
           ["入職日", person.lastJoinDate || "-"],
@@ -3406,7 +3502,7 @@
           <div class="personal-details">
             <div class="details-actions">
               <button class="details-toggle" type="button" aria-expanded="false">Performance Data</button>
-              <button type="button" class="assessment-button" onclick="openAssessmentForm('${person.staffId}', '${assessmentContext.suggestedTier || ''}', ${assessmentContext.currentCount || 0})">評估</button>
+              ${alreadyAssessed ? "" : `<button type="button" class="assessment-button" onclick="openAssessmentForm('${person.staffId}', '${assessmentContext.suggestedTier || ''}', ${assessmentContext.currentCount || 0})">評估</button>`}
             </div>
             <div class="detail-panels">
               ${renderDetailGroup("個人資料", profileDetails)}
@@ -3448,6 +3544,101 @@
         return `<div class="kpi-grid">${items.map(([label, value]) => `<div><span>${label}</span><strong>${value}</strong></div>`).join("")}</div>`;
       }
 
+      function renderAssessmentActions(person, assessment) {
+        const actions = [
+          `<button class="secondary-button history-button" type="button" data-history="${person.staffId}">View History</button>`
+        ];
+
+        if (needsSignatureDocument(assessment)) {
+          actions.push(`<button class="secondary-button" type="button" data-resubmit-doc="${person.staffId}">補交文件</button>`);
+        }
+
+        if (participationValue(assessment) === "N") {
+          actions.push(`<button class="secondary-button" type="button" data-revise-decision="${person.staffId}">改變決定</button>`);
+        } else {
+          actions.push(`<button class="secondary-button" type="button" data-followup="${person.staffId}">Follow Up</button>`);
+        }
+
+        return `<div class="assessment-actions">${actions.join("")}</div>`;
+      }
+
+      function renderAssessmentSection(title, label, rows, sectionType = "neutral") {
+        if (!rows.length) return "";
+        const sectionClass = sectionType === "agreed"
+          ? "assessment-section-row agreed-section"
+          : sectionType === "rejected"
+            ? "assessment-section-row rejected-section"
+            : "assessment-section-row";
+
+        return `
+          <tr class="${sectionClass}">
+            <td colspan="11">
+              <div class="assessment-section-title">
+                <strong>${title}</strong>
+                <span>${rows.length} records · ${label}</span>
+              </div>
+            </td>
+          </tr>
+          ${rows.map(renderAssessmentRow).join("")}
+        `;
+      }
+
+      function renderAssessmentRow(person) {
+        const coaching = state.coaching[person.staffId];
+        const assessment = state.assessments[person.staffId] || {};
+
+        let teamSizeStr = "-";
+        const role = normalizeRole(person.position);
+        if (["S", "AS"].includes(role)) {
+          const hc = staff.filter(p => p.as === person.as && !["S", "AS"].includes(normalizeRole(p.position))).length;
+          teamSizeStr = `HC: ${hc}`;
+        } else if (role === "TL") {
+          const e1s = staff.filter(p => p.team === person.team && normalizeRole(p.position) === "E1").length;
+          teamSizeStr = `E1: ${e1s}`;
+        }
+        const offerTarget = parseNumber(assessment.offerTarget);
+        const offerTargetCompletion = offerTarget > 0
+          ? `${Math.floor((person.offerSinceMay2026 / offerTarget) * 100)}%`
+          : "-";
+        const locationText = person.floor && person.floor !== person.center
+          ? `${person.center} | ${person.floor}`
+          : person.center;
+
+        return `
+          <tr class="${isFlagged(person) ? "flagged-row" : ""}">
+            <td>
+              <div class="staff-name">${person.therapist}</div>
+              <div class="staff-meta">${person.staffId} | ${person.serviceMonths} months | joined ${person.lastJoinDate}</div>
+              ${isFlagged(person) ? `<span class="role-chip">高潛人才</span>` : ""}
+              ${assessmentLabel(person)}
+              ${signatureStatusLabel(assessment)}
+            </td>
+            <td>${person.brand}<br><span class="staff-meta">${locationText}</span></td>
+            <td>${person.position}<br><span class="staff-meta">HR: ${person.hrTitle}</span><br><span class="staff-meta">${teamSizeStr}</span>${person.misMismatch ? `<br>${titleMismatchLabel(person)}` : ""}</td>
+            <td>
+              <div><strong class="${salesStatusClass(person.mayMtd ?? salesPercent(person))}">本月: ${formatPercent(person.mayMtd ?? salesPercent(person))}</strong></div>
+              <div class="staff-meta">
+                M-1: <strong class="${salesStatusClass(person.apr)}">${formatPercent(person.apr)}</strong><br>
+                M-2: <strong class="${salesStatusClass(person.mar)}">${formatPercent(person.mar)}</strong><br>
+                M-3: <strong class="${salesStatusClass(person.feb)}">${formatPercent(person.feb)}</strong>
+              </div>
+            </td>
+            <td><strong style="color: #fff;">${assessment.offerTarget !== undefined && assessment.offerTarget !== "" ? assessment.offerTarget : "-"}</strong></td>
+            <td>
+              <div class="staff-meta">
+                CV: ${formatPlain(person.cvSinceMay2026)}<br>
+                Offer: ${formatPlain(person.offerSinceMay2026)}<br>
+                On board: ${formatPlain(person.onboardSinceMay2026)}
+              </div>
+            </td>
+            <td><strong class="kpi-offer-target-completion">${offerTargetCompletion}</strong></td>
+            <td><span class="staff-meta">${assessment.assessmentDateTime || "-"}</span></td>
+            <td><span class="staff-meta">${assessment.carriedOutBy || "-"}</span></td>
+            <td>${renderAssessmentActions(person, assessment)}</td>
+          </tr>
+        `;
+      }
+
       function renderStaffTable() {
         const query = elements.searchInput.value.trim().toLowerCase();
         const rows = staff.filter((person) => {
@@ -3463,67 +3654,19 @@
 
         if (!rows.length) {
           const message = isLoading ? "正在載入資料..." : "沒有已完成評估的人員符合目前篩選條件。";
-          elements.staffTable.innerHTML = `<tr><td colspan="13">${message}</td></tr>`;
+          elements.staffTable.innerHTML = `<tr><td colspan="11">${message}</td></tr>`;
           return;
         }
 
-        elements.staffTable.innerHTML = rows.map((person) => {
-          const coaching = state.coaching[person.staffId];
-          const assessment = state.assessments[person.staffId] || {};
+        const agreedRows = rows.filter((person) => participationValue(state.assessments[person.staffId]) === "Y");
+        const rejectedRows = rows.filter((person) => participationValue(state.assessments[person.staffId]) === "N");
+        const otherRows = rows.filter((person) => !["Y", "N"].includes(participationValue(state.assessments[person.staffId])));
 
-          let teamSizeStr = "-";
-          const role = normalizeRole(person.position);
-          if (["S", "AS"].includes(role)) {
-            const hc = staff.filter(p => p.as === person.as && !["S", "AS"].includes(normalizeRole(p.position))).length;
-            teamSizeStr = `HC: ${hc}`;
-          } else if (role === "TL") {
-            const e1s = staff.filter(p => p.team === person.team && normalizeRole(p.position) === "E1").length;
-            teamSizeStr = `E1: ${e1s}`;
-          }
-          const offerTarget = parseNumber(assessment.offerTarget);
-          const offerTargetCompletion = offerTarget > 0
-            ? `${Math.floor((person.offerSinceMay2026 / offerTarget) * 100)}%`
-            : "-";
-          const locationText = person.floor && person.floor !== person.center
-            ? `${person.center} | ${person.floor}`
-            : person.center;
-
-          return `
-            <tr class="${isFlagged(person) ? "flagged-row" : ""}">
-              <td>
-                <div class="staff-name">${person.therapist}</div>
-                <div class="staff-meta">${person.staffId} | ${person.serviceMonths} months | joined ${person.lastJoinDate}</div>
-                ${isFlagged(person) ? `<span class="role-chip">高潛人才</span>` : ""}
-                ${assessmentLabel(person)}
-                ${signatureStatusLabel(assessment)}
-              </td>
-              <td>${person.brand}<br><span class="staff-meta">${locationText}</span></td>
-              <td>${person.position}<br><span class="staff-meta">HR: ${person.hrTitle}</span>${person.misMismatch ? `<br>${titleMismatchLabel(person)}` : ""}</td>
-              <td>${teamSizeStr}</td>
-              <td><strong class="${salesStatusClass(person.mayMtd ?? salesPercent(person))}">${formatPercent(person.mayMtd ?? salesPercent(person))}</strong></td>
-              <td>
-                <div class="staff-meta">
-                  M-1: <strong class="${salesStatusClass(person.apr)}">${formatPercent(person.apr)}</strong><br>
-                  M-2: <strong class="${salesStatusClass(person.mar)}">${formatPercent(person.mar)}</strong><br>
-                  M-3: <strong class="${salesStatusClass(person.feb)}">${formatPercent(person.feb)}</strong>
-                </div>
-              </td>
-              <td><strong style="color: #fff;">${assessment.offerTarget !== undefined && assessment.offerTarget !== "" ? assessment.offerTarget : "-"}</strong></td>
-              <td>
-                <div class="staff-meta">
-                  CV: ${formatPlain(person.cvSinceMay2026)}<br>
-                  Offer: ${formatPlain(person.offerSinceMay2026)}<br>
-                  On board: ${formatPlain(person.onboardSinceMay2026)}
-                </div>
-              </td>
-              <td><strong style="color: #fff;">${offerTargetCompletion}</strong></td>
-              <td><span class="staff-meta">${assessment.assessmentDateTime || "-"}</span></td>
-              <td><span class="staff-meta">${assessment.carriedOutBy || "-"}</span></td>
-              <td><button class="secondary-button history-button" type="button" data-history="${person.staffId}">View History</button></td>
-              <td><button class="secondary-button" type="button" data-followup="${person.staffId}">Follow Up</button></td>
-            </tr>
-          `;
-        }).join("");
+        elements.staffTable.innerHTML = [
+          renderAssessmentSection("願意參與", "Agreed to participate", agreedRows, "agreed"),
+          renderAssessmentSection("拒絕參與", "Refused to participate", rejectedRows, "rejected"),
+          renderAssessmentSection("未設定參與意願", "No participation value", otherRows, "neutral")
+        ].join("");
       }
 
 
@@ -3605,7 +3748,7 @@
                     ${historyField("Assessment Date Time", record.assessmentDateTime)}
                     ${historyField("1st Follow up Date", record.firstAssessmentDate)}
                     ${historyField("Carried out by", record.carriedOutBy)}
-                    ${historyField("1st Follow up Remarks", record.firstRemarks, "history-note")}
+                    ${historyField("1st Assessment Remarks", record.firstRemarks, "history-note")}
                     ${renderSignedFormButton(record)}
                   </dl>
                 </section>
@@ -3633,31 +3776,51 @@
         if (!person || !history.length) return;
 
         elements.historyTitle.textContent = `${person.therapist} | ${staffId}`;
-        elements.historyContent.innerHTML = history.map((record, index) => renderHistoryCard({
-          ...record,
-          signedFormName: record.signedFormName || `${sanitizeDriveName(staffId)}_${sanitizeDriveName(person.brand)}`
-        }, index)).join("");
+        elements.historyContent.innerHTML = history.map(renderHistoryCard).join("");
         elements.historyDialog.showModal();
       }
 
       function renderFollowUpReadonly(person, assessment) {
-        const items = [
-          ["Staff No.", person.staffId],
-          ["Name", person.therapist],
-          ["Join", assessment.willingJoin || "-"],
-          ["Commitment Tier", assessment.targetTierLabel || tierLabel(assessment.targetTier) || "-"],
-          ["Offer Gap", assessment.offerGap || "-"],
-          ["Enroll date", assessment.enrollDate || "-"],
-          ["Target completion Date", assessment.targetCompletionDate || "-"],
-          ["Current Team size", assessment.currentTeamSize || "-"],
-          ["Target team size", assessment.targetTeamSize || "-"],
-          ["Offer target", assessment.offerTarget || "-"],
-          ["Assessment date time", assessment.assessmentDateTime || "-"],
-          ["Carried out by", assessment.carriedOutBy || "-"],
-          ["1st Follow up Remarks", assessment.firstRemarks || "-"],
-          ["1st Follow up Date", assessment.firstAssessmentDate || "-"]
-        ];
-        return items.map(([label, value]) => `<div><dt>${label}</dt><dd>${value}</dd></div>`).join("");
+        const field = (label, value, className = "") => `
+          <div class="${className}">
+            <dt>${label}</dt>
+            <dd>${value || "-"}</dd>
+          </div>
+        `;
+        return `
+          <section class="followup-group">
+            <div class="followup-group-title">Basic Info</div>
+            <dl class="followup-group-grid">
+              ${field("Staff No.", person.staffId)}
+              ${field("Name", person.therapist)}
+              ${field("Join", assessment.willingJoin)}
+              ${field("Commitment Tier", assessment.targetTierLabel || tierLabel(assessment.targetTier))}
+            </dl>
+          </section>
+          <section class="followup-group">
+            <div class="followup-group-title">Assessment</div>
+            <dl class="followup-group-grid">
+              ${field("Assessment date time", assessment.assessmentDateTime)}
+              ${field("Carried out by", assessment.carriedOutBy)}
+              ${field("Enroll date", assessment.enrollDate)}
+              ${field("Target completion Date", assessment.targetCompletionDate)}
+              ${field("Current Team size", assessment.currentTeamSize)}
+              ${field("Target team size", assessment.targetTeamSize)}
+              ${field("Offer target", assessment.offerTarget)}
+              ${field("Offer Gap", assessment.offerGap, "followup-note")}
+              ${field("Assessment Remarks", assessment.firstRemarks, "followup-note")}
+            </dl>
+          </section>
+          <section class="followup-group">
+            <div class="followup-group-title">Follow Up Progress</div>
+            <dl class="followup-group-grid">
+              ${field("1st Follow up Remarks", assessment.firstFollowUpRemarks, "followup-note")}
+              ${field("1st Follow up Date", assessment.firstAssessmentDate)}
+              ${field("2nd Follow Remarks", assessment.secondRemarks, "followup-note")}
+              ${field("2nd Follow up Date", assessment.secondCommitmentDate)}
+            </dl>
+          </section>
+        `;
       }
 
       function openFollowUpDialog(staffId) {
@@ -3667,8 +3830,14 @@
         elements.followUpStaffId.value = staffId;
         elements.followUpTitle.textContent = `${person.therapist} | ${staffId}`;
         elements.followUpReadonly.innerHTML = renderFollowUpReadonly(person, assessment);
-        elements.followUpRemarks.value = assessment.secondRemarks || "";
-        elements.followUpDate.value = normalizeDateInput(assessment.secondCommitmentDate);
+        const hasFirstFollowUp = Boolean(String(assessment.firstFollowUpRemarks || assessment.firstAssessmentDate || "").trim());
+        const mode = hasFirstFollowUp ? "second" : "first";
+        elements.followUpDialog.dataset.mode = mode;
+        elements.followUpRemarksLabel.textContent = mode === "first" ? "1st Follow up Remarks" : "2nd Follow Remarks";
+        elements.followUpDateLabel.textContent = mode === "first" ? "1st Follow up Date" : "2nd Follow up Date";
+        elements.followUpRemarks.placeholder = mode === "first" ? "輸入 1st follow-up remarks" : "輸入 2nd follow-up remarks";
+        elements.followUpRemarks.value = mode === "first" ? (assessment.firstFollowUpRemarks || "") : (assessment.secondRemarks || "");
+        elements.followUpDate.value = normalizeDateInput(mode === "first" ? assessment.firstAssessmentDate : assessment.secondCommitmentDate);
         elements.followUpDialog.showModal();
       }
 
@@ -3806,6 +3975,108 @@
         if (elements.signedUploadStatus) elements.signedUploadStatus.textContent = message || "";
       }
 
+      function currentDateParts() {
+        const now = new Date();
+        const date = now.getFullYear() + '-' +
+          String(now.getMonth() + 1).padStart(2, '0') + '-' +
+          String(now.getDate()).padStart(2, '0');
+        const dateTime = date + ' ' +
+          String(now.getHours()).padStart(2, '0') + ':' +
+          String(now.getMinutes()).padStart(2, '0');
+        return { date, dateTime };
+      }
+
+      function assessmentPayloadData(staffId, person, assessment, assessmentDateTime) {
+        return {
+          "Staff No.": staffId,
+          "Brand": person.brand,
+          "Join": assessment.willingJoin || "Y",
+          "Commitment Tier": assessment.targetTierLabel || tierLabel(assessment.targetTier),
+          "Offer Gap": assessment.offerGap || "",
+          "Enroll date": assessment.enrollDate || assessmentDateTime.slice(0, 10),
+          "Target completion Date": assessment.targetCompletionDate || "",
+          "Current Team size": assessment.currentTeamSize || assessment.currentCount || "",
+          "Target team size": assessment.targetTeamSize || "",
+          "Offer target": assessment.offerTarget || "",
+          "Assessment date time": assessmentDateTime,
+          "Carried out by": assessment.carriedOutBy || "",
+          "Assessment Remarks": assessment.firstRemarks || "",
+          "1st Follow up Remarks": assessment.firstFollowUpRemarks || "",
+          "1st Follow up Date": assessment.firstAssessmentDate || ""
+        };
+      }
+
+      async function postAppsScriptPayload(payload) {
+        await fetch(SHEET_CONFIG.appsScriptUrl, {
+          method: "POST",
+          mode: "no-cors",
+          headers: {
+            "Content-Type": "text/plain;charset=utf-8"
+          },
+          body: JSON.stringify(payload)
+        });
+      }
+
+      async function resubmitSignedDocument(staffId) {
+        const person = staff.find((item) => item.staffId === staffId);
+        const assessment = state.assessments[staffId] || {};
+        if (!person || !assessment.staffId) return;
+
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = "application/pdf,image/*";
+        input.addEventListener("change", async () => {
+          const signedFile = input.files?.[0];
+          if (!signedFile) return;
+
+          const signedFormBase64 = await fileToBase64(signedFile);
+          const signedFormFileName = `${sanitizeDriveName(staffId)}_${sanitizeDriveName(person.brand)}${safeFileExtension(signedFile)}`;
+          const { dateTime } = currentDateParts();
+          const payload = {
+            action: "saveAssessment",
+            sheetName: "enrollment detail",
+            data: assessmentPayloadData(staffId, person, assessment, dateTime),
+            file: {
+              name: signedFormFileName,
+              originalName: signedFile.name,
+              mimeType: signedFile.type || "application/octet-stream",
+              base64: signedFormBase64
+            }
+          };
+
+          try {
+            await ensureAppsScriptReachable();
+            await postAppsScriptPayload(payload);
+            const nextRecord = {
+              ...assessment,
+              assessmentDateTime: dateTime,
+              signedFormName: signedFormFileName,
+              updatedAt: new Date().toISOString()
+            };
+
+            try {
+              const uploadedFile = await confirmSignedFormUploaded(signedFormFileName);
+              nextRecord.signedFormUrl = uploadedFile.url;
+              nextRecord.signedFormFileId = uploadedFile.id;
+              alert("已補交文件。");
+            } catch (confirmError) {
+              console.warn("補交文件後未能確認 Drive 檔案：", confirmError);
+              alert("已記錄補交文件；Drive 檔案尚未確認。");
+            }
+
+            state.assessments[staffId] = nextRecord;
+            state.assessmentHistory[staffId] = [nextRecord, ...(state.assessmentHistory[staffId] || [])];
+            saveJson("programAssessments", state.assessments);
+            saveJson("programAssessmentHistory", state.assessmentHistory);
+            renderAll();
+          } catch (error) {
+            console.error("補交文件失敗：", error);
+            alert(error.message || "補交文件失敗。");
+          }
+        }, { once: true });
+        input.click();
+      }
+
       elements.testSignedUpload?.addEventListener("click", async () => {
         const button = elements.testSignedUpload;
         const originalText = button.textContent;
@@ -3877,7 +4148,7 @@
           targetCompletionDate: elements.assTargetDate.value,
           carriedOutBy: elements.assCarriedOutBy.value.trim(),
           firstRemarks: elements.assFirstRemarks.value.trim(),
-          firstAssessmentDate: assessmentDateTime,
+          firstAssessmentDate: "",
           signedFormName: signedFormFileName,
           updatedAt: new Date().toISOString()
         };
@@ -3896,7 +4167,7 @@
           // 2. 透過 POST 傳送至 Google Apps Script 寫入 enrollment detail 分頁
           if (SHEET_CONFIG.appsScriptUrl) {
             const payload = {
-              action: "saveAssessment",
+              action: signedFile ? "saveAssessment" : "saveAssessmentPendingSignature",
               sheetName: "enrollment detail",
               data: {
                 "Staff No.": staffId,
@@ -3911,8 +4182,9 @@
                 "Offer target": offerTarget,
                 "Assessment date time": assessmentDateTime,
                 "Carried out by": elements.assCarriedOutBy.value.trim(),
-                "1st Follow up Remarks": elements.assFirstRemarks.value.trim(),
-                "1st Follow up Date": assessmentDateTime
+                "Assessment Remarks": elements.assFirstRemarks.value.trim(),
+                "1st Follow up Remarks": "",
+                "1st Follow up Date": ""
               }
             };
 
@@ -3939,9 +4211,14 @@
           if (signedFile) {
             submitBtn.textContent = "正在確認 Drive 檔案...";
             setUploadStatus("正在確認 Drive 檔案...");
-            uploadedFile = await confirmSignedFormUploaded(signedFormFileName);
-            assessmentData.signedFormUrl = uploadedFile.url;
-            assessmentData.signedFormFileId = uploadedFile.id;
+            try {
+              uploadedFile = await confirmSignedFormUploaded(signedFormFileName);
+              assessmentData.signedFormUrl = uploadedFile.url;
+              assessmentData.signedFormFileId = uploadedFile.id;
+            } catch (confirmError) {
+              console.warn("Drive 檔案確認失敗，評估會先以尚未簽署文件儲存：", confirmError);
+              setUploadStatus("已儲存評估；Drive 檔案尚未確認。");
+            }
           }
 
           // 3. 遠端要求送出後才更新本地狀態，避免壞 URL 時畫面誤標為已完成。
@@ -3985,6 +4262,7 @@
           elements.floorFilter
         ].forEach((element) => element.addEventListener("change", renderAll));
         
+        elements.leaderSearchInput.addEventListener("input", renderOrgChart);
         elements.searchInput.addEventListener("input", renderStaffTable);
         elements.refreshData.addEventListener("click", loadStaffData);
         elements.setAppsScriptUrl.addEventListener("click", () => {
@@ -3999,6 +4277,8 @@
           const editButton = event.target.closest("[data-edit]");
           const followUpButton = event.target.closest("[data-followup]");
           const historyButton = event.target.closest("[data-history]");
+          const resubmitDocButton = event.target.closest("[data-resubmit-doc]");
+          const reviseDecisionButton = event.target.closest("[data-revise-decision]");
           const branchButton = event.target.closest("[data-branch-toggle]");
           if (branchButton) {
             const branch = branchButton.closest(".org-tree, .team-branch");
@@ -4021,6 +4301,12 @@
           }
           if (historyButton) openAssessmentHistory(historyButton.dataset.history);
           if (followUpButton) openFollowUpDialog(followUpButton.dataset.followup);
+          if (resubmitDocButton) resubmitSignedDocument(resubmitDocButton.dataset.resubmitDoc);
+          if (reviseDecisionButton) {
+            const staffId = reviseDecisionButton.dataset.reviseDecision;
+            const person = staff.find((item) => item.staffId === staffId);
+            if (person) openAssessmentForm(staffId, assessmentContextForPerson(person).suggestedTier, assessmentContextForPerson(person).currentCount);
+          }
           if (editButton) openCoachDialog(editButton.dataset.edit);
         });
 
@@ -4067,8 +4353,16 @@
         elements.saveFollowUp.addEventListener("click", async () => {
           const staffId = elements.followUpStaffId.value;
           const assessment = state.assessments[staffId] || {};
-          assessment.secondRemarks = elements.followUpRemarks.value.trim();
-          assessment.secondCommitmentDate = elements.followUpDate.value;
+          const mode = elements.followUpDialog.dataset.mode === "second" ? "second" : "first";
+          const followUpRemarks = elements.followUpRemarks.value.trim();
+          const followUpDate = elements.followUpDate.value;
+          if (mode === "first") {
+            assessment.firstFollowUpRemarks = followUpRemarks;
+            assessment.firstAssessmentDate = followUpDate;
+          } else {
+            assessment.secondRemarks = followUpRemarks;
+            assessment.secondCommitmentDate = followUpDate;
+          }
           state.assessments[staffId] = assessment;
           if (!state.assessmentHistory[staffId] || !state.assessmentHistory[staffId].length) {
             state.assessmentHistory[staffId] = [assessment];
@@ -4095,9 +4389,15 @@
                   sheetName: "enrollment detail",
                   data: {
                     "Staff No.": staffId,
-                    "2nd Follow Remarks": assessment.secondRemarks,
-                    "2nd Follow up Remarks": assessment.secondRemarks,
-                    "2nd Follow up Date": assessment.secondCommitmentDate
+                    ...(mode === "first"
+                      ? {
+                          "1st Follow up Remarks": assessment.firstFollowUpRemarks || "",
+                          "1st Follow up Date": assessment.firstAssessmentDate || ""
+                        }
+                      : {
+                          "2nd Follow Remarks": assessment.secondRemarks || "",
+                          "2nd Follow up Date": assessment.secondCommitmentDate || ""
+                        })
                   }
                 })
               });
