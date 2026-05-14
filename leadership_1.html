@@ -311,9 +311,10 @@
 
       .hero-metrics {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 150px));
+        grid-template-columns: repeat(3, minmax(150px, 1fr));
         gap: 10px;
         margin-top: 8px;
+        max-width: 620px;
       }
 
       .hero-dashboard-label {
@@ -382,22 +383,47 @@
       }
 
       .hero-metrics div {
-        min-height: 82px;
-        padding: 14px 16px;
+        min-height: 0;
         border-radius: 8px;
       }
 
-      .hero-metrics strong {
+      .metric-card {
+        display: grid;
+        gap: 8px;
+        padding: 12px 14px;
+      }
+
+      .metric-card-title {
+        display: block;
+        margin: 0 0 2px;
+        color: var(--gold-soft);
+        font-size: 0.72rem;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .metric-row {
+        display: grid;
+        grid-template-columns: 42px 1fr;
+        align-items: center;
+        gap: 10px;
+        min-height: 30px;
+      }
+
+      .hero-metrics .metric-row strong {
         display: block;
         color: var(--gold);
-        font-size: clamp(1.8rem, 3.2vw, 2.5rem);
+        font-size: 1.65rem;
         line-height: 1;
       }
 
-      .hero-metrics span {
+      .hero-metrics .metric-row span {
         display: block;
-        margin-top: 8px;
+        margin: 0;
         color: #d9d2ea;
+        font-size: 0.86rem;
+        line-height: 1.15;
       }
 
       .mission-panel {
@@ -2108,13 +2134,46 @@
             </p>
             <h3 class="hero-dashboard-label">已參加人選</h3>
             <div class="hero-metrics" aria-label="Program headline metrics">
-              <div>
-                <strong id="metricSignupTl">0</strong>
-                <span>currently sign up to TL</span>
+              <div class="metric-card">
+                <span class="metric-card-title">Sign Up</span>
+                <div class="metric-row">
+                  <strong id="metricSignupTl">0</strong>
+                  <span>1:6</span>
+                </div>
+                <div class="metric-row">
+                  <strong id="metricSignupAs">0</strong>
+                  <span>1:14</span>
+                </div>
               </div>
-              <div>
-                <strong id="metricSignupAs">0</strong>
-                <span>currently sign up to AS</span>
+              <div class="metric-card">
+                <span class="metric-card-title">Rejected</span>
+                <div class="metric-row">
+                  <strong id="metricRejectAs">0</strong>
+                  <span>AS</span>
+                </div>
+                <div class="metric-row">
+                  <strong id="metricRejectTl">0</strong>
+                  <span>TL</span>
+                </div>
+                <div class="metric-row">
+                  <strong id="metricRejectEligibleE1">0</strong>
+                  <span>Eligible E1</span>
+                </div>
+              </div>
+              <div class="metric-card">
+                <span class="metric-card-title">Not Yet Assessed</span>
+                <div class="metric-row">
+                  <strong id="metricPendingAs">0</strong>
+                  <span>AS</span>
+                </div>
+                <div class="metric-row">
+                  <strong id="metricPendingTl">0</strong>
+                  <span>TL</span>
+                </div>
+                <div class="metric-row">
+                  <strong id="metricPendingEligibleE1">0</strong>
+                  <span>Eligible E1</span>
+                </div>
               </div>
             </div>
             <h3 class="hero-dashboard-label">HC 團隊總覽</h3>
@@ -2542,6 +2601,12 @@
         staffTable: document.querySelector("#staffTable"),
         metricSignupTl: document.querySelector("#metricSignupTl"),
         metricSignupAs: document.querySelector("#metricSignupAs"),
+        metricRejectAs: document.querySelector("#metricRejectAs"),
+        metricRejectTl: document.querySelector("#metricRejectTl"),
+        metricRejectEligibleE1: document.querySelector("#metricRejectEligibleE1"),
+        metricPendingAs: document.querySelector("#metricPendingAs"),
+        metricPendingTl: document.querySelector("#metricPendingTl"),
+        metricPendingEligibleE1: document.querySelector("#metricPendingEligibleE1"),
         dialog: document.querySelector("#coachDialog"),
         coachForm: document.querySelector("#coachForm"),
         dialogTitle: document.querySelector("#dialogTitle"),
@@ -3224,8 +3289,31 @@
         const agreed = assessments.filter((item) => participationValue(item) === "Y");
         const signedToTl = agreed.filter((item) => item.targetTier === "tl").length;
         const signedToAs = agreed.filter((item) => item.targetTier === "as").length;
+        const assessmentByStaff = new Map(assessments.map((item) => [String(item.staffId || "").trim(), item]));
+        const eligibleE1Staff = staff.filter((person) =>
+          normalizeRole(person.position) === "E1" &&
+          Number(person.apr) >= 100 &&
+          Number(person.mar) >= 100
+        );
+        const asStaff = staff.filter((person) => normalizeRole(person.position) === "AS");
+        const tlStaff = staff.filter((person) => normalizeRole(person.position) === "TL");
+
+        const rejectAs = asStaff.filter((person) => participationValue(assessmentByStaff.get(person.staffId)) === "N").length;
+        const rejectTl = tlStaff.filter((person) => participationValue(assessmentByStaff.get(person.staffId)) === "N").length;
+        const rejectEligibleE1 = eligibleE1Staff.filter((person) => participationValue(assessmentByStaff.get(person.staffId)) === "N").length;
+
+        const pendingAs = asStaff.filter((person) => !hasAssessment(person)).length;
+        const pendingTl = tlStaff.filter((person) => !hasAssessment(person)).length;
+        const pendingEligibleE1 = eligibleE1Staff.filter((person) => !hasAssessment(person)).length;
+
         elements.metricSignupTl.textContent = signedToTl;
         elements.metricSignupAs.textContent = signedToAs;
+        elements.metricRejectAs.textContent = rejectAs;
+        elements.metricRejectTl.textContent = rejectTl;
+        elements.metricRejectEligibleE1.textContent = rejectEligibleE1;
+        elements.metricPendingAs.textContent = pendingAs;
+        elements.metricPendingTl.textContent = pendingTl;
+        elements.metricPendingEligibleE1.textContent = pendingEligibleE1;
       }
 
       function participationValue(assessment) {
