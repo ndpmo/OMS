@@ -4464,7 +4464,8 @@
         });
         
         elements.leaderSearchInput.addEventListener("input", renderOrgChart);
-        elements.searchInput.addEventListener("input", renderStaffTable);
+        \1
+        elements.assessmentDateFilter?.addEventListener("change", renderStaffTable);
         elements.refreshData.addEventListener("click", loadStaffData);
         elements.setAppsScriptUrl.addEventListener("click", () => {
           const nextUrl = window.prompt("目前已連接到指定 Apps Script URL。如需改用另一個 Web App URL，請貼上：", SHEET_CONFIG.appsScriptUrl);
