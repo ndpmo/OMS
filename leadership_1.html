@@ -426,42 +426,6 @@
         line-height: 1.15;
       }
 
-      .metric-row {
-        cursor: pointer;
-      }
-
-      .metric-row:hover {
-        filter: brightness(1.06);
-      }
-
-      .metric-detail-list {
-        display: grid;
-        gap: 8px;
-        max-height: min(58vh, 520px);
-        overflow: auto;
-        padding: 8px 0;
-      }
-
-      .metric-detail-item {
-        display: grid;
-        grid-template-columns: 1fr auto;
-        gap: 10px;
-        align-items: center;
-        padding: 10px 12px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 8px;
-        background: rgba(255, 255, 255, 0.04);
-      }
-
-      .metric-detail-item strong {
-        color: #fff;
-      }
-
-      .metric-detail-item span {
-        color: var(--muted);
-        font-size: 0.86rem;
-      }
-
       .mission-panel {
         color: #f8f2ff;
         background: linear-gradient(145deg, rgba(18, 13, 46, 0.96), rgba(13, 12, 36, 0.94));
@@ -1177,28 +1141,6 @@
         color: var(--red) !important;
       }
 
-      .assessment-button {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 34px;
-        padding: 0 12px;
-        border: 1px solid rgba(242, 198, 106, 0.45);
-        border-radius: 8px;
-        color: #080915;
-        background: linear-gradient(135deg, var(--gold-soft), var(--gold));
-        font-size: 0.78rem;
-        font-weight: 850;
-        white-space: nowrap;
-        cursor: pointer;
-        border: none;
-        font-family: inherit;
-      }
-
-      .assessment-button:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-      }
 
       .assessment-label {
         display: inline-flex;
@@ -2201,56 +2143,56 @@
             <div class="hero-metrics" aria-label="Program headline metrics">
               <div class="metric-card">
                 <span class="metric-card-title">Sign Up</span>
-                <div class="metric-row" data-metric-key="signup_tl">
+                <div class="metric-row">
                   <strong id="metricSignupTl">0</strong>
                   <span>1:6</span>
                 </div>
-                <div class="metric-row" data-metric-key="signup_as">
+                <div class="metric-row">
                   <strong id="metricSignupAs">0</strong>
                   <span>1:14</span>
                 </div>
               </div>
               <div class="metric-card">
                 <span class="metric-card-title">Rejected</span>
-                <div class="metric-row" data-metric-key="reject_as">
+                <div class="metric-row">
                   <strong id="metricRejectAs">0</strong>
                   <span>AS</span>
                 </div>
-                <div class="metric-row" data-metric-key="reject_tl">
+                <div class="metric-row">
                   <strong id="metricRejectTl">0</strong>
                   <span>TL</span>
                 </div>
-                <div class="metric-row" data-metric-key="reject_e1">
+                <div class="metric-row">
                   <strong id="metricRejectEligibleE1">0</strong>
                   <span>Eligible E1</span>
                 </div>
               </div>
               <div class="metric-card">
                 <span class="metric-card-title">Considering</span>
-                <div class="metric-row" data-metric-key="consider_as">
+                <div class="metric-row">
                   <strong id="metricConsideringAs">0</strong>
                   <span>AS</span>
                 </div>
-                <div class="metric-row" data-metric-key="consider_tl">
+                <div class="metric-row">
                   <strong id="metricConsideringTl">0</strong>
                   <span>TL</span>
                 </div>
-                <div class="metric-row" data-metric-key="consider_e1">
+                <div class="metric-row">
                   <strong id="metricConsideringEligibleE1">0</strong>
                   <span>Eligible E1</span>
                 </div>
               </div>
               <div class="metric-card">
                 <span class="metric-card-title">Not Yet Assessed</span>
-                <div class="metric-row" data-metric-key="pending_as">
+                <div class="metric-row">
                   <strong id="metricPendingAs">0</strong>
                   <span>AS</span>
                 </div>
-                <div class="metric-row" data-metric-key="pending_tl">
+                <div class="metric-row">
                   <strong id="metricPendingTl">0</strong>
                   <span>TL</span>
                 </div>
-                <div class="metric-row" data-metric-key="pending_e1">
+                <div class="metric-row">
                   <strong id="metricPendingEligibleE1">0</strong>
                   <span>Eligible E1</span>
                 </div>
@@ -2379,6 +2321,10 @@
               樓層
               <select id="floorFilter"></select>
             </label>
+            <label>
+              Assessment Date
+              <input id="assessmentDateFilter" type="date">
+            </label>
             <label class="search-field">
               搜尋
               <input id="searchInput" type="search" placeholder="姓名、員工編號、團隊">
@@ -2481,22 +2427,6 @@
             <button class="icon-button" value="cancel" aria-label="Close dialog" type="submit">x</button>
           </div>
           <div id="historyContent" class="history-list"></div>
-          <div class="dialog-actions">
-            <button class="secondary-button" value="cancel" type="submit">關閉</button>
-          </div>
-        </form>
-      </dialog>
-
-      <dialog id="metricDetailDialog" class="coach-dialog history-dialog">
-        <form method="dialog">
-          <div class="dialog-head">
-            <div>
-              <p class="eyebrow">METRIC DETAILS</p>
-              <h2 id="metricDetailTitle">People list</h2>
-            </div>
-            <button class="icon-button" value="cancel" aria-label="Close dialog" type="submit">x</button>
-          </div>
-          <div id="metricDetailContent" class="metric-detail-list"></div>
           <div class="dialog-actions">
             <button class="secondary-button" value="cancel" type="submit">關閉</button>
           </div>
@@ -2686,6 +2616,7 @@
         positionFilter: document.querySelector("#positionFilter"),
         assessmentBrandFilter: document.querySelector("#assessmentBrandFilter"),
         floorFilter: document.querySelector("#floorFilter"),
+        assessmentDateFilter: document.querySelector("#assessmentDateFilter"),
         searchInput: document.querySelector("#searchInput"),
         staffTable: document.querySelector("#staffTable"),
         metricSignupTl: document.querySelector("#metricSignupTl"),
@@ -2699,9 +2630,6 @@
         metricPendingAs: document.querySelector("#metricPendingAs"),
         metricPendingTl: document.querySelector("#metricPendingTl"),
         metricPendingEligibleE1: document.querySelector("#metricPendingEligibleE1"),
-        metricDetailDialog: document.querySelector("#metricDetailDialog"),
-        metricDetailTitle: document.querySelector("#metricDetailTitle"),
-        metricDetailContent: document.querySelector("#metricDetailContent"),
         dialog: document.querySelector("#coachDialog"),
         coachForm: document.querySelector("#coachForm"),
         dialogTitle: document.querySelector("#dialogTitle"),
@@ -3423,65 +3351,6 @@
         return String(assessment?.willingJoin || "").trim().toUpperCase();
       }
 
-      function isEligibleE1(person) {
-        return normalizeRole(person.position) === "E1" && Number(person.apr) >= 100 && Number(person.mar) >= 100;
-      }
-
-      function metricPeopleByKey(metricKey) {
-        const assessments = state.assessments || {};
-        const withAssessment = (person) => assessments[person.staffId] || null;
-        const byJoin = (person, value) => participationValue(withAssessment(person)) === value;
-        const byRole = (role) => staff.filter((person) => normalizeRole(person.position) === role);
-        const byE1Eligible = () => staff.filter(isEligibleE1);
-
-        const map = {
-          signup_tl: byRole("TL").filter((person) => byJoin(person, "Y")),
-          signup_as: byRole("AS").filter((person) => byJoin(person, "Y")),
-          reject_as: byRole("AS").filter((person) => byJoin(person, "N")),
-          reject_tl: byRole("TL").filter((person) => byJoin(person, "N")),
-          reject_e1: byE1Eligible().filter((person) => byJoin(person, "N")),
-          consider_as: byRole("AS").filter((person) => byJoin(person, "C")),
-          consider_tl: byRole("TL").filter((person) => byJoin(person, "C")),
-          consider_e1: byE1Eligible().filter((person) => byJoin(person, "C")),
-          pending_as: byRole("AS").filter((person) => !hasAssessment(person)),
-          pending_tl: byRole("TL").filter((person) => !hasAssessment(person)),
-          pending_e1: byE1Eligible().filter((person) => !hasAssessment(person))
-        };
-
-        return map[metricKey] || [];
-      }
-
-      function metricTitleByKey(metricKey) {
-        const map = {
-          signup_tl: "Sign Up · 1:6",
-          signup_as: "Sign Up · 1:14",
-          reject_as: "Rejected · AS",
-          reject_tl: "Rejected · TL",
-          reject_e1: "Rejected · Eligible E1",
-          consider_as: "Considering · AS",
-          consider_tl: "Considering · TL",
-          consider_e1: "Considering · Eligible E1",
-          pending_as: "Not Yet Assessed · AS",
-          pending_tl: "Not Yet Assessed · TL",
-          pending_e1: "Not Yet Assessed · Eligible E1"
-        };
-        return map[metricKey] || "People list";
-      }
-
-      function openMetricDetail(metricKey) {
-        const people = metricPeopleByKey(metricKey);
-        elements.metricDetailTitle.textContent = `${metricTitleByKey(metricKey)} (${people.length})`;
-        if (!people.length) {
-          elements.metricDetailContent.innerHTML = `<div class="metric-detail-item"><strong>沒有人員</strong><span>-</span></div>`;
-        } else {
-          elements.metricDetailContent.innerHTML = people
-            .sort((a, b) => String(a.therapist || "").localeCompare(String(b.therapist || "")))
-            .map((person) => `<div class="metric-detail-item"><strong>${escapeHtml(person.therapist || "-")}</strong><span>${escapeHtml(person.floor || person.center || "-")}</span></div>`)
-            .join("");
-        }
-        elements.metricDetailDialog.showModal();
-      }
-
       function hasSignedForm(assessment) {
         return Boolean(
           String(assessment?.signedFormUrl || "").trim() ||
@@ -3801,7 +3670,6 @@
           <div class="personal-details">
             <div class="details-actions">
               <button class="details-toggle" type="button" aria-expanded="false">Performance Data</button>
-              ${alreadyAssessed ? "" : `<button type="button" class="assessment-button" onclick="openAssessmentForm('${person.staffId}', '${assessmentContext.suggestedTier || ''}', ${assessmentContext.currentCount || 0})">評估</button>`}
             </div>
             <div class="detail-panels">
               ${renderDetailGroup("個人資料", profileDetails)}
@@ -3852,11 +3720,7 @@
           actions.push(`<button class="secondary-button" type="button" data-resubmit-doc="${person.staffId}">補交文件</button>`);
         }
 
-        if (participationValue(assessment) === "N") {
-          actions.push(`<button class="secondary-button" type="button" data-revise-decision="${person.staffId}">改變決定</button>`);
-        } else {
-          actions.push(`<button class="secondary-button" type="button" data-followup="${person.staffId}">Follow Up</button>`);
-        }
+        // Follow Up and Revise Decision buttons removed
 
         return `<div class="assessment-actions">${actions.join("")}</div>`;
       }
@@ -3941,6 +3805,7 @@
 
       function renderStaffTable() {
         const query = elements.searchInput.value.trim().toLowerCase();
+        const selectedAssessmentDate = elements.assessmentDateFilter.value;
         const rows = staff.filter((person) => {
           const assessment = state.assessments[person.staffId] || {};
           const assessmentMatch = hasAssessment(person);
@@ -3948,8 +3813,9 @@
           const positionMatch = elements.positionFilter.value === "All" || person.position === elements.positionFilter.value;
           const brandMatch = elements.assessmentBrandFilter.value === "All" || person.brand === elements.assessmentBrandFilter.value;
           const floorMatch = elements.floorFilter.value === "All" || person.floor === elements.floorFilter.value;
+          const assessmentDateMatch = !selectedAssessmentDate || normalizeDateInput(assessment.assessmentDateTime) === selectedAssessmentDate;
           const queryMatch = !query || [person.therapist, person.staffId, person.team, person.center].join(" ").toLowerCase().includes(query);
-          return assessmentMatch && participationMatch && positionMatch && brandMatch && floorMatch && queryMatch;
+          return assessmentMatch && participationMatch && positionMatch && brandMatch && floorMatch && assessmentDateMatch && queryMatch;
         });
 
         if (!rows.length) {
@@ -4581,7 +4447,8 @@
           elements.performanceStatusFilter,
           elements.participationFilter,
           elements.positionFilter,
-          elements.floorFilter
+          elements.floorFilter,
+          elements.assessmentDateFilter
         ].forEach((element) => element.addEventListener("change", renderAll));
 
         elements.performanceMetricFilter.addEventListener("change", (event) => {
@@ -4616,16 +4483,9 @@
         });
 
         document.addEventListener("click", (event) => {
-          const metricRow = event.target.closest(".metric-row[data-metric-key]");
           const editButton = event.target.closest("[data-edit]");
-          const followUpButton = event.target.closest("[data-followup]");
           const historyButton = event.target.closest("[data-history]");
           const resubmitDocButton = event.target.closest("[data-resubmit-doc]");
-          const reviseDecisionButton = event.target.closest("[data-revise-decision]");
-          if (metricRow) {
-            openMetricDetail(metricRow.dataset.metricKey);
-            return;
-          }
           const branchButton = event.target.closest("[data-branch-toggle]");
           if (branchButton) {
             const branch = branchButton.closest(".org-tree, .team-branch");
@@ -4647,13 +4507,7 @@
             detailsButton.setAttribute("aria-expanded", String(isExpanded));
           }
           if (historyButton) openAssessmentHistory(historyButton.dataset.history);
-          if (followUpButton) openFollowUpDialog(followUpButton.dataset.followup);
           if (resubmitDocButton) resubmitSignedDocument(resubmitDocButton.dataset.resubmitDoc);
-          if (reviseDecisionButton) {
-            const staffId = reviseDecisionButton.dataset.reviseDecision;
-            const person = staff.find((item) => item.staffId === staffId);
-            if (person) openAssessmentForm(staffId, assessmentContextForPerson(person).suggestedTier, assessmentContextForPerson(person).currentCount);
-          }
           if (editButton) openCoachDialog(editButton.dataset.edit);
         });
 
