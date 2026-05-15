@@ -1381,7 +1381,7 @@
       .therapist-node {
         position: relative;
         display: grid;
-        grid-template-columns: minmax(160px, 1fr) auto auto;
+        grid-template-columns: minmax(0, 1fr) auto;
         gap: 10px;
         align-items: start;
         min-height: 42px;
@@ -2383,6 +2383,10 @@
               搜尋
               <input id="searchInput" type="search" placeholder="姓名、員工編號、團隊">
             </label>
+            <label>
+              Assessment Date
+              <input id="assessmentDateFilter" type="date">
+            </label>
           </div>
 
           <div class="table-shell">
@@ -2688,6 +2692,7 @@
         assessmentBrandFilter: document.querySelector("#assessmentBrandFilter"),
         floorFilter: document.querySelector("#floorFilter"),
         searchInput: document.querySelector("#searchInput"),
+        assessmentDateFilter: document.querySelector("#assessmentDateFilter"),
         staffTable: document.querySelector("#staffTable"),
         metricSignupTl: document.querySelector("#metricSignupTl"),
         metricSignupAs: document.querySelector("#metricSignupAs"),
@@ -3997,6 +4002,7 @@
 
       function renderStaffTable() {
         const query = elements.searchInput.value.trim().toLowerCase();
+        const selectedAssessmentDate = elements.assessmentDateFilter.value;
         const rows = staff.filter((person) => {
           const assessment = state.assessments[person.staffId] || {};
           const assessmentMatch = hasAssessment(person);
@@ -4004,8 +4010,9 @@
           const positionMatch = elements.positionFilter.value === "All" || person.position === elements.positionFilter.value;
           const brandMatch = elements.assessmentBrandFilter.value === "All" || person.brand === elements.assessmentBrandFilter.value;
           const floorMatch = elements.floorFilter.value === "All" || person.floor === elements.floorFilter.value;
+          const assessmentDateMatch = !selectedAssessmentDate || assessmentDateOnly(assessment.assessmentDateTime) === selectedAssessmentDate;
           const queryMatch = !query || [person.therapist, person.staffId, person.team, person.center].join(" ").toLowerCase().includes(query);
-          return assessmentMatch && participationMatch && positionMatch && brandMatch && floorMatch && queryMatch;
+          return assessmentMatch && participationMatch && positionMatch && brandMatch && floorMatch && assessmentDateMatch && queryMatch;
         });
 
         if (!rows.length) {
@@ -4662,6 +4669,7 @@
         
         elements.leaderSearchInput.addEventListener("input", renderOrgChart);
         elements.searchInput.addEventListener("input", renderStaffTable);
+        elements.assessmentDateFilter.addEventListener("change", renderStaffTable);
         elements.refreshData.addEventListener("click", loadStaffData);
         elements.setAppsScriptUrl.addEventListener("click", () => {
           const nextUrl = window.prompt("目前已連接到指定 Apps Script URL。如需改用另一個 Web App URL，請貼上：", SHEET_CONFIG.appsScriptUrl);
@@ -4850,6 +4858,13 @@
         return text === "" || text === "0" ? "-" : text;
       }
 
+      function assessmentDateOnly(value) {
+        const text = String(value || "").trim();
+        if (!text) return "";
+        const match = text.match(/\d{4}-\d{2}-\d{2}/);
+        return match ? match[0] : "";
+      }
+
       function salesStatusClass(value) {
         const key = salesStatusKey(value);
         if (key === "good") return "sales-good";
@@ -4935,6 +4950,7 @@
     </script>
   </body>
 </html>
+
 
 
 
