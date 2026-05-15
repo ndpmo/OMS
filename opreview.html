@@ -3715,11 +3715,7 @@
           actions.push(`<button class="secondary-button" type="button" data-resubmit-doc="${person.staffId}">補交文件</button>`);
         }
 
-        if (participationValue(assessment) === "N") {
-          actions.push(`<button class="secondary-button" type="button" data-revise-decision="${person.staffId}">改變決定</button>`);
-        } else {
-          actions.push(`<button class="secondary-button" type="button" data-followup="${person.staffId}">Follow Up</button>`);
-        }
+        actions.push(`<button class="secondary-button" type="button" data-followup="${person.staffId}">Follow Up</button>`);
 
         return `<div class="assessment-actions">${actions.join("")}</div>`;
       }
@@ -4483,7 +4479,6 @@
           const followUpButton = event.target.closest("[data-followup]");
           const historyButton = event.target.closest("[data-history]");
           const resubmitDocButton = event.target.closest("[data-resubmit-doc]");
-          const reviseDecisionButton = event.target.closest("[data-revise-decision]");
           const branchButton = event.target.closest("[data-branch-toggle]");
           if (branchButton) {
             const branch = branchButton.closest(".org-tree, .team-branch");
@@ -4507,11 +4502,6 @@
           if (historyButton) openAssessmentHistory(historyButton.dataset.history);
           if (followUpButton) openFollowUpDialog(followUpButton.dataset.followup);
           if (resubmitDocButton) resubmitSignedDocument(resubmitDocButton.dataset.resubmitDoc);
-          if (reviseDecisionButton) {
-            const staffId = reviseDecisionButton.dataset.reviseDecision;
-            const person = staff.find((item) => item.staffId === staffId);
-            if (person) openAssessmentForm(staffId, assessmentContextForPerson(person).suggestedTier, assessmentContextForPerson(person).currentCount);
-          }
           if (editButton) openCoachDialog(editButton.dataset.edit);
         });
 
