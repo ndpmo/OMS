@@ -2665,7 +2665,8 @@
         flags: loadJson("talentFlags", {}),
         coaching: loadJson("coachingNotes", {}),
         assessments: loadJson("programAssessments", {}),
-        assessmentHistory: loadJson("programAssessmentHistory", {})
+        assessmentHistory: loadJson("programAssessmentHistory", {}),
+        jobHistory: {}
       };
 
       const money = new Intl.NumberFormat("en-HK", { style: "currency", currency: "HKD", maximumFractionDigits: 0 });
@@ -2819,6 +2820,13 @@
             parseEnrollmentDetails(enrollmentRows);
           } catch (e) {
             console.warn("無法載入 enrollment detail:", e);
+          }
+          try {
+            const jobHistoryRows = await loadAppsScriptRows("Job History");
+            state.jobHistory = parseJobHistoryRows(jobHistoryRows);
+          } catch (e) {
+            state.jobHistory = {};
+            console.warn("無法載入 Job History:", e);
           }
 
           isLoading = false;
@@ -3092,12 +3100,57 @@
         return String(value || "").replace(/\s+/g, " ").trim().toLowerCase();
       }
 
+      function normalizeStaffId(value) {
+        return String(value || "").trim().toLowerCase().replace(/\s+/g, "");
+      }
+
+      function normalizeStaffIdDigits(value) {
+        return String(value || "").replace(/\D/g, "");
+      }
+
       function readCell(record, names) {
         for (const name of names) {
           const normalized = normalizeHeader(name);
           if (record[normalized] !== undefined && String(record[normalized]).trim() !== "") return String(record[normalized]).trim();
         }
         return "";
+      }
+
+      function parseJobHistoryRows(rows) {
+        const mapped = {};
+        if (!Array.isArray(rows) || !rows.length) return mapped;
+
+        const upsert = (staffIdRaw, cRaw, dRaw, eRaw) => {
+          const staffIdRawText = String(staffIdRaw || "").trim();
+          if (!staffIdRawText) return;
+          const row = {
+            c: String(cRaw ?? "").trim(),
+            d: String(dRaw ?? "").trim(),
+            e: String(eRaw ?? "").trim()
+          };
+          mapped[normalizeStaffId(staffIdRawText)] = row;
+          const digits = normalizeStaffIdDigits(staffIdRawText);
+          if (digits) mapped[digits] = row;
+        };
+
+        if (Array.isArray(rows[0])) {
+          rows.forEach((row, idx) => {
+            if (!Array.isArray(row)) return;
+            if (idx === 0 && normalizeHeader(row[0]).includes("staff")) return;
+            upsert(row[0], row[2], row[3], row[4]);
+          });
+          return mapped;
+        }
+
+        rows.forEach((record) => {
+          const staffId = readCell(record, ["Staff ID", "Staff No.", "Staff No", "Therapist Staff No", "A"]);
+          const cVal = readCell(record, ["C", "Column C"]);
+          const dVal = readCell(record, ["D", "Column D"]);
+          const eVal = readCell(record, ["E", "Column E"]);
+          upsert(staffId, cVal, dVal, eVal);
+        });
+
+        return mapped;
       }
 
       function parseNumber(value) {
@@ -3784,6 +3837,15 @@
           ["現時", formatPercent(person.catCurrent)],
           ["過去 3M", formatPlain(person.catPast3)]
         ];
+        const jobHistoryRecord =
+          state.jobHistory[normalizeStaffId(person.staffId)] ||
+          state.jobHistory[normalizeStaffIdDigits(person.staffId)] ||
+          {};
+        const jobHistoryDetails = [
+          ["Position Description", jobHistoryRecord.c || "N/A"],
+          ["Job Reason Description", jobHistoryRecord.d || "N/A"],
+          ["Effective Date", jobHistoryRecord.e || "N/A"]
+        ];
         const recruitmentDetails = {
           fullYear: [
             ["CV", formatPlain(person.cvSince2026)],
@@ -3803,6 +3865,7 @@
               <button class="details-toggle" type="button" aria-expanded="false">Performance Data</button>
             </div>
             <div class="detail-panels">
+              ${renderDetailGroup("Job History", jobHistoryDetails)}
               ${renderDetailGroup("個人資料", profileDetails)}
               ${renderDetailGroup("銷售表現", salesDetails)}
               ${renderRecruitmentGroup(recruitmentDetails)}
@@ -4872,3 +4935,6 @@
     </script>
   </body>
 </html>
+
+
+
