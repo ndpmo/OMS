@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>NEODERM 甈∩?隞??鋡?脰???/title>
+    <title>NEODERM 次世代領袖培育計劃</title>
     <style>
       :root {
         color-scheme: dark;
@@ -424,42 +424,6 @@
         color: #d9d2ea;
         font-size: 0.86rem;
         line-height: 1.15;
-      }
-
-      .metric-row {
-        cursor: pointer;
-      }
-
-      .metric-row:hover {
-        filter: brightness(1.06);
-      }
-
-      .metric-detail-list {
-        display: grid;
-        gap: 8px;
-        max-height: min(58vh, 520px);
-        overflow: auto;
-        padding: 8px 0;
-      }
-
-      .metric-detail-item {
-        display: grid;
-        grid-template-columns: 1fr auto;
-        gap: 10px;
-        align-items: center;
-        padding: 10px 12px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 8px;
-        background: rgba(255, 255, 255, 0.04);
-      }
-
-      .metric-detail-item strong {
-        color: #fff;
-      }
-
-      .metric-detail-item span {
-        color: var(--muted);
-        font-size: 0.86rem;
       }
 
       .mission-panel {
@@ -1177,28 +1141,6 @@
         color: var(--red) !important;
       }
 
-      .assessment-button {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 34px;
-        padding: 0 12px;
-        border: 1px solid rgba(242, 198, 106, 0.45);
-        border-radius: 8px;
-        color: #080915;
-        background: linear-gradient(135deg, var(--gold-soft), var(--gold));
-        font-size: 0.78rem;
-        font-weight: 850;
-        white-space: nowrap;
-        cursor: pointer;
-        border: none;
-        font-family: inherit;
-      }
-
-      .assessment-button:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-      }
 
       .assessment-label {
         display: inline-flex;
@@ -2158,7 +2100,7 @@
   <body>
     <canvas id="campaignCanvas" aria-hidden="true"></canvas>
 
-    <!-- 銝餅?啗???Dashboard View -->
+    <!-- 主控台視圖 Dashboard View -->
     <div id="dashboardView">
       <header class="hero">
         <nav class="topbar" aria-label="Campaign navigation">
@@ -2166,13 +2108,13 @@
             <span class="brand-mark" aria-hidden="true"></span>
             <span>
               <strong>NEODERM</strong>
-              <small>甈∩?隞??鋡?脰???/small>
+              <small>次世代領袖培育計劃</small>
             </span>
           </a>
           <div class="nav-actions">
-            <a href="#leaders">??蝮質汗</a>
-            <a href="#assessment">?暹??蜀</a>
-            <a href="https://solomonma2004.github.io/Gamification/Salary">?芷閮?璈?/a>
+            <a href="#leaders">團隊總覽</a>
+            <a href="#assessment">現時成績</a>
+            <a href="https://solomonma2004.github.io/Gamification/Salary">薪酬計算機</a>
           </div>
         </nav>
 
@@ -2184,82 +2126,82 @@
                 <span class="plus">+</span>
                 <strong>50 <small>AS</small></strong>
               </div>
-              <div class="hero-slogan">??憭芷??</div>
+              <div class="hero-slogan">量子太陽領袖</div>
               <div class="hero-pill-row">
-                <div class="hero-pill">Groom leadership<span>?寡??鈭箸?</span></div>
-                <div class="hero-pill">Build HC<span>撱箇?鈭箸???蝜?/span></div>
-                <div class="hero-pill">Drive replication<span>?典?摰Ｘ?箇?銴ˊ</span></div>
+                <div class="hero-pill">Groom leadership<span>培育領導人才</span></div>
+                <div class="hero-pill">Build HC<span>建立人才與組織</span></div>
+                <div class="hero-pill">Drive replication<span>推動客戶基礎複製</span></div>
               </div>
             </div>
             <div class="hero-network" aria-hidden="true"></div>
-            <p class="eyebrow">???餃?甇乓銴ˊ?颱蜓撠?/p>
-            <h1>NEODERM 甈∩?隞??鋡?脰???/h1>
+            <p class="eyebrow">領導・同步・複製・主導</p>
+            <h1>NEODERM 次世代領袖培育計劃</h1>
             <p class="hero-lede">
-              銝蝡?霅擃?鈭箸??炎閬??瑽?銝西蕭頩方?隡啜?蝺游??輯姥?脣漲??
+              一站式識別高潛人才、檢視團隊架構，並追蹤評估、教練及承諾進度。
             </p>
-            <h3 class="hero-dashboard-label">撌脣??犖??/h3>
+            <h3 class="hero-dashboard-label">已參加人選</h3>
             <div class="hero-metrics" aria-label="Program headline metrics">
               <div class="metric-card">
                 <span class="metric-card-title">Sign Up</span>
-                <div class="metric-row" data-metric-key="signup_tl">
+                <div class="metric-row">
                   <strong id="metricSignupTl">0</strong>
                   <span>1:6</span>
                 </div>
-                <div class="metric-row" data-metric-key="signup_as">
+                <div class="metric-row">
                   <strong id="metricSignupAs">0</strong>
                   <span>1:14</span>
                 </div>
               </div>
               <div class="metric-card">
                 <span class="metric-card-title">Rejected</span>
-                <div class="metric-row" data-metric-key="reject_as">
+                <div class="metric-row">
                   <strong id="metricRejectAs">0</strong>
                   <span>AS</span>
                 </div>
-                <div class="metric-row" data-metric-key="reject_tl">
+                <div class="metric-row">
                   <strong id="metricRejectTl">0</strong>
                   <span>TL</span>
                 </div>
-                <div class="metric-row" data-metric-key="reject_e1">
+                <div class="metric-row">
                   <strong id="metricRejectEligibleE1">0</strong>
                   <span>Eligible E1</span>
                 </div>
               </div>
               <div class="metric-card">
                 <span class="metric-card-title">Considering</span>
-                <div class="metric-row" data-metric-key="consider_as">
+                <div class="metric-row">
                   <strong id="metricConsideringAs">0</strong>
                   <span>AS</span>
                 </div>
-                <div class="metric-row" data-metric-key="consider_tl">
+                <div class="metric-row">
                   <strong id="metricConsideringTl">0</strong>
                   <span>TL</span>
                 </div>
-                <div class="metric-row" data-metric-key="consider_e1">
+                <div class="metric-row">
                   <strong id="metricConsideringEligibleE1">0</strong>
                   <span>Eligible E1</span>
                 </div>
               </div>
               <div class="metric-card">
                 <span class="metric-card-title">Not Yet Assessed</span>
-                <div class="metric-row" data-metric-key="pending_as">
+                <div class="metric-row">
                   <strong id="metricPendingAs">0</strong>
                   <span>AS</span>
                 </div>
-                <div class="metric-row" data-metric-key="pending_tl">
+                <div class="metric-row">
                   <strong id="metricPendingTl">0</strong>
                   <span>TL</span>
                 </div>
-                <div class="metric-row" data-metric-key="pending_e1">
+                <div class="metric-row">
                   <strong id="metricPendingEligibleE1">0</strong>
                   <span>Eligible E1</span>
                 </div>
               </div>
             </div>
-            <h3 class="hero-dashboard-label">HC ??蝮質汗</h3>
+            <h3 class="hero-dashboard-label">HC 團隊總覽</h3>
             <section class="formation-panel" aria-label="HC team overview">
               <div class="panel-heading">
-                <p class="eyebrow">??嗆?</p>
+                <p class="eyebrow">理想架構</p>
                 <h3>AS -&gt; TL -&gt; Therapist (E1)</h3>
               </div>
               <div class="ratio-grid">
@@ -2283,18 +2225,18 @@
       <main>
         <section id="leaders" class="section">
           <div class="section-heading">
-            <p class="eyebrow">蝚砌??典?</p>
-            <h2>Identify Leadership Gap &amp; Discover High Potential Individual<br><span>?暹????嗆??潭?擃??犖??/span></h2>
-            <p>隞亦?蝜??孵?瑼Ｚ????嗆???撠?靘??犖銵函嚗?箸０?撩????瑞撅???鈭箸???/p>
+            <p class="eyebrow">第一部分</p>
+            <h2>Identify Leadership Gap &amp; Discover High Potential Individual<br><span>現時團隊架構發掘高潛力人才</span></h2>
+            <p>以組織圖方式檢視團隊架構、領導比例及個人表現，找出梯隊缺口與具發展潛力的人才。</p>
           </div>
 
           <div class="control-row" aria-label="Leader controls">
             <label>
-              ??
+              品牌
               <select id="brandFilter"></select>
             </label>
             <label>
-              銝剖?
+              中心
               <select id="centerFilter"></select>
             </label>
             <label>
@@ -2306,17 +2248,17 @@
               <select id="hrPositionFilter"></select>
             </label>
             <label>
-              瑼Ｚ?
+              檢視
               <select id="viewFilter">
-                <option value="all">?券??</option>
-                <option value="mismatch">?芷＊蝷?Title mismatch</option>
+                <option value="all">全部領袖</option>
+                <option value="mismatch">只顯示 Title mismatch</option>
               </select>
             </label>
             <label class="metric-filter-field">
-              ?瑕銵函
+              銷售表現
               <div id="performanceMetricFilter" class="metric-checkbox-group">
-                <label><input type="checkbox" value="all" checked> ?券??</label>
-                <label><input type="checkbox" value="thisMonth"> ?祆??瑕 %</label>
+                <label><input type="checkbox" value="all" checked> 全部指標</label>
+                <label><input type="checkbox" value="thisMonth"> 本月銷售 %</label>
                 <label><input type="checkbox" value="m1"> M-1 Sales %</label>
                 <label><input type="checkbox" value="m2"> M-2 Sales %</label>
                 <label><input type="checkbox" value="m3"> M-3 Sales %</label>
@@ -2324,22 +2266,22 @@
               </div>
             </label>
             <label>
-              ???
+              狀態
               <select id="performanceStatusFilter">
-                <option value="all">?券???/option>
-                <option value="good">蝬 >= 100%</option>
-                <option value="watch">暺 90-99%</option>
-                <option value="risk">蝝 &lt; 90%</option>
+                <option value="all">全部狀態</option>
+                <option value="good">綠色 >= 100%</option>
+                <option value="watch">黃色 90-99%</option>
+                <option value="risk">紅色 &lt; 90%</option>
               </select>
             </label>
             <label class="search-field">
-              ??
-              <input id="leaderSearchInput" type="search" placeholder="憪??撌亦楊????>
+              搜尋
+              <input id="leaderSearchInput" type="search" placeholder="姓名、員工編號、團隊">
             </label>
             <div class="data-status" role="status" aria-live="polite">
-              <span id="dataStatus">撌脤? Apps Script</span>
-              <button id="setAppsScriptUrl" type="button">?閮剖? Script URL</button>
-              <button id="refreshData" type="button">??渡?</button>
+              <span id="dataStatus">已連接 Apps Script</span>
+              <button id="setAppsScriptUrl" type="button">重新設定 Script URL</button>
+              <button id="refreshData" type="button">重新整理</button>
             </div>
           </div>
 
@@ -2350,38 +2292,42 @@
 
         <section id="assessment" class="section">
           <div class="section-heading">
-            <p class="eyebrow">蝚砌??典?</p>
-            <h2>Assessment and Monitor<br><span>閰摯?脣漲???</span></h2>
-            <p>TA ???舀炎閬歇摰?閰摯?犖?∴?銝行??瑚?????璅惜蝭拚???脯?/p>
+            <p class="eyebrow">第二部分</p>
+            <h2>Assessment and Monitor<br><span>評估及進度監察</span></h2>
+            <p>TA 團隊可檢視已完成評估的人員，並按職位、品牌及樓層篩選及跟進。</p>
           </div>
 
           <div id="participationSummary" class="participation-summary" aria-label="Assessment participation summary"></div>
 
           <div class="control-row" aria-label="Assessment filters">
             <label>
-              ????
+              參與意願
               <select id="participationFilter">
-                <option value="All">?券</option>
-                <option value="Y">憿???</option>
-                <option value="N">撌脫?蝯?/option>
-                <option value="C">?銝?/option>
+                <option value="All">全部</option>
+                <option value="Y">願意參與</option>
+                <option value="N">已拒絕</option>
+                <option value="C">考慮中</option>
               </select>
             </label>
             <label>
-              ?瑚?
+              職位
               <select id="positionFilter"></select>
             </label>
             <label>
-              ??
+              品牌
               <select id="assessmentBrandFilter"></select>
             </label>
             <label>
-              璅惜
+              樓層
               <select id="floorFilter"></select>
             </label>
+            <label>
+              Assessment Date
+              <input id="assessmentDateFilter" type="date">
+            </label>
             <label class="search-field">
-              ??
-              <input id="searchInput" type="search" placeholder="憪??撌亦楊????>
+              搜尋
+              <input id="searchInput" type="search" placeholder="姓名、員工編號、團隊">
             </label>
           </div>
 
@@ -2389,12 +2335,12 @@
             <table>
               <thead>
                 <tr>
-                  <th>??/th>
+                  <th>名</th>
                   <th>Brand / Center</th>
-                  <th>?瑚? / Team Size</th>
-                  <th>?瑕銵函 (?祆? + 撠?3??)</th>
+                  <th>職位 / Team Size</th>
+                  <th>銷售表現 (本月 + 對上3個月)</th>
                   <th>Offer target</th>
-                  <th>2026 5????</th>
+                  <th>2026 5月後招聘</th>
                   <th>Offer target completion</th>
                   <th>Assessment date time</th>
                   <th>Carried out by</th>
@@ -2412,32 +2358,32 @@
         <form method="dialog" id="coachForm">
           <div class="dialog-head">
             <div>
-              <p class="eyebrow">TA ?毀頛詨</p>
-              <h2 id="dialogTitle">?∪極鞈?</h2>
+              <p class="eyebrow">TA 教練輸入</p>
+              <h2 id="dialogTitle">員工資料</h2>
             </div>
             <button class="icon-button" value="cancel" aria-label="Close dialog" type="submit">x</button>
           </div>
           <input type="hidden" id="coachStaffId">
           <label>
-            閰摯蝯?
+            評估結果
             <select id="assessmentResult">
-              <option>撌脫?????銝撅斤?</option>
-              <option>?潛?瑞匱蝥撅?/option>
-              <option>閫撖?3 ??</option>
-              <option>?暸?畾菜?拙?</option>
+              <option>已準備晉升下一層級</option>
+              <option>於現職繼續發展</option>
+              <option>觀察 3 個月</option>
+              <option>現階段未適合</option>
             </select>
           </label>
           <label>
-            ?輯姥?格?
-            <input id="commitmentTarget" type="text" placeholder="靘?2026 撟?7 ??撱箇? 2 雿?E1 ?亦鈭?>
+            承諾目標
+            <input id="commitmentTarget" type="text" placeholder="例：2026 年 7 月前建立 2 位 E1 接班人">
           </label>
           <label>
-            ?毀?酉
-            <textarea id="coachNotes" rows="5" placeholder="TA ?毀閫撖?????頝脫??></textarea>
+            教練備註
+            <textarea id="coachNotes" rows="5" placeholder="TA 教練觀察、行動計劃及跟進日期"></textarea>
           </label>
           <div class="dialog-actions">
-            <button class="secondary-button" value="cancel" type="submit">??</button>
-            <button id="saveCoach" class="primary-button" value="default" type="button">?脣?</button>
+            <button class="secondary-button" value="cancel" type="submit">取消</button>
+            <button id="saveCoach" class="primary-button" value="default" type="button">儲存</button>
           </div>
         </form>
       </dialog>
@@ -2446,7 +2392,7 @@
         <form method="dialog" id="followUpForm">
           <div class="dialog-head">
             <div>
-              <p class="eyebrow">閰摯 / FOLLOW UP</p>
+              <p class="eyebrow">評估 / FOLLOW UP</p>
               <h2 id="followUpTitle">Follow up</h2>
             </div>
             <button class="icon-button" value="cancel" aria-label="Close dialog" type="submit">x</button>
@@ -2455,15 +2401,15 @@
           <dl id="followUpReadonly" class="followup-readonly"></dl>
           <label>
             <span id="followUpRemarksLabel">1st Follow up Remarks</span>
-            <textarea id="followUpRemarks" rows="4" placeholder="頛詨 2nd follow-up remarks"></textarea>
+            <textarea id="followUpRemarks" rows="4" placeholder="輸入 2nd follow-up remarks"></textarea>
           </label>
           <label>
             <span id="followUpDateLabel">1st Follow up Date</span>
             <input id="followUpDate" type="date">
           </label>
           <div class="dialog-actions">
-            <button class="secondary-button" value="cancel" type="submit">??</button>
-            <button id="saveFollowUp" class="primary-button" value="default" type="button">?脣? Follow up</button>
+            <button class="secondary-button" value="cancel" type="submit">取消</button>
+            <button id="saveFollowUp" class="primary-button" value="default" type="button">儲存 Follow up</button>
           </div>
         </form>
       </dialog>
@@ -2482,98 +2428,82 @@
           </div>
           <div id="historyContent" class="history-list"></div>
           <div class="dialog-actions">
-            <button class="secondary-button" value="cancel" type="submit">??</button>
+            <button class="secondary-button" value="cancel" type="submit">關閉</button>
           </div>
         </form>
       </dialog>
 
-      <dialog id="metricDetailDialog" class="coach-dialog history-dialog">
-        <form method="dialog">
-          <div class="dialog-head">
-            <div>
-              <p class="eyebrow">METRIC DETAILS</p>
-              <h2 id="metricDetailTitle">People list</h2>
-            </div>
-            <button class="icon-button" value="cancel" aria-label="Close dialog" type="submit">x</button>
-          </div>
-          <div id="metricDetailContent" class="metric-detail-list"></div>
-          <div class="dialog-actions">
-            <button class="secondary-button" value="cancel" type="submit">??</button>
-          </div>
-        </form>
-      </dialog>
-
-    <!-- 閰摯銵典閬? Assessment View (SPA) -->
+    <!-- 評估表單視圖 Assessment View (SPA) -->
     <div id="assessmentView" style="display: none;">
       <main class="assessment-shell">
-        <button type="button" class="back-link" onclick="closeAssessmentForm()">餈?蝯???/button>
+        <button type="button" class="back-link" onclick="closeAssessmentForm()">返回組織圖</button>
         <section class="assessment-card">
           <div class="section-heading">
-            <p class="eyebrow">閰摯頛詨</p>
+            <p class="eyebrow">評估輸入</p>
             <h1 id="assessmentName">Staff assessment</h1>
-            <p id="assessmentMeta">閮????隢曇???/p>
+            <p id="assessmentMeta">計劃意願及承諾資料</p>
           </div>
 
           <form id="programAssessmentForm" class="assessment-form">
             <label>
-              ?臬憿??閮?
+              是否願意加入計劃
               <select id="willingJoin" required>
-                <option value="">隢??Y/N</option>
+                <option value="">請選擇 Y/N</option>
                 <option value="Y">Y</option>
                 <option value="N">N</option>
-                <option value="C">?銝?/option>
+                <option value="C">考慮中</option>
               </select>
             </label>
 
             <label>
-              ?格???撅斤?
+              目標晉升層級
               <select id="targetTier" required>
-                <option value="">隢?惜蝝?/option>
-                <option value="tl">Team Leader 撅斤? -&gt; 1:6</option>
-                <option value="as">AS 撅斤? -&gt; 1:14</option>
+                <option value="">請選擇層級</option>
+                <option value="tl">Team Leader 層級 -&gt; 1:6</option>
+                <option value="as">AS 層級 -&gt; 1:14</option>
               </select>
             </label>
 
             <label>
-              Offer 撌株?
-              <textarea id="offerGap" rows="3" readonly placeholder="?豢?撅斤?敺??蝞?></textarea>
+              Offer 差距
+              <textarea id="offerGap" rows="3" readonly placeholder="選擇層級後自動計算"></textarea>
             </label>
 
             <label>
-              ?格?摰??交?
+              目標完成日期
               <input id="targetCompletionDate" type="date">
             </label>
 
             <label>
               Carried out by
-              <input id="carriedOutBy" type="text" placeholder="頛詨閰摯鞎痊鈭?>
+              <input id="carriedOutBy" type="text" placeholder="輸入評估負責人">
             </label>
 
             <label>
               1st Assessment Remarks
-              <textarea id="firstAssessmentRemarks" rows="4" placeholder="頛詨蝚砌?甈∟?隡?remarks"></textarea>
+              <textarea id="firstAssessmentRemarks" rows="4" placeholder="輸入第一次評估 remarks"></textarea>
             </label>
 
             <label class="upload-field">
-              撌脩偷蝵脰”?澆??<span class="required-note">?豢? Y ????頛?/span>
+              已簽署表格副本 <span class="required-note">選擇 Y 時必須上載</span>
               <input id="signedFormUpload" type="file" accept="application/pdf,image/*">
-              <small class="upload-help">?豢? N ?臭??銝????Y ??獢??芸?銝??單?摰?Google Drive嚗?撘?StaffNo_Brand嚗?憒?16674_dermes??/small>
+              <small class="upload-help">選擇 N 可不需上載。選擇 Y 時檔案會自動上載至指定 Google Drive，命名格式：StaffNo_Brand，例如 16674_dermes。</small>
               <span class="upload-actions">
-                <button id="testSignedUpload" class="upload-test-button" type="button">皜祈岫 Drive 銝?</button>
+                <button id="testSignedUpload" class="upload-test-button" type="button">測試 Drive 上載</button>
                 <small id="signedUploadStatus" class="upload-status"></small>
               </span>
             </label>
 
             <div class="dialog-actions">
-              <button type="button" class="secondary-button link-button" onclick="closeAssessmentForm()">??</button>
-              <button class="primary-button" type="submit">?脣?閰摯</button>
+              <button type="button" class="secondary-button link-button" onclick="closeAssessmentForm()">取消</button>
+              <button class="primary-button" type="submit">儲存評估</button>
             </div>
           </form>
         </section>
       </main>
     </div>
 
-    <!-- JavaScript ?游? -->
+    <!-- JavaScript 整合 -->
     <script>
       const DEFAULT_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz4gI5LTMDnHGKD7NAUcttBo-oa2XUzUJ3wVvWtfWgy9qheKg3KFRdD4SkrR60KkLLj/exec";
 
@@ -2686,6 +2616,7 @@
         positionFilter: document.querySelector("#positionFilter"),
         assessmentBrandFilter: document.querySelector("#assessmentBrandFilter"),
         floorFilter: document.querySelector("#floorFilter"),
+        assessmentDateFilter: document.querySelector("#assessmentDateFilter"),
         searchInput: document.querySelector("#searchInput"),
         staffTable: document.querySelector("#staffTable"),
         metricSignupTl: document.querySelector("#metricSignupTl"),
@@ -2699,9 +2630,6 @@
         metricPendingAs: document.querySelector("#metricPendingAs"),
         metricPendingTl: document.querySelector("#metricPendingTl"),
         metricPendingEligibleE1: document.querySelector("#metricPendingEligibleE1"),
-        metricDetailDialog: document.querySelector("#metricDetailDialog"),
-        metricDetailTitle: document.querySelector("#metricDetailTitle"),
-        metricDetailContent: document.querySelector("#metricDetailContent"),
         dialog: document.querySelector("#coachDialog"),
         coachForm: document.querySelector("#coachForm"),
         dialogTitle: document.querySelector("#dialogTitle"),
@@ -2781,7 +2709,7 @@
 
       function assessmentLabel(person) {
         if (!hasAssessment(person)) return "";
-        return `<span class="assessment-label">撌脣???隡?/span>`;
+        return `<span class="assessment-label">已完成評估</span>`;
       }
 
       function syncDefaultFlags() {
@@ -2798,7 +2726,7 @@
           syncDefaultFlags();
           initFilters();
           renderAll();
-          setDataStatus("?芾身摰?Apps Script URL嚗?質??亙????);
+          setDataStatus("未設定 Apps Script URL，未能載入即時資料。");
           return;
         }
 
@@ -2806,33 +2734,33 @@
         staff = [];
         initFilters();
         renderAll();
-        setDataStatus("甇?頛鞈?...");
+        setDataStatus("正在載入資料...");
         try {
           const rows = await loadAppsScriptRows(SHEET_CONFIG.sheetName);
           const mappedStaff = mapSheetRows(rows);
-          if (!mappedStaff.length) throw new Error("Master ??瘝??舐?∪極鞈???);
+          if (!mappedStaff.length) throw new Error("Master 分頁沒有可用員工資料。");
           staff = mappedStaff;
 
-          setDataStatus("甇?頛 enrollment detail 鞈?...");
+          setDataStatus("正在載入 enrollment detail 資料...");
           try {
             const enrollmentRows = await loadAppsScriptRows("enrollment detail");
             parseEnrollmentDetails(enrollmentRows);
           } catch (e) {
-            console.warn("?⊥?頛 enrollment detail:", e);
+            console.warn("無法載入 enrollment detail:", e);
           }
 
           isLoading = false;
           syncDefaultFlags();
           initFilters();
           renderAll();
-          setDataStatus(`?單?鞈?嚗?{staff.length} 雿撌?(撌脣?甇亥?隡啣???`);
+          setDataStatus(`即時資料：${staff.length} 位員工 (已同步評估名單)`);
         } catch (error) {
           isLoading = false;
           staff = [];
           syncDefaultFlags();
           initFilters();
           renderAll();
-          setDataStatus("鞈?頛憭望?嚗憿舐內蝷箔?鞈???瑼Ｘ Apps Script ?函蔡????);
+          setDataStatus("資料載入失敗，未顯示示例資料。請檢查 Apps Script 部署或權限。");
           console.warn(error);
         }
       }
@@ -2969,13 +2897,13 @@
 
       function loadAppsScriptRows(sheetName) {
         return new Promise((resolve, reject) => {
-          // ??冽??賊????澆???澆?詨?蝔梯?蝒?
+          // 加入隨機數避免連續呼叫時回呼函數名稱衝突
           const callbackName = `sheetCallback_${Date.now()}_${Math.floor(Math.random()*1000)}`;
           const script = document.createElement("script");
           const separator = SHEET_CONFIG.appsScriptUrl.includes("?") ? "&" : "?";
           let settled = false;
           const timeout = window.setTimeout(() => {
-            fail(new Error(`Apps Script 霈?暹? (${sheetName})?));
+            fail(new Error(`Apps Script 讀取逾時 (${sheetName})。`));
           }, 10000);
 
           window[callbackName] = (payload) => {
@@ -2991,7 +2919,7 @@
           };
 
           script.onerror = () => {
-            fail(new Error(`Apps Script 霈?仃??(${sheetName})?));
+            fail(new Error(`Apps Script 讀取失敗 (${sheetName})。`));
           };
 
           function cleanup() {
@@ -3026,13 +2954,13 @@
           const separator = SHEET_CONFIG.appsScriptUrl.includes("?") ? "&" : "?";
           let settled = false;
           const timeout = window.setTimeout(() => {
-            fail(new Error("Apps Script ???暹???));
+            fail(new Error("Apps Script 回應逾時。"));
           }, 15000);
 
           window[callbackName] = (payload) => {
             try {
               if (payload && payload.ok === false) {
-                fail(new Error(payload.error || "Apps Script ?憭望???));
+                fail(new Error(payload.error || "Apps Script 回傳失敗。"));
                 return;
               }
               resolveOnce(payload);
@@ -3041,7 +2969,7 @@
             }
           };
 
-          script.onerror = () => fail(new Error("Apps Script ?⊥?頛嚗?瑼Ｘ Web App URL??));
+          script.onerror = () => fail(new Error("Apps Script 無法載入，請檢查 Web App URL。"));
 
           function cleanup() {
             window.clearTimeout(timeout);
@@ -3118,8 +3046,8 @@
         const numeric = Number(strVal.replace(/[^\d.-]/g, ""));
         if (!Number.isFinite(numeric)) return 0;
         
-        // 靽格迤 Google Sheets ?芸?撠??頧撠??憿?靘? 69% ????0.69嚗?
-        // ?芾??舐?撠澆??潛???20嚗誨銵?2000% 隞乩?嚗?撠梯????100
+        // 修正 Google Sheets 自動將百分比轉為小數的問題（例如 69% 會變成 0.69）
+        // 只要是絕對值小於等於 20（代表 2000% 以下），就自動乘回 100
         if (numeric !== 0 && Math.abs(numeric) <= 20) {
           return numeric * 100;
         }
@@ -3129,7 +3057,7 @@
       function formatJoinDate(rawDate) {
         if (!rawDate) return "-";
         const strDate = String(rawDate).trim();
-        // ?瑕? T ?????(靘?: "2017-08-13T16:00:00.000Z" -> "2017-08-13")
+        // 擷取 T 前面的日期部分 (例如: "2017-08-13T16:00:00.000Z" -> "2017-08-13")
         if (strDate.includes("T")) return strDate.split("T")[0];
         return strDate;
       }
@@ -3151,7 +3079,7 @@
         const position = readCell(record, ["KPI Position", "Position"]) || "Unassigned";
         const target = parseNumber(readCell(record, ["Full month Target", "Current Sales Target", "MTD Target"]));
         const currentSales = parseNumber(readCell(record, ["Current month Sales", "Current month Sales", "Actual Sales (MTD)"]));
-        const mayMtdValue = readCell(record, ["This Month Sales %", "May MTD %", "MTD%", "?祆??蜀"]);
+        const mayMtdValue = readCell(record, ["This Month Sales %", "May MTD %", "MTD%", "本月成績"]);
         const currentSalesPercent = target ? Math.round((currentSales / target) * 100) : parseSalesPercent(mayMtdValue);
         const mayMtd = mayMtdValue === "" ? currentSalesPercent : parseSalesPercent(mayMtdValue);
 
@@ -3178,10 +3106,10 @@
           target,
           currentSales,
           mayMtd,
-          apr: parseSalesPercent(readCell(record, ["M-1 Sales %", "Sales % April 26", "撠? 1???蜀"])),
-          mar: parseSalesPercent(readCell(record, ["M-2 Sales %", "Sales % March 26", "撠? 2???蜀"])),
-          feb: parseSalesPercent(readCell(record, ["M-3 Sales %", "Sales % Feb 26", "撠? 3???蜀"])),
-          jan: parseSalesPercent(readCell(record, ["M-4 Sales %", "Sales % Jan 26", "撠? 4???蜀"])),
+          apr: parseSalesPercent(readCell(record, ["M-1 Sales %", "Sales % April 26", "對上 1個月成績"])),
+          mar: parseSalesPercent(readCell(record, ["M-2 Sales %", "Sales % March 26", "對上 2個月成績"])),
+          feb: parseSalesPercent(readCell(record, ["M-3 Sales %", "Sales % Feb 26", "對上 3個月成績"])),
+          jan: parseSalesPercent(readCell(record, ["M-4 Sales %", "Sales % Jan 26", "對上 4個月成績"])),
           avg6: parseNumber(readCell(record, ["Past 3 month Average Sales", "Past 3 month Average sales"])),
           catCurrent: parsePercent(readCell(record, ["Current Cat1/2", "Current Cat1/2", "Cat 1/2"])),
           catPast3: parseNumber(readCell(record, ["Past 3 month Cat 1/2"])),
@@ -3266,7 +3194,7 @@
         }
       }
 
-      // ??蝭拚嚗????瞈曄泵???剔??葉敹???撅扎??
+      // 動態篩選：根據「品牌」過濾符合字頭的「中心」與「樓層」選項
       function updateDependentFilters() {
         const filterByPrefix = (brandValue, allValues) => {
           if (brandValue === "All") return allValues;
@@ -3276,12 +3204,12 @@
             if (val === "All") return true;
             const valStrUpper = String(val).trim().toUpperCase();
             
-            // ??瘙?瑕???
+            // 按照需求判斷字頭
             if (brandUpper === "DERMES") return valStrUpper.startsWith("D");
             if (brandUpper === "REENEX") return valStrUpper.startsWith("R");
             if (brandUpper === "ELYZE") return valStrUpper.startsWith("E");
             
-            // ?嗡???蝬剜??????
+            // 其他品牌維持原貌或全選
             return true;
           });
         };
@@ -3300,7 +3228,7 @@
         fillSelect(elements.assessmentBrandFilter, uniqueValues("brand"));
         fillSelect(elements.positionFilter, uniqueValues("position"));
         
-        // 閫貊銝甈∪????剔祟??
+        // 觸發一次動態字頭篩選
         updateDependentFilters();
       }
 
@@ -3423,65 +3351,6 @@
         return String(assessment?.willingJoin || "").trim().toUpperCase();
       }
 
-      function isEligibleE1(person) {
-        return normalizeRole(person.position) === "E1" && Number(person.apr) >= 100 && Number(person.mar) >= 100;
-      }
-
-      function metricPeopleByKey(metricKey) {
-        const assessments = state.assessments || {};
-        const withAssessment = (person) => assessments[person.staffId] || null;
-        const byJoin = (person, value) => participationValue(withAssessment(person)) === value;
-        const byRole = (role) => staff.filter((person) => normalizeRole(person.position) === role);
-        const byE1Eligible = () => staff.filter(isEligibleE1);
-
-        const map = {
-          signup_tl: byRole("TL").filter((person) => byJoin(person, "Y")),
-          signup_as: byRole("AS").filter((person) => byJoin(person, "Y")),
-          reject_as: byRole("AS").filter((person) => byJoin(person, "N")),
-          reject_tl: byRole("TL").filter((person) => byJoin(person, "N")),
-          reject_e1: byE1Eligible().filter((person) => byJoin(person, "N")),
-          consider_as: byRole("AS").filter((person) => byJoin(person, "C")),
-          consider_tl: byRole("TL").filter((person) => byJoin(person, "C")),
-          consider_e1: byE1Eligible().filter((person) => byJoin(person, "C")),
-          pending_as: byRole("AS").filter((person) => !hasAssessment(person)),
-          pending_tl: byRole("TL").filter((person) => !hasAssessment(person)),
-          pending_e1: byE1Eligible().filter((person) => !hasAssessment(person))
-        };
-
-        return map[metricKey] || [];
-      }
-
-      function metricTitleByKey(metricKey) {
-        const map = {
-          signup_tl: "Sign Up 繚 1:6",
-          signup_as: "Sign Up 繚 1:14",
-          reject_as: "Rejected 繚 AS",
-          reject_tl: "Rejected 繚 TL",
-          reject_e1: "Rejected 繚 Eligible E1",
-          consider_as: "Considering 繚 AS",
-          consider_tl: "Considering 繚 TL",
-          consider_e1: "Considering 繚 Eligible E1",
-          pending_as: "Not Yet Assessed 繚 AS",
-          pending_tl: "Not Yet Assessed 繚 TL",
-          pending_e1: "Not Yet Assessed 繚 Eligible E1"
-        };
-        return map[metricKey] || "People list";
-      }
-
-      function openMetricDetail(metricKey) {
-        const people = metricPeopleByKey(metricKey);
-        elements.metricDetailTitle.textContent = `${metricTitleByKey(metricKey)} (${people.length})`;
-        if (!people.length) {
-          elements.metricDetailContent.innerHTML = `<div class="metric-detail-item"><strong>瘝?鈭箏</strong><span>-</span></div>`;
-        } else {
-          elements.metricDetailContent.innerHTML = people
-            .sort((a, b) => String(a.therapist || "").localeCompare(String(b.therapist || "")))
-            .map((person) => `<div class="metric-detail-item"><strong>${escapeHtml(person.therapist || "-")}</strong><span>${escapeHtml(person.floor || person.center || "-")}</span></div>`)
-            .join("");
-        }
-        elements.metricDetailDialog.showModal();
-      }
-
       function hasSignedForm(assessment) {
         return Boolean(
           String(assessment?.signedFormUrl || "").trim() ||
@@ -3491,8 +3360,8 @@
 
       function signatureStatusLabel(assessment) {
         if (participationValue(assessment) !== "Y") return "";
-        if (hasSignedForm(assessment)) return `<span class="signature-status is-signed">撌脩偷蝵脫?隞?/span>`;
-        return `<span class="signature-status">撠蝪賜蔡?辣</span>`;
+        if (hasSignedForm(assessment)) return `<span class="signature-status is-signed">已簽署文件</span>`;
+        return `<span class="signature-status">尚未簽署文件</span>`;
       }
 
       function needsSignatureDocument(assessment) {
@@ -3578,7 +3447,7 @@
 
       function hcGapStatus(current, target) {
         const gap = Math.max(target - current, 0);
-        return gap > 0 ? `?撱箇? HC / ?閬???朣?${gap} 鈭槁 : "";
+        return gap > 0 ? `需建立 HC / 需要招聘補齊 ${gap} 人` : "";
       }
 
       function renderOrgChart() {
@@ -3592,7 +3461,7 @@
         renderFormationSummary(source);
 
         if (!source.length) {
-          const message = isLoading ? "甇?頛鞈?..." : "瘝??∪極蝚血??桀?蝭拚璇辣??;
+          const message = isLoading ? "正在載入資料..." : "沒有員工符合目前篩選條件。";
           elements.orgChart.innerHTML = `<div class="org-tree"><div class="org-node as-node">${message}</div></div>`;
           return;
         }
@@ -3618,8 +3487,8 @@
           const asHcTarget = 15;
           const asHcGapStatus = hcGapStatus(asHcCount, asHcTarget);
           const asStatus = teamCount < 2
-            ? "?撱箇? TL 璇舫?"
-            : (asHcGapStatus || "蝚血? AS 瘥?");
+            ? "需建立 TL 梯隊"
+            : (asHcGapStatus || "符合 AS 比例");
           return `
             <article class="org-tree ${asFlagged ? "is-flagged" : ""} ${asMismatch ? "mismatch" : ""} ${shouldAutoExpand ? "is-expanded" : ""}">
               <div class="org-node as-node">
@@ -3640,7 +3509,7 @@
                   currentCount: asHcCount
                 }) : ""}
               </div>
-              <div class="team-branches">${teamCards || `<div class="empty-branch">?芣? TL team</div>`}</div>
+              <div class="team-branches">${teamCards || `<div class="empty-branch">未有 TL team</div>`}</div>
               ${directReports.length ? `<div class="direct-reports"><div class="direct-reports-label">Direct E1 under AS</div>${directReports.map(renderTherapistNode).join("")}</div>` : ""}
             </article>
           `;
@@ -3661,7 +3530,7 @@
           );
 
         if (!members.length) {
-          elements.orgChart.innerHTML = `<div class="org-tree"><div class="org-node as-node">瘝??∪極蝚血??桀??瑞?蝭拚璇辣??/div></div>`;
+          elements.orgChart.innerHTML = `<div class="org-tree"><div class="org-node as-node">沒有員工符合目前職級篩選條件。</div></div>`;
           return;
         }
 
@@ -3682,14 +3551,14 @@
         const e1Count = childMembers.length;
         const tlHcTarget = 6;
         const tlStatus = leader
-          ? (hcGapStatus(e1Count, tlHcTarget) || "蝚血? TL 瘥?")
-          : "??? TL";
+          ? (hcGapStatus(e1Count, tlHcTarget) || "符合 TL 比例")
+          : "需指定 TL";
         return `
           <article class="team-branch ${flagged ? "is-flagged" : ""} ${teamMismatch ? "mismatch" : ""} ${isExpanded ? "is-expanded" : ""}">
             <div class="org-node tl-node">
               <div class="node-copy">
                 <span class="role-chip">TL</span>
-                <strong>${leader ? leader.therapist : "?芾身摰?TL"}</strong>
+                <strong>${leader ? leader.therapist : "未設定 TL"}</strong>
                 <small>${teamName}</small>
               </div>
               ${leader ? titleMismatchLabel(leader) : ""}
@@ -3718,7 +3587,7 @@
               <small>${person.position} | ${person.staffId}</small>
             </div>
             <div class="mini-kpis">
-              <span class="${salesStatusClass(person.mayMtd ?? salesPercent(person))}">?瑕 ${formatPercent(person.mayMtd ?? salesPercent(person))}</span>
+              <span class="${salesStatusClass(person.mayMtd ?? salesPercent(person))}">銷售 ${formatPercent(person.mayMtd ?? salesPercent(person))}</span>
             </div>
             ${titleMismatchLabel(person)}
             ${assessmentLabel(person)}
@@ -3741,7 +3610,7 @@
               <small>${contextLine}</small>
             </div>
             <div class="mini-kpis">
-              <span class="${salesStatusClass(person.mayMtd ?? salesPercent(person))}">?瑕 ${formatPercent(person.mayMtd ?? salesPercent(person))}</span>
+              <span class="${salesStatusClass(person.mayMtd ?? salesPercent(person))}">銷售 ${formatPercent(person.mayMtd ?? salesPercent(person))}</span>
             </div>
             ${titleMismatchLabel(person)}
             ${assessmentLabel(person)}
@@ -3767,13 +3636,13 @@
       function renderPersonalDetails(person, assessmentContext = {}) {
         const alreadyAssessed = hasAssessment(person);
         const profileDetails = [
-          ["撟渲?", `${formatPlain(person.serviceMonths)} ?],
-          ["?亥??, person.lastJoinDate || "-"],
+          ["年資", `${formatPlain(person.serviceMonths)} 月`],
+          ["入職日", person.lastJoinDate || "-"],
           ["Full month Target", formatMoneyOrDash(person.target)],
-          ["?瑕", formatMoneyOrDash(person.currentSales)]
+          ["銷售", formatMoneyOrDash(person.currentSales)]
         ];
         const salesDetails = [
-          ["?祆?", formatPercent(person.mayMtd ?? salesPercent(person)), salesStatusClass(person.mayMtd ?? salesPercent(person))],
+          ["本月", formatPercent(person.mayMtd ?? salesPercent(person)), salesStatusClass(person.mayMtd ?? salesPercent(person))],
           ["M-1", formatPercent(person.apr), salesStatusClass(person.apr)],
           ["M-2", formatPercent(person.mar), salesStatusClass(person.mar)],
           ["M-3", formatPercent(person.feb), salesStatusClass(person.feb)],
@@ -3781,19 +3650,19 @@
           ["3M avg sales", formatMoneyOrDash(person.avg6)]
         ];
         const categoryDetails = [
-          ["?暹?", formatPercent(person.catCurrent)],
-          ["? 3M", formatPlain(person.catPast3)]
+          ["現時", formatPercent(person.catCurrent)],
+          ["過去 3M", formatPlain(person.catPast3)]
         ];
         const recruitmentDetails = {
           fullYear: [
             ["CV", formatPlain(person.cvSince2026)],
             ["Offer", formatPlain(person.offerSince2026)],
-            ["?亥", formatPlain(person.onboardSince2026)]
+            ["入職", formatPlain(person.onboardSince2026)]
           ],
           afterMay: [
             ["CV", formatPlain(person.cvSinceMay2026)],
             ["Offer", formatPlain(person.offerSinceMay2026)],
-            ["?亥", formatPlain(person.onboardSinceMay2026)]
+            ["入職", formatPlain(person.onboardSinceMay2026)]
           ]
         };
 
@@ -3801,11 +3670,10 @@
           <div class="personal-details">
             <div class="details-actions">
               <button class="details-toggle" type="button" aria-expanded="false">Performance Data</button>
-              ${""}
             </div>
             <div class="detail-panels">
-              ${renderDetailGroup("?犖鞈?", profileDetails)}
-              ${renderDetailGroup("?瑕銵函", salesDetails)}
+              ${renderDetailGroup("個人資料", profileDetails)}
+              ${renderDetailGroup("銷售表現", salesDetails)}
               ${renderRecruitmentGroup(recruitmentDetails)}
               ${renderDetailGroup("Cat 1/2", categoryDetails)}
             </div>
@@ -3828,11 +3696,11 @@
         const renderRows = (items) => items.map(([label, value]) => `<div><dt>${label}</dt><dd>${value}</dd></div>`).join("");
         return `
           <section class="detail-group recruitment-group">
-            <div class="detail-toggle">2026??</div>
+            <div class="detail-toggle">2026招聘</div>
             <dl>
-              <div class="detail-subtitle">2026 ?典僑</div>
+              <div class="detail-subtitle">2026 全年</div>
               ${renderRows(details.fullYear)}
-              <div class="detail-subtitle">2026 5??</div>
+              <div class="detail-subtitle">2026 5月後</div>
               ${renderRows(details.afterMay)}
             </dl>
           </section>
@@ -3847,6 +3715,12 @@
         const actions = [
           `<button class="secondary-button history-button" type="button" data-history="${person.staffId}">View History</button>`
         ];
+
+        if (needsSignatureDocument(assessment)) {
+          actions.push(`<button class="secondary-button" type="button" data-resubmit-doc="${person.staffId}">補交文件</button>`);
+        }
+
+        // Follow Up and Revise Decision buttons removed
 
         return `<div class="assessment-actions">${actions.join("")}</div>`;
       }
@@ -3864,7 +3738,7 @@
             <td colspan="11">
               <div class="assessment-section-title">
                 <strong>${title}</strong>
-                <span>${rows.length} records 繚 ${label}</span>
+                <span>${rows.length} records · ${label}</span>
               </div>
             </td>
           </tr>
@@ -3899,14 +3773,14 @@
             <td>
               <div class="staff-name">${person.therapist}</div>
               <div class="staff-meta">${person.staffId} | ${person.serviceMonths} months | joined ${person.lastJoinDate}</div>
-              ${isFlagged(person) ? `<span class="role-chip">擃?鈭箸?</span>` : ""}
+              ${isFlagged(person) ? `<span class="role-chip">高潛人才</span>` : ""}
               ${assessmentLabel(person)}
               ${signatureStatusLabel(assessment)}
             </td>
             <td>${person.brand}<br><span class="staff-meta">${locationText}</span></td>
             <td>${person.position}<br><span class="staff-meta">HR: ${person.hrTitle}</span><br><span class="staff-meta">${teamSizeStr}</span>${person.misMismatch ? `<br>${titleMismatchLabel(person)}` : ""}</td>
             <td>
-              <div><strong class="${salesStatusClass(person.mayMtd ?? salesPercent(person))}">?祆?: ${formatPercent(person.mayMtd ?? salesPercent(person))}</strong></div>
+              <div><strong class="${salesStatusClass(person.mayMtd ?? salesPercent(person))}">本月: ${formatPercent(person.mayMtd ?? salesPercent(person))}</strong></div>
               <div class="staff-meta">
                 M-1: <strong class="${salesStatusClass(person.apr)}">${formatPercent(person.apr)}</strong><br>
                 M-2: <strong class="${salesStatusClass(person.mar)}">${formatPercent(person.mar)}</strong><br>
@@ -3931,6 +3805,7 @@
 
       function renderStaffTable() {
         const query = elements.searchInput.value.trim().toLowerCase();
+        const selectedAssessmentDate = elements.assessmentDateFilter.value;
         const rows = staff.filter((person) => {
           const assessment = state.assessments[person.staffId] || {};
           const assessmentMatch = hasAssessment(person);
@@ -3938,12 +3813,13 @@
           const positionMatch = elements.positionFilter.value === "All" || person.position === elements.positionFilter.value;
           const brandMatch = elements.assessmentBrandFilter.value === "All" || person.brand === elements.assessmentBrandFilter.value;
           const floorMatch = elements.floorFilter.value === "All" || person.floor === elements.floorFilter.value;
+          const assessmentDateMatch = !selectedAssessmentDate || normalizeDateInput(assessment.assessmentDateTime) === selectedAssessmentDate;
           const queryMatch = !query || [person.therapist, person.staffId, person.team, person.center].join(" ").toLowerCase().includes(query);
-          return assessmentMatch && participationMatch && positionMatch && brandMatch && floorMatch && queryMatch;
+          return assessmentMatch && participationMatch && positionMatch && brandMatch && floorMatch && assessmentDateMatch && queryMatch;
         });
 
         if (!rows.length) {
-          const message = isLoading ? "甇?頛鞈?..." : "瘝?撌脣???隡啁?鈭箏蝚血??桀?蝭拚璇辣??;
+          const message = isLoading ? "正在載入資料..." : "沒有已完成評估的人員符合目前篩選條件。";
           elements.staffTable.innerHTML = `<tr><td colspan="11">${message}</td></tr>`;
           return;
         }
@@ -3954,10 +3830,10 @@
         const otherRows = rows.filter((person) => !["Y", "N", "C"].includes(participationValue(state.assessments[person.staffId])));
 
         elements.staffTable.innerHTML = [
-          renderAssessmentSection("憿???", "Agreed to participate", agreedRows, "agreed"),
-          renderAssessmentSection("?銝?, "Considering", consideringRows, "neutral"),
-          renderAssessmentSection("????", "Refused to participate", rejectedRows, "rejected"),
-          renderAssessmentSection("?芾身摰???憿?, "No participation value", otherRows, "neutral")
+          renderAssessmentSection("願意參與", "Agreed to participate", agreedRows, "agreed"),
+          renderAssessmentSection("考慮中", "Considering", consideringRows, "neutral"),
+          renderAssessmentSection("拒絕參與", "Refused to participate", rejectedRows, "rejected"),
+          renderAssessmentSection("未設定參與意願", "No participation value", otherRows, "neutral")
         ].join("");
       }
 
@@ -4008,7 +3884,7 @@
         return `
           <section class="history-card">
             <div class="history-card-head">
-              <h3>Record ${index + 1}${record.sourceRow ? ` 繚 Sheet row ${record.sourceRow}` : ""}</h3>
+              <h3>Record ${index + 1}${record.sourceRow ? ` · Sheet row ${record.sourceRow}` : ""}</h3>
               <span class="history-date-pill">${escapeHtml(recordDate)}</span>
             </div>
 
@@ -4132,7 +4008,7 @@
         elements.followUpDialog.dataset.mode = mode;
         elements.followUpRemarksLabel.textContent = mode === "first" ? "1st Follow up Remarks" : "2nd Follow Remarks";
         elements.followUpDateLabel.textContent = mode === "first" ? "1st Follow up Date" : "2nd Follow up Date";
-        elements.followUpRemarks.placeholder = mode === "first" ? "頛詨 1st follow-up remarks" : "頛詨 2nd follow-up remarks";
+        elements.followUpRemarks.placeholder = mode === "first" ? "輸入 1st follow-up remarks" : "輸入 2nd follow-up remarks";
         elements.followUpRemarks.value = mode === "first" ? (assessment.firstFollowUpRemarks || "") : (assessment.secondRemarks || "");
         elements.followUpDate.value = normalizeDateInput(mode === "first" ? assessment.firstAssessmentDate : assessment.secondCommitmentDate);
         elements.followUpDialog.showModal();
@@ -4150,7 +4026,7 @@
         const coaching = state.coaching[staffId] || {};
         elements.dialogTitle.textContent = `${person.therapist} | ${person.staffId}`;
         elements.coachStaffId.value = staffId;
-        elements.assessmentResult.value = coaching.result || "撌脫?????銝撅斤?";
+        elements.assessmentResult.value = coaching.result || "已準備晉升下一層級";
         elements.commitmentTarget.value = coaching.target || "";
         elements.coachNotes.value = coaching.notes || "";
         elements.dialog.showModal();
@@ -4198,15 +4074,15 @@
           return;
         }
         const target = tier === "as" ? 14 : 6;
-        const unit = tier === "as" ? "HC嚗???砌犖嚗? : "E1嚗???砌犖嚗?;
+        const unit = tier === "as" ? "HC（不包括本人）" : "E1（不包括本人）";
         const count = window.currentAssessmentCount || 0;
         const gap = Math.max(target - count, 0);
-        elements.assOfferGap.value = `?暹?嚗?{count}/${target} ${unit}?榆頝?${gap} ${unit}?;
+        elements.assOfferGap.value = `現時：${count}/${target} ${unit}。差距：${gap} ${unit}。`;
       }
 
       function tierLabel(value) {
-        if (value === "as") return "AS 撅斤? -> 1:14";
-        if (value === "tl") return "Team Leader 撅斤? -> 1:6";
+        if (value === "as") return "AS 層級 -> 1:14";
+        if (value === "tl") return "Team Leader 層級 -> 1:6";
         return "";
       }
 
@@ -4244,13 +4120,13 @@
 
       async function ensureAppsScriptReachable() {
         if (!SHEET_CONFIG.appsScriptUrl) {
-          throw new Error("?芾身摰?Apps Script URL??);
+          throw new Error("未設定 Apps Script URL。");
         }
 
         try {
           await loadAppsScriptRows(SHEET_CONFIG.sheetName);
         } catch (error) {
-          throw new Error("Apps Script URL ?⊥????嚗??身摰?Apps Script URL?票銝???Web App /exec ???敺?閰艾?);
+          throw new Error("Apps Script URL 無法連線，請按「設定 Apps Script URL」貼上最新 Web App /exec 連結後再試。");
         }
       }
 
@@ -4262,7 +4138,7 @@
         });
 
         if (!confirmation || !confirmation.found) {
-          throw new Error(`Drive ?芣?啣歇銝?瑼?嚗?{fileName}??蝣箄? Apps Script 撌脤蝵脫??啁??穿?銝行?閰?Drive folder 甈??);
+          throw new Error(`Drive 未找到已上載檔案：${fileName}。請確認 Apps Script 已部署最新版本，並有該 Drive folder 權限。`);
         }
 
         return confirmation.file;
@@ -4355,10 +4231,10 @@
               const uploadedFile = await confirmSignedFormUploaded(signedFormFileName);
               nextRecord.signedFormUrl = uploadedFile.url;
               nextRecord.signedFormFileId = uploadedFile.id;
-              alert("撌脰?鈭斗?隞嗚?);
+              alert("已補交文件。");
             } catch (confirmError) {
-              console.warn("鋆漱?辣敺?賜Ⅱ隤?Drive 瑼?嚗?, confirmError);
-              alert("撌脰???鈭斗?隞塚?Drive 瑼?撠蝣箄???);
+              console.warn("補交文件後未能確認 Drive 檔案：", confirmError);
+              alert("已記錄補交文件；Drive 檔案尚未確認。");
             }
 
             state.assessments[staffId] = nextRecord;
@@ -4367,8 +4243,8 @@
             saveJson("programAssessmentHistory", state.assessmentHistory);
             renderAll();
           } catch (error) {
-            console.error("鋆漱?辣憭望?嚗?, error);
-            alert(error.message || "鋆漱?辣憭望???);
+            console.error("補交文件失敗：", error);
+            alert(error.message || "補交文件失敗。");
           }
         }, { once: true });
         input.click();
@@ -4378,18 +4254,18 @@
         const button = elements.testSignedUpload;
         const originalText = button.textContent;
         button.disabled = true;
-        button.textContent = "皜祈岫銝?..";
-        setUploadStatus("甇?閬? Apps Script 撱箇?皜祈岫瑼?...");
+        button.textContent = "測試中...";
+        setUploadStatus("正在要求 Apps Script 建立測試檔案...");
 
         try {
           const result = await callAppsScriptJsonp({ action: "testUpload" });
-          if (!result || !result.file) throw new Error("Apps Script ?芸??單葫閰行?獢???);
-          setUploadStatus(`??嚗?{result.file.name}`);
-          alert(`Drive 銝?皜祈岫??嚗?{result.file.name}`);
+          if (!result || !result.file) throw new Error("Apps Script 未回傳測試檔案資料。");
+          setUploadStatus(`成功：${result.file.name}`);
+          alert(`Drive 上載測試成功：${result.file.name}`);
         } catch (error) {
-          console.error("Drive 銝?皜祈岫憭望?嚗?, error);
-          setUploadStatus("皜祈岫憭望?");
-          alert(error.message || "Drive 銝?皜祈岫憭望?嚗?瑼Ｘ Apps Script ?函蔡????);
+          console.error("Drive 上載測試失敗：", error);
+          setUploadStatus("測試失敗");
+          alert(error.message || "Drive 上載測試失敗，請檢查 Apps Script 部署與權限。");
         } finally {
           button.disabled = false;
           button.textContent = originalText;
@@ -4407,13 +4283,13 @@
 
         updateOfferGap();
 
-        // 閮?閬?璅榆頝???閬芋鞈?
+        // 計算要送出的目標差距與團隊規模資料
         const tier = elements.assTargetTier.value;
         const targetTeamSize = tier === "as" ? 14 : (tier === "tl" ? 6 : 0);
         const currentTeamSize = count || 0;
         const offerTarget = Math.max(targetTeamSize - currentTeamSize, 0);
 
-        // ?Ｙ??曉?????交?摮葡
+        // 產生現在的時間與日期字串
         const now = new Date();
         const enrollDate = now.getFullYear() + '-' +
             String(now.getMonth() + 1).padStart(2, '0') + '-' +
@@ -4450,26 +4326,26 @@
           updatedAt: new Date().toISOString()
         };
 
-        // UI ???憿舐內?脣?銝?
+        // UI 狀態：顯示儲存中
         const submitBtn = e.target.querySelector('button[type="submit"]');
         const originalText = submitBtn.textContent;
-        submitBtn.textContent = "甇?瑼Ｘ Apps Script...";
+        submitBtn.textContent = "正在檢查 Apps Script...";
         submitBtn.disabled = true;
 
         try {
           await ensureAppsScriptReachable();
-          submitBtn.textContent = signedFile ? "甇?銝?蝪賜蔡銵冽..." : "甇??郊??Google 銵冽...";
+          submitBtn.textContent = signedFile ? "正在上載簽署表格..." : "正在同步至 Google 表格...";
           setUploadStatus(
             signedFile
-              ? "甇?銝?蝪賜蔡銵冽..."
+              ? "正在上載簽署表格..."
               : (willingJoin === "Y"
-                ? "撠蝪賜蔡?辣嚗??脣?閰摯??
+                ? "尚未簽署文件，先儲存評估。"
                 : willingJoin === "N"
-                  ? "?豢? N嚗???頛偷蝵脰”?潦?
-                  : "?豢??銝哨??摮?隡啜?)
+                  ? "選擇 N，毋須上載簽署表格。"
+                  : "選擇考慮中，先儲存評估。")
           );
 
-          // 2. ?? POST ?喲 Google Apps Script 撖怠 enrollment detail ??
+          // 2. 透過 POST 傳送至 Google Apps Script 寫入 enrollment detail 分頁
           if (SHEET_CONFIG.appsScriptUrl) {
             const payload = {
               action: signedFile ? "saveAssessment" : "saveAssessmentPendingSignature",
@@ -4504,7 +4380,7 @@
 
             await fetch(SHEET_CONFIG.appsScriptUrl, {
               method: "POST",
-              mode: "no-cors", // 銝?楊蝬脣?閬?
+              mode: "no-cors", // 不阻擋跨網域要求
               headers: {
                 "Content-Type": "text/plain;charset=utf-8", 
               },
@@ -4514,19 +4390,19 @@
 
           let uploadedFile = null;
           if (signedFile) {
-            submitBtn.textContent = "甇?蝣箄? Drive 瑼?...";
-            setUploadStatus("甇?蝣箄? Drive 瑼?...");
+            submitBtn.textContent = "正在確認 Drive 檔案...";
+            setUploadStatus("正在確認 Drive 檔案...");
             try {
               uploadedFile = await confirmSignedFormUploaded(signedFormFileName);
               assessmentData.signedFormUrl = uploadedFile.url;
               assessmentData.signedFormFileId = uploadedFile.id;
             } catch (confirmError) {
-              console.warn("Drive 瑼?蝣箄?憭望?嚗?隡唳??誑撠蝪賜蔡?辣?脣?嚗?, confirmError);
-              setUploadStatus("撌脣摮?隡堆?Drive 瑼?撠蝣箄???);
+              console.warn("Drive 檔案確認失敗，評估會先以尚未簽署文件儲存：", confirmError);
+              setUploadStatus("已儲存評估；Drive 檔案尚未確認。");
             }
           }
 
-          // 3. ?垢閬??敺??湔?砍????踹?憯?URL ??Ｚ炊璅撌脣???
+          // 3. 遠端要求送出後才更新本地狀態，避免壞 URL 時畫面誤標為已完成。
           state.assessments[staffId] = assessmentData;
           state.assessmentHistory[staffId] = [assessmentData, ...(state.assessmentHistory[staffId] || [])];
           saveJson("programAssessments", state.assessments);
@@ -4534,27 +4410,27 @@
 
           setUploadStatus(
             uploadedFile
-              ? `撌脖?頛?${uploadedFile.name}`
+              ? `已上載：${uploadedFile.name}`
               : (willingJoin === "Y"
-                ? "撌脣摮?撠蝪賜蔡?辣??
+                ? "已儲存：尚未簽署文件。"
                 : willingJoin === "N"
-                  ? "撌脣摮??豢? N嚗???頛?獢?
-                  : "撌脣摮??豢??銝准?)
+                  ? "已儲存：選擇 N，沒有上載檔案。"
+                  : "已儲存：選擇考慮中。")
           );
           closeAssessmentForm();
         } catch (error) {
-          console.error("?郊?唾岫蝞”??隤歹?", error);
-          setUploadStatus("銝?憭望?");
-          alert(error.message || "銝?憭望?嚗?瑼Ｘ Apps Script URL ??Google Drive 甈?敺?閰艾?);
+          console.error("同步至試算表時發生錯誤：", error);
+          setUploadStatus("上載失敗");
+          alert(error.message || "上載失敗，請檢查 Apps Script URL 或 Google Drive 權限後再試。");
         } finally {
-          // ?? UI 銝阡??”??
+          // 還原 UI 並關閉表單
           submitBtn.textContent = originalText;
           submitBtn.disabled = false;
         }
       });
 
       function bindEvents() {
-        // 閫貊???湔?????湔銝剖???撅文?銵?
+        // 觸發品牌更改時，動態更新中心及樓層列表
         [
           elements.brandFilter,
           elements.assessmentBrandFilter
@@ -4571,7 +4447,8 @@
           elements.performanceStatusFilter,
           elements.participationFilter,
           elements.positionFilter,
-          elements.floorFilter
+          elements.floorFilter,
+          elements.assessmentDateFilter
         ].forEach((element) => element.addEventListener("change", renderAll));
 
         elements.performanceMetricFilter.addEventListener("change", (event) => {
@@ -4598,7 +4475,7 @@
         elements.searchInput.addEventListener("input", renderStaffTable);
         elements.refreshData.addEventListener("click", loadStaffData);
         elements.setAppsScriptUrl.addEventListener("click", () => {
-          const nextUrl = window.prompt("?桀?撌脤??唳?摰?Apps Script URL????寧?虫???Web App URL嚗?鞎潔?嚗?, SHEET_CONFIG.appsScriptUrl);
+          const nextUrl = window.prompt("目前已連接到指定 Apps Script URL。如需改用另一個 Web App URL，請貼上：", SHEET_CONFIG.appsScriptUrl);
           if (nextUrl === null) return;
           SHEET_CONFIG.appsScriptUrl = nextUrl.trim();
           saveText("appsScriptUrl", SHEET_CONFIG.appsScriptUrl);
@@ -4606,16 +4483,9 @@
         });
 
         document.addEventListener("click", (event) => {
-          const metricRow = event.target.closest(".metric-row[data-metric-key]");
           const editButton = event.target.closest("[data-edit]");
-          const followUpButton = event.target.closest("[data-followup]");
           const historyButton = event.target.closest("[data-history]");
           const resubmitDocButton = event.target.closest("[data-resubmit-doc]");
-          const reviseDecisionButton = event.target.closest("[data-revise-decision]");
-          if (metricRow) {
-            openMetricDetail(metricRow.dataset.metricKey);
-            return;
-          }
           const branchButton = event.target.closest("[data-branch-toggle]");
           if (branchButton) {
             const branch = branchButton.closest(".org-tree, .team-branch");
@@ -4637,13 +4507,7 @@
             detailsButton.setAttribute("aria-expanded", String(isExpanded));
           }
           if (historyButton) openAssessmentHistory(historyButton.dataset.history);
-          if (followUpButton) openFollowUpDialog(followUpButton.dataset.followup);
           if (resubmitDocButton) resubmitSignedDocument(resubmitDocButton.dataset.resubmitDoc);
-          if (reviseDecisionButton) {
-            const staffId = reviseDecisionButton.dataset.reviseDecision;
-            const person = staff.find((item) => item.staffId === staffId);
-            if (person) openAssessmentForm(staffId, assessmentContextForPerson(person).suggestedTier, assessmentContextForPerson(person).currentCount);
-          }
           if (editButton) openCoachDialog(editButton.dataset.edit);
         });
 
@@ -4665,7 +4529,7 @@
           }
 
           if (!fileName) {
-            alert("?芣?撌脖?頛?蝝????);
+            alert("未有已上載合約連結。");
             return;
           }
 
@@ -4675,12 +4539,12 @@
           try {
             const result = await callAppsScriptJsonp({ action: "findSignedForm", name: fileName });
             if (!result || !result.found || !result.file || !result.file.url) {
-              throw new Error(`Drive ?芣?啣歇銝???嚗?{fileName}`);
+              throw new Error(`Drive 未找到已上載合約：${fileName}`);
             }
             window.open(result.file.url, "_blank", "noopener");
           } catch (error) {
-            console.error("??撌脖?頛?蝝仃??", error);
-            alert(error.message || "?芾??撌脖?頛?蝝?隢炎??Apps Script 甈???);
+            console.error("開啟已上載合約失敗：", error);
+            alert(error.message || "未能開啟已上載合約，請檢查 Apps Script 權限。");
           } finally {
             contractButton.textContent = originalText;
             contractButton.disabled = false;
@@ -4710,7 +4574,7 @@
           saveJson("programAssessmentHistory", state.assessmentHistory);
 
           const originalText = elements.saveFollowUp.textContent;
-          elements.saveFollowUp.textContent = "甇??郊...";
+          elements.saveFollowUp.textContent = "正在同步...";
           elements.saveFollowUp.disabled = true;
 
           try {
@@ -4740,7 +4604,7 @@
               });
             }
           } catch (error) {
-            console.error("?郊 follow-up ?唾岫蝞”??隤歹?", error);
+            console.error("同步 follow-up 至試算表時發生錯誤：", error);
           } finally {
             elements.saveFollowUp.textContent = originalText;
             elements.saveFollowUp.disabled = false;
@@ -4863,12 +4727,9 @@
       initFilters();
       bindEvents();
       renderAll();
-      setDataStatus("甇?頛鞈?...");
+      setDataStatus("正在載入資料...");
       loadStaffData();
       drawCampaignCanvas();
     </script>
   </body>
 </html>
-
-
-
