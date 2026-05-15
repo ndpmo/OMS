@@ -1141,28 +1141,6 @@
         color: var(--red) !important;
       }
 
-      .assessment-button {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 34px;
-        padding: 0 12px;
-        border: 1px solid rgba(242, 198, 106, 0.45);
-        border-radius: 8px;
-        color: #080915;
-        background: linear-gradient(135deg, var(--gold-soft), var(--gold));
-        font-size: 0.78rem;
-        font-weight: 850;
-        white-space: nowrap;
-        cursor: pointer;
-        border: none;
-        font-family: inherit;
-      }
-
-      .assessment-button:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-      }
 
       .assessment-label {
         display: inline-flex;
@@ -3687,7 +3665,6 @@
           <div class="personal-details">
             <div class="details-actions">
               <button class="details-toggle" type="button" aria-expanded="false">Performance Data</button>
-              ${alreadyAssessed ? "" : `<button type="button" class="assessment-button" onclick="openAssessmentForm('${person.staffId}', '${assessmentContext.suggestedTier || ''}', ${assessmentContext.currentCount || 0})">評估</button>`}
             </div>
             <div class="detail-panels">
               ${renderDetailGroup("個人資料", profileDetails)}
