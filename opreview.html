@@ -3715,7 +3715,7 @@
           actions.push(`<button class="secondary-button" type="button" data-resubmit-doc="${person.staffId}">補交文件</button>`);
         }
 
-        actions.push(`<button class="secondary-button" type="button" data-followup="${person.staffId}">Follow Up</button>`);
+        // Follow Up and Revise Decision buttons removed
 
         return `<div class="assessment-actions">${actions.join("")}</div>`;
       }
@@ -4476,7 +4476,6 @@
 
         document.addEventListener("click", (event) => {
           const editButton = event.target.closest("[data-edit]");
-          const followUpButton = event.target.closest("[data-followup]");
           const historyButton = event.target.closest("[data-history]");
           const resubmitDocButton = event.target.closest("[data-resubmit-doc]");
           const branchButton = event.target.closest("[data-branch-toggle]");
@@ -4500,7 +4499,6 @@
             detailsButton.setAttribute("aria-expanded", String(isExpanded));
           }
           if (historyButton) openAssessmentHistory(historyButton.dataset.history);
-          if (followUpButton) openFollowUpDialog(followUpButton.dataset.followup);
           if (resubmitDocButton) resubmitSignedDocument(resubmitDocButton.dataset.resubmitDoc);
           if (editButton) openCoachDialog(editButton.dataset.edit);
         });
