@@ -3465,9 +3465,9 @@
         const consideringTl = tlStaff.filter((person) => participationValue(assessmentByStaff.get(String(person.staffId || "").trim())) === "C").length;
         const consideringEligibleE1 = eligibleE1Staff.filter((person) => participationValue(assessmentByStaff.get(String(person.staffId || "").trim())) === "C").length;
 
-        const pendingAs = asStaff.filter((person) => !hasAssessment(person)).length;
-        const pendingTl = tlStaff.filter((person) => !hasAssessment(person)).length;
-        const pendingEligibleE1 = eligibleE1Staff.filter((person) => !hasAssessment(person)).length;
+        const pendingAs = metricPeopleByKey("pending_as").length;
+        const pendingTl = metricPeopleByKey("pending_tl").length;
+        const pendingEligibleE1 = metricPeopleByKey("pending_e1").length;
 
         elements.metricSignupTl.textContent = signedToTl;
         elements.metricSignupAs.textContent = signedToAs;
