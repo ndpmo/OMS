@@ -1466,6 +1466,25 @@
       .table-shell-top > div {
         height: 1px;
       }
+      .table-shell,
+      .table-shell-top {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255, 255, 255, 0.45) rgba(255, 255, 255, 0.12);
+      }
+      .table-shell::-webkit-scrollbar,
+      .table-shell-top::-webkit-scrollbar {
+        height: 12px;
+      }
+      .table-shell::-webkit-scrollbar-track,
+      .table-shell-top::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.12);
+        border-radius: 999px;
+      }
+      .table-shell::-webkit-scrollbar-thumb,
+      .table-shell-top::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.45);
+        border-radius: 999px;
+      }
 
       table {
         width: 100%;
