@@ -612,6 +612,27 @@
       .metric-filter-field {
         position: relative;
       }
+      .leader-controls .performance-status-field,
+      .leader-controls .metric-filter-field {
+        flex: 0 0 240px;
+      }
+      .leader-controls .performance-status-field {
+        order: 6;
+        flex-basis: 180px;
+      }
+      .leader-controls .metric-filter-field {
+        order: 5;
+        flex: 1 1 280px;
+        min-width: 280px;
+      }
+      .leader-controls .data-status {
+        order: 7;
+        flex: 1 1 100%;
+      }
+      .leader-controls .search-field {
+        order: 8;
+        flex: 1 1 100%;
+      }
 
       .metric-filter-field .metric-checkbox-group {
         width: 240px;
@@ -1432,6 +1453,18 @@
       .table-shell {
         overflow-x: auto;
         border-radius: 8px;
+      }
+      .table-shell-top {
+        position: sticky;
+        top: 0;
+        z-index: 8;
+        height: 14px;
+        margin-bottom: 6px;
+        overflow-x: auto;
+        overflow-y: hidden;
+      }
+      .table-shell-top > div {
+        height: 1px;
       }
 
       table {
@@ -2288,7 +2321,7 @@
             <p>以組織圖方式檢視團隊架構、領導比例及個人表現，找出梯隊缺口與具發展潛力的人才。</p>
           </div>
 
-          <div class="control-row" aria-label="Leader controls">
+          <div class="control-row leader-controls" aria-label="Leader controls">
             <label>
               品牌
               <select id="brandFilter"></select>
@@ -2323,7 +2356,7 @@
                 <label><input type="checkbox" value="m4"> M-4 Sales %</label>
               </div>
             </label>
-            <label>
+            <label class="performance-status-field">
               狀態
               <select id="performanceStatusFilter">
                 <option value="all">全部狀態</option>
@@ -2390,6 +2423,9 @@
           </div>
 
           <div class="table-shell">
+            <div class="table-shell table-shell-top" id="tableShellTop" aria-label="Horizontal scroll helper">
+              <div id="tableShellTopInner"></div>
+            </div>
             <table>
               <thead>
                 <tr>
@@ -3535,7 +3571,11 @@
           elements.metricDetailContent.innerHTML = `<div class="metric-detail-item"><strong>沒有人員</strong><span>-</span></div>`;
         } else {
           elements.metricDetailContent.innerHTML = people
-            .sort((a, b) => String(a.therapist || "").localeCompare(String(b.therapist || "")))
+            .sort((a, b) =>
+              String(a.brand || "").localeCompare(String(b.brand || "")) ||
+              String(a.floor || a.center || "").localeCompare(String(b.floor || b.center || "")) ||
+              String(a.therapist || "").localeCompare(String(b.therapist || ""))
+            )
             .map((person) => `<div class="metric-detail-item"><strong>${escapeHtml(person.therapist || "-")}</strong><span>${escapeHtml(person.floor || person.center || "-")}</span></div>`)
             .join("");
         }
@@ -4851,6 +4891,26 @@
         renderParticipationSummary();
         renderOrgChart();
         renderStaffTable();
+        syncAssessmentScrollbars();
+      }
+
+      function syncAssessmentScrollbars() {
+        const shell = document.querySelector(".table-shell:not(.table-shell-top)");
+        const table = shell?.querySelector("table");
+        const topBar = document.querySelector("#tableShellTop");
+        const topInner = document.querySelector("#tableShellTopInner");
+        if (!shell || !table || !topBar || !topInner) return;
+        topInner.style.width = `${table.scrollWidth}px`;
+
+        if (!topBar.dataset.bound) {
+          topBar.addEventListener("scroll", () => {
+            shell.scrollLeft = topBar.scrollLeft;
+          });
+          shell.addEventListener("scroll", () => {
+            topBar.scrollLeft = shell.scrollLeft;
+          });
+          topBar.dataset.bound = "1";
+        }
       }
 
       function formatMoneyOrDash(value) {
