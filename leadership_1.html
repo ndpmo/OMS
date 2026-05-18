@@ -3450,21 +3450,14 @@
 
       function renderMetrics() {
         const assessments = Object.values(state.assessments);
-        const agreed = assessments.filter((item) => participationValue(item) === "Y");
-        const signedToTl = agreed.filter((item) => item.targetTier === "tl").length;
-        const signedToAs = agreed.filter((item) => item.targetTier === "as").length;
-        const assessmentByStaff = new Map(assessments.map((item) => [String(item.staffId || "").trim(), item]));
-        const eligibleE1Staff = staff.filter((person) => normalizeRole(person.position) === "E1");
-        const asStaff = staff.filter((person) => normalizeRole(person.position) === "AS");
-        const tlStaff = staff.filter((person) => normalizeRole(person.position) === "TL");
-
-        const rejectAs = asStaff.filter((person) => participationValue(assessmentByStaff.get(String(person.staffId || "").trim())) === "N").length;
-        const rejectTl = tlStaff.filter((person) => participationValue(assessmentByStaff.get(String(person.staffId || "").trim())) === "N").length;
-        const rejectEligibleE1 = eligibleE1Staff.filter((person) => participationValue(assessmentByStaff.get(String(person.staffId || "").trim())) === "N").length;
-        const consideringAs = asStaff.filter((person) => participationValue(assessmentByStaff.get(String(person.staffId || "").trim())) === "C").length;
-        const consideringTl = tlStaff.filter((person) => participationValue(assessmentByStaff.get(String(person.staffId || "").trim())) === "C").length;
-        const consideringEligibleE1 = eligibleE1Staff.filter((person) => participationValue(assessmentByStaff.get(String(person.staffId || "").trim())) === "C").length;
-
+        const signedToTl = metricPeopleByKey("signup_tl").length;
+        const signedToAs = metricPeopleByKey("signup_as").length;
+        const rejectAs = metricPeopleByKey("reject_as").length;
+        const rejectTl = metricPeopleByKey("reject_tl").length;
+        const rejectEligibleE1 = metricPeopleByKey("reject_e1").length;
+        const consideringAs = metricPeopleByKey("consider_as").length;
+        const consideringTl = metricPeopleByKey("consider_tl").length;
+        const consideringEligibleE1 = metricPeopleByKey("consider_e1").length;
         const pendingAs = metricPeopleByKey("pending_as").length;
         const pendingTl = metricPeopleByKey("pending_tl").length;
         const pendingEligibleE1 = metricPeopleByKey("pending_e1").length;
@@ -3499,16 +3492,17 @@
         const byJoin = (person, value) => participationValue(withAssessment(person)) === value;
         const byRole = (role) => staff.filter((person) => normalizeRole(person.position) === role);
         const byE1Eligible = () => staff.filter(isEligibleE1);
+        const byTargetTier = (tier) => staff.filter((person) => String(withAssessment(person)?.targetTier || "").trim().toLowerCase() === tier);
 
         const map = {
-          signup_tl: byRole("TL").filter((person) => byJoin(person, "Y")),
-          signup_as: byRole("AS").filter((person) => byJoin(person, "Y")),
+          signup_tl: byTargetTier("tl").filter((person) => byJoin(person, "Y")),
+          signup_as: byTargetTier("as").filter((person) => byJoin(person, "Y")),
           reject_as: byRole("AS").filter((person) => byJoin(person, "N")),
           reject_tl: byRole("TL").filter((person) => byJoin(person, "N")),
-          reject_e1: byE1Eligible().filter((person) => byJoin(person, "N")),
+          reject_e1: byRole("E1").filter((person) => byJoin(person, "N")),
           consider_as: byRole("AS").filter((person) => byJoin(person, "C")),
           consider_tl: byRole("TL").filter((person) => byJoin(person, "C")),
-          consider_e1: byE1Eligible().filter((person) => byJoin(person, "C")),
+          consider_e1: byRole("E1").filter((person) => byJoin(person, "C")),
           pending_as: byRole("AS").filter((person) => !hasAssessment(person) && Number(person.apr) >= 100 && Number(person.mar) >= 100),
           pending_tl: byRole("TL").filter((person) => !hasAssessment(person) && Number(person.apr) >= 100 && Number(person.mar) >= 100),
           pending_e1: byE1Eligible().filter((person) => !hasAssessment(person))
