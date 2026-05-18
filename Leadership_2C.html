@@ -2222,7 +2222,7 @@
                 </div>
                 <div class="metric-row" data-metric-key="reject_e1">
                   <strong id="metricRejectEligibleE1">0</strong>
-                  <span>Eligible E1</span>
+                  <span>E1</span>
                 </div>
               </div>
               <div class="metric-card">
@@ -2237,7 +2237,7 @@
                 </div>
                 <div class="metric-row" data-metric-key="consider_e1">
                   <strong id="metricConsideringEligibleE1">0</strong>
-                  <span>Eligible E1</span>
+                  <span>E1</span>
                 </div>
               </div>
               <div class="metric-card">
@@ -2748,6 +2748,15 @@
         historyTitle: document.querySelector("#historyTitle"),
         historyContent: document.querySelector("#historyContent")
       };
+      let renderFrameId = null;
+
+      function scheduleRenderAll() {
+        if (renderFrameId !== null) return;
+        renderFrameId = requestAnimationFrame(() => {
+          renderFrameId = null;
+          renderAll();
+        });
+      }
 
       function loadJson(key, fallback) {
         try {
@@ -3445,20 +3454,16 @@
         const signedToTl = agreed.filter((item) => item.targetTier === "tl").length;
         const signedToAs = agreed.filter((item) => item.targetTier === "as").length;
         const assessmentByStaff = new Map(assessments.map((item) => [String(item.staffId || "").trim(), item]));
-        const eligibleE1Staff = staff.filter((person) =>
-          normalizeRole(person.position) === "E1" &&
-          Number(person.apr) >= 100 &&
-          Number(person.mar) >= 100
-        );
+        const eligibleE1Staff = staff.filter((person) => normalizeRole(person.position) === "E1");
         const asStaff = staff.filter((person) => normalizeRole(person.position) === "AS");
         const tlStaff = staff.filter((person) => normalizeRole(person.position) === "TL");
 
-        const rejectAs = asStaff.filter((person) => participationValue(assessmentByStaff.get(person.staffId)) === "N").length;
-        const rejectTl = tlStaff.filter((person) => participationValue(assessmentByStaff.get(person.staffId)) === "N").length;
-        const rejectEligibleE1 = eligibleE1Staff.filter((person) => participationValue(assessmentByStaff.get(person.staffId)) === "N").length;
-        const consideringAs = asStaff.filter((person) => participationValue(assessmentByStaff.get(person.staffId)) === "C").length;
-        const consideringTl = tlStaff.filter((person) => participationValue(assessmentByStaff.get(person.staffId)) === "C").length;
-        const consideringEligibleE1 = eligibleE1Staff.filter((person) => participationValue(assessmentByStaff.get(person.staffId)) === "C").length;
+        const rejectAs = asStaff.filter((person) => participationValue(assessmentByStaff.get(String(person.staffId || "").trim())) === "N").length;
+        const rejectTl = tlStaff.filter((person) => participationValue(assessmentByStaff.get(String(person.staffId || "").trim())) === "N").length;
+        const rejectEligibleE1 = eligibleE1Staff.filter((person) => participationValue(assessmentByStaff.get(String(person.staffId || "").trim())) === "N").length;
+        const consideringAs = asStaff.filter((person) => participationValue(assessmentByStaff.get(String(person.staffId || "").trim())) === "C").length;
+        const consideringTl = tlStaff.filter((person) => participationValue(assessmentByStaff.get(String(person.staffId || "").trim())) === "C").length;
+        const consideringEligibleE1 = eligibleE1Staff.filter((person) => participationValue(assessmentByStaff.get(String(person.staffId || "").trim())) === "C").length;
 
         const pendingAs = asStaff.filter((person) => !hasAssessment(person)).length;
         const pendingTl = tlStaff.filter((person) => !hasAssessment(person)).length;
@@ -3487,7 +3492,10 @@
 
       function metricPeopleByKey(metricKey) {
         const assessments = state.assessments || {};
-        const withAssessment = (person) => assessments[person.staffId] || null;
+        const withAssessment = (person) => {
+          const key = String(person?.staffId || "").trim();
+          return assessments[key] || null;
+        };
         const byJoin = (person, value) => participationValue(withAssessment(person)) === value;
         const byRole = (role) => staff.filter((person) => normalizeRole(person.position) === role);
         const byE1Eligible = () => staff.filter(isEligibleE1);
@@ -3501,8 +3509,8 @@
           consider_as: byRole("AS").filter((person) => byJoin(person, "C")),
           consider_tl: byRole("TL").filter((person) => byJoin(person, "C")),
           consider_e1: byE1Eligible().filter((person) => byJoin(person, "C")),
-          pending_as: byRole("AS").filter((person) => !hasAssessment(person)),
-          pending_tl: byRole("TL").filter((person) => !hasAssessment(person)),
+          pending_as: byRole("AS").filter((person) => !hasAssessment(person) && Number(person.apr) >= 100 && Number(person.mar) >= 100),
+          pending_tl: byRole("TL").filter((person) => !hasAssessment(person) && Number(person.apr) >= 100 && Number(person.mar) >= 100),
           pending_e1: byE1Eligible().filter((person) => !hasAssessment(person))
         };
 
@@ -3515,10 +3523,10 @@
           signup_as: "Sign Up · 1:14",
           reject_as: "Rejected · AS",
           reject_tl: "Rejected · TL",
-          reject_e1: "Rejected · Eligible E1",
+          reject_e1: "Rejected · E1",
           consider_as: "Considering · AS",
           consider_tl: "Considering · TL",
-          consider_e1: "Considering · Eligible E1",
+          consider_e1: "Considering · E1",
           pending_as: "Not Yet Assessed · AS",
           pending_tl: "Not Yet Assessed · TL",
           pending_e1: "Not Yet Assessed · Eligible E1"
@@ -4652,7 +4660,7 @@
           elements.participationFilter,
           elements.positionFilter,
           elements.floorFilter
-        ].forEach((element) => element.addEventListener("change", renderAll));
+        ].forEach((element) => element.addEventListener("change", scheduleRenderAll));
 
         elements.performanceMetricFilter.addEventListener("change", (event) => {
           const checkboxes = Array.from(elements.performanceMetricFilter.querySelectorAll('input[type="checkbox"]'));
@@ -4671,7 +4679,7 @@
             allBox.checked = true;
           }
 
-          renderAll();
+          scheduleRenderAll();
         });
         
         elements.leaderSearchInput.addEventListener("input", renderOrgChart);
