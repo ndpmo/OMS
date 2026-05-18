@@ -3408,7 +3408,7 @@
           ? ["thisMonth", "m1", "m2", "m3", "m4"]
           : selectedMetrics;
 
-        return metrics.every((metricKey) => {
+        return metrics.some((metricKey) => {
           const value = performanceValue(person, metricKey);
           if (!Number.isFinite(value)) return false;
           if (status === "all") return true;
