@@ -2417,6 +2417,7 @@
                 <label><input type="checkbox" value="m2"> M-2 Sales %</label>
                 <label><input type="checkbox" value="m3"> M-3 Sales %</label>
                 <label><input type="checkbox" value="m4"> M-4 Sales %</label>
+                <label><input type="checkbox" value="past4Any2"> Any 2 of M-1 to M-4</label>
               </div>
             </label>
             <label class="performance-status-field">
@@ -3514,16 +3515,30 @@
         const useAllMetrics = selectedMetrics.length === 0 || selectedMetrics.includes("all");
         if (useAllMetrics && status === "all") return true;
 
+        if (selectedMetrics.includes("past4Any2")) {
+          return pastFourMatchingCount(person, status) >= 2;
+        }
+
         const metrics = useAllMetrics
           ? ["thisMonth", "m1", "m2", "m3", "m4"]
           : selectedMetrics;
 
         return metrics.some((metricKey) => {
           const value = performanceValue(person, metricKey);
-          if (!Number.isFinite(value)) return false;
-          if (status === "all") return true;
-          return salesStatusKey(value) === status;
+          return matchesPerformanceStatus(value, status);
         });
+      }
+
+      function matchesPerformanceStatus(value, status) {
+        if (!Number.isFinite(value)) return false;
+        if (status === "all") return true;
+        return salesStatusKey(value) === status;
+      }
+
+      function pastFourMatchingCount(person, status) {
+        return ["m1", "m2", "m3", "m4"].filter((metricKey) =>
+          matchesPerformanceStatus(performanceValue(person, metricKey), status)
+        ).length;
       }
 
       function performanceValue(person, metricKey) {
@@ -3548,15 +3563,26 @@
           m1: "M-1",
           m2: "M-2",
           m3: "M-3",
-          m4: "M-4"
+          m4: "M-4",
+          past4Any2: "Any 2"
         };
         const selected = selectedPerformanceMetrics().filter((metric) => metric !== "all");
+        const status = elements.performanceStatusFilter.value;
+        if (selected.includes("past4Any2")) {
+          const count = pastFourMatchingCount(person, status);
+          return {
+            label: "Past 4",
+            text: `${count}/4`,
+            statusValue: count >= 2 ? 100 : 0
+          };
+        }
         const metricKey = selected[0] || "thisMonth";
         const suffix = selected.length > 1 ? ` +${selected.length - 1}` : "";
         const value = performanceValue(person, metricKey);
         return {
           label: `${metricLabels[metricKey] || "銷售"}${suffix}`,
-          value
+          text: formatPercent(value),
+          statusValue: value
         };
       }
 
@@ -3566,7 +3592,8 @@
           m1: "M-1 Sales %",
           m2: "M-2 Sales %",
           m3: "M-3 Sales %",
-          m4: "M-4 Sales %"
+          m4: "M-4 Sales %",
+          past4Any2: "Any 2 of M-1 to M-4"
         };
         const selected = selectedPerformanceMetrics();
         if (!selected.length || selected.includes("all")) {
@@ -3919,7 +3946,7 @@
               <small>${person.position} | ${person.staffId}</small>
             </div>
             <div class="mini-kpis">
-              <span class="${salesStatusClass(performanceDisplay.value)}">${performanceDisplay.label} ${formatPercent(performanceDisplay.value)}</span>
+              <span class="${salesStatusClass(performanceDisplay.statusValue)}">${performanceDisplay.label} ${performanceDisplay.text}</span>
             </div>
             ${titleMismatchLabel(person)}
             ${assessmentLabel(person)}
@@ -3943,7 +3970,7 @@
               <small>${contextLine}</small>
             </div>
             <div class="mini-kpis">
-              <span class="${salesStatusClass(performanceDisplay.value)}">${performanceDisplay.label} ${formatPercent(performanceDisplay.value)}</span>
+              <span class="${salesStatusClass(performanceDisplay.statusValue)}">${performanceDisplay.label} ${performanceDisplay.text}</span>
             </div>
             ${titleMismatchLabel(person)}
             ${assessmentLabel(person)}
@@ -4802,12 +4829,19 @@
           const checkboxes = Array.from(elements.performanceMetricFilter.querySelectorAll('input[type="checkbox"]'));
           const allBox = checkboxes.find((input) => input.value === "all");
           const metricBoxes = checkboxes.filter((input) => input.value !== "all");
+          const anyTwoBox = checkboxes.find((input) => input.value === "past4Any2");
           const changed = event.target;
 
           if (changed.value === "all" && changed.checked) {
             metricBoxes.forEach((input) => { input.checked = false; });
+          } else if (changed.value === "past4Any2" && changed.checked) {
+            metricBoxes.forEach((input) => {
+              if (input.value !== "past4Any2") input.checked = false;
+            });
+            if (allBox) allBox.checked = false;
           } else if (changed.value !== "all" && changed.checked && allBox) {
             allBox.checked = false;
+            if (anyTwoBox && changed.value !== "past4Any2") anyTwoBox.checked = false;
           }
 
           const selectedMetricCount = metricBoxes.filter((input) => input.checked).length;
@@ -5129,6 +5163,3 @@
     </script>
   </body>
 </html>
-
-
-
