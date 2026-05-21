@@ -597,20 +597,9 @@
         flex: 1;
       }
 
-      .metric-checkbox-group {
-        display: grid;
-        gap: 6px;
-        max-height: 44px;
-        overflow: hidden;
-        padding: 10px 12px;
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        background: rgba(255, 255, 255, 0.055);
-        transition: max-height 140ms ease;
-      }
-
       .metric-filter-field {
         position: relative;
+        min-width: 240px;
       }
       .leader-controls .performance-status-field,
       .leader-controls .metric-filter-field {
@@ -634,20 +623,60 @@
         flex: 1 1 100%;
       }
 
-      .metric-filter-field .metric-checkbox-group {
-        width: 240px;
+      .metric-filter-toggle {
+        width: 100%;
+        height: 44px;
+        padding: 0 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        color: var(--text);
+        background: rgba(255, 255, 255, 0.08);
+        font: inherit;
+        text-align: left;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        cursor: pointer;
       }
 
-      .metric-filter-field .metric-checkbox-group:focus-within,
-      .metric-filter-field:hover .metric-checkbox-group {
-        max-height: 210px;
+      .metric-filter-toggle:focus {
+        border-color: var(--gold);
+        box-shadow: 0 0 0 3px rgba(242, 198, 106, 0.15);
+        outline: none;
+      }
+
+      .metric-filter-summary {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+      }
+
+      .metric-filter-caret {
+        color: var(--muted);
+        font-size: 0.85rem;
+        flex: 0 0 auto;
+      }
+
+      .metric-checkbox-group {
+        display: none;
+        gap: 6px;
+        width: 100%;
+        max-height: 220px;
         overflow: auto;
         padding: 8px 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #151735;
         position: absolute;
         top: calc(100% + 4px);
         left: 0;
         z-index: 30;
         box-shadow: var(--shadow);
+      }
+
+      .metric-filter-field.is-open .metric-checkbox-group {
+        display: grid;
       }
 
       .metric-checkbox-group label {
@@ -2366,6 +2395,10 @@
             </label>
             <label class="metric-filter-field">
               銷售表現
+              <button id="performanceMetricToggle" class="metric-filter-toggle" type="button" aria-expanded="false" aria-controls="performanceMetricFilter">
+                <span id="performanceMetricSummary" class="metric-filter-summary">全部指標</span>
+                <span class="metric-filter-caret">▼</span>
+              </button>
               <div id="performanceMetricFilter" class="metric-checkbox-group">
                 <label><input type="checkbox" value="all" checked> 全部指標</label>
                 <label><input type="checkbox" value="thisMonth"> 本月銷售 %</label>
@@ -2736,6 +2769,8 @@
         leaderPositionFilter: document.querySelector("#leaderPositionFilter"),
         hrPositionFilter: document.querySelector("#hrPositionFilter"),
         viewFilter: document.querySelector("#viewFilter"),
+        performanceMetricToggle: document.querySelector("#performanceMetricToggle"),
+        performanceMetricSummary: document.querySelector("#performanceMetricSummary"),
         performanceMetricFilter: document.querySelector("#performanceMetricFilter"),
         performanceStatusFilter: document.querySelector("#performanceStatusFilter"),
         leaderSearchInput: document.querySelector("#leaderSearchInput"),
@@ -3496,6 +3531,41 @@
           .map((input) => input.value);
       }
 
+      function activePerformanceDisplay(person) {
+        const metricLabels = {
+          thisMonth: "本月",
+          m1: "M-1",
+          m2: "M-2",
+          m3: "M-3",
+          m4: "M-4"
+        };
+        const selected = selectedPerformanceMetrics().filter((metric) => metric !== "all");
+        const metricKey = selected[0] || "thisMonth";
+        const suffix = selected.length > 1 ? ` +${selected.length - 1}` : "";
+        const value = performanceValue(person, metricKey);
+        return {
+          label: `${metricLabels[metricKey] || "銷售"}${suffix}`,
+          value
+        };
+      }
+
+      function updatePerformanceMetricSummary() {
+        const labels = {
+          thisMonth: "本月銷售 %",
+          m1: "M-1 Sales %",
+          m2: "M-2 Sales %",
+          m3: "M-3 Sales %",
+          m4: "M-4 Sales %"
+        };
+        const selected = selectedPerformanceMetrics();
+        if (!selected.length || selected.includes("all")) {
+          elements.performanceMetricSummary.textContent = "全部指標";
+          return;
+        }
+        const text = selected.map((key) => labels[key]).filter(Boolean).join(" + ");
+        elements.performanceMetricSummary.textContent = text || "全部指標";
+      }
+
       function isPerformanceFilterActive() {
         const selectedMetrics = selectedPerformanceMetrics();
         const metricsNotAll = !(selectedMetrics.length === 0 || selectedMetrics.includes("all"));
@@ -3829,6 +3899,7 @@
       }
 
       function renderTherapistNode(person) {
+        const performanceDisplay = activePerformanceDisplay(person);
         return `
           <div class="therapist-node ${isFlagged(person) ? "is-flagged" : ""} ${person.misMismatch ? "mismatch" : ""}">
             <span class="node-dot" aria-hidden="true"></span>
@@ -3837,7 +3908,7 @@
               <small>${person.position} | ${person.staffId}</small>
             </div>
             <div class="mini-kpis">
-              <span class="${salesStatusClass(person.mayMtd ?? salesPercent(person))}">銷售 ${formatPercent(person.mayMtd ?? salesPercent(person))}</span>
+              <span class="${salesStatusClass(performanceDisplay.value)}">${performanceDisplay.label} ${formatPercent(performanceDisplay.value)}</span>
             </div>
             ${titleMismatchLabel(person)}
             ${assessmentLabel(person)}
@@ -3852,6 +3923,7 @@
       function renderCompactPersonNode(person) {
         const context = assessmentContextForPerson(person);
         const contextLine = [person.position, person.staffId, person.center].filter(Boolean).join(" | ");
+        const performanceDisplay = activePerformanceDisplay(person);
         return `
           <div class="therapist-node ${isFlagged(person) ? "is-flagged" : ""} ${person.misMismatch ? "mismatch" : ""}">
             <span class="node-dot" aria-hidden="true"></span>
@@ -3860,7 +3932,7 @@
               <small>${contextLine}</small>
             </div>
             <div class="mini-kpis">
-              <span class="${salesStatusClass(person.mayMtd ?? salesPercent(person))}">銷售 ${formatPercent(person.mayMtd ?? salesPercent(person))}</span>
+              <span class="${salesStatusClass(performanceDisplay.value)}">${performanceDisplay.label} ${formatPercent(performanceDisplay.value)}</span>
             </div>
             ${titleMismatchLabel(person)}
             ${assessmentLabel(person)}
@@ -4715,6 +4787,13 @@
           elements.floorFilter
         ].forEach((element) => element.addEventListener("change", scheduleRenderAll));
 
+        elements.performanceMetricToggle.addEventListener("click", (event) => {
+          event.stopPropagation();
+          const container = elements.performanceMetricToggle.closest(".metric-filter-field");
+          const isOpen = container.classList.toggle("is-open");
+          elements.performanceMetricToggle.setAttribute("aria-expanded", String(isOpen));
+        });
+
         elements.performanceMetricFilter.addEventListener("change", (event) => {
           const checkboxes = Array.from(elements.performanceMetricFilter.querySelectorAll('input[type="checkbox"]'));
           const allBox = checkboxes.find((input) => input.value === "all");
@@ -4732,6 +4811,7 @@
             allBox.checked = true;
           }
 
+          updatePerformanceMetricSummary();
           scheduleRenderAll();
         });
         
@@ -4748,6 +4828,12 @@
         });
 
         document.addEventListener("click", (event) => {
+          const metricFilterWrap = elements.performanceMetricToggle.closest(".metric-filter-field");
+          if (metricFilterWrap && !metricFilterWrap.contains(event.target)) {
+            metricFilterWrap.classList.remove("is-open");
+            elements.performanceMetricToggle.setAttribute("aria-expanded", "false");
+          }
+
           const metricRow = event.target.closest(".metric-row[data-metric-key]");
           const editButton = event.target.closest("[data-edit]");
           const followUpButton = event.target.closest("[data-followup]");
@@ -5031,6 +5117,7 @@
       syncDefaultFlags();
       initFilters();
       bindEvents();
+      updatePerformanceMetricSummary();
       renderAll();
       setDataStatus("正在載入資料...");
       loadStaffData();
@@ -5038,6 +5125,3 @@
     </script>
   </body>
 </html>
-
-
-
