@@ -112,6 +112,40 @@
       background: rgba(255, 214, 111, 0.08);
     }
 
+    .status-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-top: 10px;
+    }
+
+    .connection-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border: 1px solid rgba(255, 214, 111, 0.34);
+      border-radius: 999px;
+      padding: 6px 12px;
+      color: #ffe8a8;
+      background: rgba(16, 8, 20, 0.58);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .connection-status::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ffd078;
+      box-shadow: 0 0 12px rgba(255, 208, 120, 0.7);
+    }
+
+    .connection-status.ok::before { background: #69ffba; box-shadow: 0 0 12px rgba(105, 255, 186, 0.7); }
+    .connection-status.error::before { background: #ff5f7e; box-shadow: 0 0 12px rgba(255, 95, 126, 0.7); }
+    .connection-status.loading::before { animation: pulseDot 1s ease-in-out infinite; }
+
     .key-visual {
       min-height: 310px;
       position: relative;
@@ -228,6 +262,10 @@
 
     @keyframes slowSpin {
       to { transform: rotate(360deg); }
+    }
+
+    @keyframes pulseDot {
+      50% { transform: scale(1.45); opacity: 0.55; }
     }
 
     .summary-grid {
@@ -405,7 +443,10 @@
           <div class="hero-kicker">美力連結任務｜每日 1 Head + 2 Tail</div>
           <h1>Fibolucci 每日挑戰戰績榜</h1>
           <p>每一次分享都在擴大信任網絡。追蹤全隊戰績、連勝獎章，讓每位美容師像闖關玩家一樣累積影響力。</p>
-          <div id="periodLine" class="period"></div>
+          <div class="status-row">
+            <div id="periodLine" class="period"></div>
+            <div id="connectionStatus" class="connection-status loading">連線檢查中</div>
+          </div>
         </div>
         <div class="key-visual" aria-hidden="true">
           <div class="spiral"></div>
@@ -454,17 +495,7 @@
 
   <script>
     const APPS_SCRIPT_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwWlQIj3BJjtubusxrHvJRmq_hljPsGe2hftMHxzpHFeumte5TXXOKYeu1NSjkfvVV3/exec";
-    let rows = [
-      { therapist: "Amy", brand: "Aster Wellness", head: 21, tail: 42, notes: "示範玩家：每日任務穩定完成。" },
-      { therapist: "Brian", brand: "Aster Wellness", head: 18, tail: 36, notes: "示範玩家：距離滿分只差幾步。" },
-      { therapist: "Cindy", brand: "Aster Wellness", head: 21, tail: 40, notes: "示範玩家：Head 滿分，Tail 接近達標。" },
-      { therapist: "Derek", brand: "Bloom Clinic", head: 15, tail: 31, notes: "示範玩家：持續累積中。" },
-      { therapist: "Eva", brand: "Bloom Clinic", head: 20, tail: 41, notes: "示範玩家：高分挑戰者。" },
-      { therapist: "Felix", brand: "Bloom Clinic", head: 17, tail: 35, notes: "示範玩家：連勝潛力高。" },
-      { therapist: "Grace", brand: "Nova Skin", head: 21, tail: 42, notes: "示範玩家：滿分通關。" },
-      { therapist: "Hannah", brand: "Nova Skin", head: 19, tail: 38, notes: "示範玩家：穩定推進。" },
-      { therapist: "Iris", brand: "Nova Skin", head: 16, tail: 30, notes: "示範玩家：需要追分支援。" }
-    ];
+    let rows = [];
 
     const brandFilter = document.getElementById("brandFilter");
     const therapistFilter = document.getElementById("therapistFilter");
@@ -473,6 +504,7 @@
     const rewardGrid = document.getElementById("rewardGrid");
     const detailBox = document.getElementById("detailBox");
     const periodLine = document.getElementById("periodLine");
+    const connectionStatus = document.getElementById("connectionStatus");
 
     let challengeStart = new Date("2026-05-22T00:00:00");
     let challengeEnd = new Date("2026-06-17T23:59:59");
@@ -525,6 +557,11 @@
 
     function renderPeriod() {
       periodLine.textContent = `挑戰期間：${formatDate(challengeStart)} 至 ${formatDate(challengeEnd)}（星期日店休不計）`;
+    }
+
+    function setConnectionStatus(state, message) {
+      connectionStatus.className = `connection-status ${state}`;
+      connectionStatus.textContent = message;
     }
 
     function uniqueBrands() {
@@ -700,30 +737,53 @@
 
     async function loadFromAppsScript() {
       if (!APPS_SCRIPT_WEBAPP_URL || APPS_SCRIPT_WEBAPP_URL.includes("PASTE_YOUR_APPS_SCRIPT_WEBAPP_URL_HERE")) {
-        return;
+        rows = [];
+        setConnectionStatus("error", "未設定 Apps Script URL");
+        return false;
       }
-      const res = await fetch(`${APPS_SCRIPT_WEBAPP_URL}?action=challengeData`);
-      const data = await res.json();
-      if (!data.ok || !Array.isArray(data.rows)) return;
 
-      if (data.challengeStart) challengeStart = new Date(`${data.challengeStart}T00:00:00`);
-      if (data.challengeEnd) challengeEnd = new Date(`${data.challengeEnd}T23:59:59`);
+      setConnectionStatus("loading", "正在連接 Apps Script");
 
-      rows = data.rows.map(r => {
-        const headByDate = r.headByDate || {};
-        const tailByDate = r.tailByDate || {};
-        const head = Object.values(headByDate).reduce((a, v) => a + num(v), 0);
-        const tail = Object.values(tailByDate).reduce((a, v) => a + num(v), 0);
-        return {
-          therapist: r.therapist,
-          brand: r.brand,
-          head,
-          tail,
-          notes: `已連接 Google Sheet。Head 累計：${head}；Tail 累計：${tail}`,
-          headByDate,
-          tailByDate
-        };
-      });
+      try {
+        const res = await fetch(`${APPS_SCRIPT_WEBAPP_URL}?action=challengeData`);
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+        if (!data.ok) {
+          throw new Error(data.error || "Apps Script 回傳錯誤");
+        }
+        if (!Array.isArray(data.rows)) {
+          throw new Error("Apps Script 未回傳 rows 資料");
+        }
+
+        if (data.challengeStart) challengeStart = new Date(`${data.challengeStart}T00:00:00`);
+        if (data.challengeEnd) challengeEnd = new Date(`${data.challengeEnd}T23:59:59`);
+
+        rows = data.rows.map(r => {
+          const headByDate = r.headByDate || {};
+          const tailByDate = r.tailByDate || {};
+          const head = Object.values(headByDate).reduce((a, v) => a + num(v), 0);
+          const tail = Object.values(tailByDate).reduce((a, v) => a + num(v), 0);
+          return {
+            therapist: r.therapist,
+            brand: r.brand,
+            head,
+            tail,
+            notes: `已連接 Google Sheet。Head 累計：${head}；Tail 累計：${tail}`,
+            headByDate,
+            tailByDate
+          };
+        });
+
+        setConnectionStatus("ok", `已連接 Apps Script｜${rows.length} 位玩家`);
+        return true;
+      } catch (error) {
+        rows = [];
+        setConnectionStatus("error", `連線失敗：${error.message}`);
+        return false;
+      }
     }
 
     function refresh() {
