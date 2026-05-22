@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Fibolucci Daily Challenge Dashboard</title>
+  <title>Fibolucci 每日挑戰戰績榜</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Noto+Sans+TC:wght@400;600;700;900&display=swap" rel="stylesheet">
@@ -57,6 +57,14 @@
       line-height: 1.15;
       color: #fff4cf;
       text-shadow: 0 0 18px rgba(255, 185, 93, 0.5);
+    }
+
+    .hero-kicker {
+      display: inline-block;
+      margin-bottom: 8px;
+      color: var(--mint);
+      font-size: 13px;
+      font-weight: 900;
     }
 
     .hero p {
@@ -146,7 +154,7 @@
 
     .reward-head span { color: var(--muted); font-size: 13px; }
     .reward-grid { display: grid; grid-template-columns: repeat(4, minmax(150px, 1fr)); gap: 10px; }
-    .reward-card { border: 1px solid rgba(255, 214, 111, 0.28); border-radius: 10px; padding: 12px; background: rgba(9, 6, 28, 0.72); }
+    .reward-card { border: 1px solid rgba(255, 214, 111, 0.28); border-radius: 10px; padding: 12px; background: rgba(9, 6, 28, 0.72); box-shadow: inset 0 0 20px rgba(255, 214, 111, 0.08); }
     .reward-name { font-family: "Orbitron", sans-serif; font-size: 24px; color: #fff4cf; }
     .reward-criteria { margin-top: 4px; color: #dfd3ff; font-size: 12px; }
     .reward-count { margin-top: 10px; color: var(--mint); font-weight: 800; }
@@ -197,6 +205,7 @@
     .daily-label { color: #cdbdff; }
     .daily-mark { color: #6dffdc; font-weight: 800; }
     .empty { color: #7b6aa9; }
+    .level-badge { color: #ffe8a8; font-weight: 900; }
 
     .pill {
       display: inline-block;
@@ -234,52 +243,53 @@
 <body>
   <div class="container">
     <section class="hero">
-      <h1>Fibolucci Daily Challenge</h1>
-      <p>Top summary for management view, and bottom filter section to drill down by brand and therapist.</p>
+      <div class="hero-kicker">每日 1 Head + 2 Tail 任務</div>
+      <h1>Fibolucci 每日挑戰戰績榜</h1>
+      <p>查看全隊戰績、連勝獎章，並用品牌及美容師篩選每位玩家的每日闖關進度。</p>
       <div id="periodLine" class="period"></div>
       <div id="summaryGrid" class="summary-grid"></div>
     </section>
 
     <section class="reward-panel">
       <div class="reward-head">
-        <h2>Reward Criteria</h2>
-        <span>Based on consecutive days where Head and Tail both succeed</span>
+        <h2>獎章任務</h2>
+        <span>連續達成 Head + Tail 即可升級領獎</span>
       </div>
       <div id="rewardGrid" class="reward-grid"></div>
     </section>
 
-    <h2 class="section-title">By Brand / By Therapist Result</h2>
+    <h2 class="section-title">玩家闖關日曆</h2>
 
     <section class="filter-wrap">
       <div class="filter-row">
         <div class="field">
-          <label for="brandFilter">BRAND</label>
+          <label for="brandFilter">品牌</label>
           <select id="brandFilter"></select>
         </div>
         <div class="field">
-          <label for="therapistFilter">THERAPIST</label>
+          <label for="therapistFilter">美容師 / 玩家</label>
           <select id="therapistFilter"></select>
         </div>
       </div>
 
       <div id="boardWrap" class="board-wrap"></div>
 
-      <div id="detailBox" class="detail">Select a row to see individual therapist breakdown.</div>
+      <div id="detailBox" class="detail">點選玩家卡，即可查看連勝、獎章及 Head / Tail 明細。</div>
     </section>
   </div>
 
   <script>
     const APPS_SCRIPT_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwWlQIj3BJjtubusxrHvJRmq_hljPsGe2hftMHxzpHFeumte5TXXOKYeu1NSjkfvVV3/exec";
     let rows = [
-      { therapist: "Amy", brand: "Aster Wellness", head: 21, tail: 42, notes: "Strong referral sharing and daily consistency." },
-      { therapist: "Brian", brand: "Aster Wellness", head: 18, tail: 36, notes: "Great momentum, needs 3 more days to full score." },
-      { therapist: "Cindy", brand: "Aster Wellness", head: 21, tail: 40, notes: "Perfect Head, near-complete Tail target." },
-      { therapist: "Derek", brand: "Bloom Clinic", head: 15, tail: 31, notes: "Good effort, focus on daily discipline." },
-      { therapist: "Eva", brand: "Bloom Clinic", head: 20, tail: 41, notes: "High performer and stable contributor." },
-      { therapist: "Felix", brand: "Bloom Clinic", head: 17, tail: 35, notes: "Close to target; improve consistency." },
-      { therapist: "Grace", brand: "Nova Skin", head: 21, tail: 42, notes: "Model performer; ideal challenge behavior." },
-      { therapist: "Hannah", brand: "Nova Skin", head: 19, tail: 38, notes: "Solid progress with strong conversion." },
-      { therapist: "Iris", brand: "Nova Skin", head: 16, tail: 30, notes: "Needs support to improve daily completion." }
+      { therapist: "Amy", brand: "Aster Wellness", head: 21, tail: 42, notes: "示範玩家：每日任務穩定完成。" },
+      { therapist: "Brian", brand: "Aster Wellness", head: 18, tail: 36, notes: "示範玩家：距離滿分只差幾步。" },
+      { therapist: "Cindy", brand: "Aster Wellness", head: 21, tail: 40, notes: "示範玩家：Head 滿分，Tail 接近達標。" },
+      { therapist: "Derek", brand: "Bloom Clinic", head: 15, tail: 31, notes: "示範玩家：持續累積中。" },
+      { therapist: "Eva", brand: "Bloom Clinic", head: 20, tail: 41, notes: "示範玩家：高分挑戰者。" },
+      { therapist: "Felix", brand: "Bloom Clinic", head: 17, tail: 35, notes: "示範玩家：連勝潛力高。" },
+      { therapist: "Grace", brand: "Nova Skin", head: 21, tail: 42, notes: "示範玩家：滿分通關。" },
+      { therapist: "Hannah", brand: "Nova Skin", head: 19, tail: 38, notes: "示範玩家：穩定推進。" },
+      { therapist: "Iris", brand: "Nova Skin", head: 16, tail: 30, notes: "示範玩家：需要追分支援。" }
     ];
 
     const brandFilter = document.getElementById("brandFilter");
@@ -321,13 +331,13 @@
       const totalDays = challengeDays().length;
 
       const cards = [
-        { label: "Therapists", value: therapistCount, sub: "Active participants" },
-        { label: "Total Head", value: totalHead, sub: "Target = 21 each" },
-        { label: "Total Tail", value: totalTail, sub: "Target = 42 each" },
-        { label: "Total Action", value: totalAction, sub: "Head + Tail" },
-        { label: "Avg Completion", value: avgRate + "%", sub: "Across visible records" },
-        { label: "Full Completed", value: fullComplete, sub: "Reached 21 Head + 42 Tail" },
-        { label: "Open Days", value: totalDays, sub: "May 22, 2026 to June 17, 2026, Sundays excluded" }
+        { label: "參賽玩家", value: therapistCount, sub: "目前顯示人數" },
+        { label: "Head 戰績", value: totalHead, sub: "每人目標 21" },
+        { label: "Tail 戰績", value: totalTail, sub: "每人目標 42" },
+        { label: "總行動值", value: totalAction, sub: "Head + Tail" },
+        { label: "平均完成率", value: avgRate + "%", sub: "依目前篩選計算" },
+        { label: "滿分通關", value: fullComplete, sub: "達成 21 Head + 42 Tail" },
+        { label: "開店挑戰日", value: totalDays, sub: "2026/05/22 至 2026/06/17，星期日不計" }
       ];
 
       summaryGrid.innerHTML = cards.map(c => `
@@ -340,7 +350,7 @@
     }
 
     function renderPeriod() {
-      periodLine.textContent = `Challenge Period: ${formatDate(challengeStart)} to ${formatDate(challengeEnd)} (Sundays excluded)`;
+      periodLine.textContent = `挑戰期間：${formatDate(challengeStart)} 至 ${formatDate(challengeEnd)}（星期日店休不計）`;
     }
 
     function uniqueBrands() {
@@ -353,13 +363,13 @@
     }
 
     function fillFilters() {
-      brandFilter.innerHTML = ["ALL", ...uniqueBrands()].map(v => `<option value="${v}">${v === "ALL" ? "All Brands" : v}</option>`).join("");
+      brandFilter.innerHTML = ["ALL", ...uniqueBrands()].map(v => `<option value="${v}">${v === "ALL" ? "全部品牌" : v}</option>`).join("");
       refillTherapists();
     }
 
     function refillTherapists() {
       const list = uniqueTherapists(brandFilter.value || "ALL");
-      therapistFilter.innerHTML = ["ALL", ...list].map(v => `<option value="${v}">${v === "ALL" ? "All Therapists" : v}</option>`).join("");
+      therapistFilter.innerHTML = ["ALL", ...list].map(v => `<option value="${v}">${v === "ALL" ? "全部玩家" : v}</option>`).join("");
     }
 
     function getFilteredRows() {
@@ -450,31 +460,31 @@
 
     function renderRewards(data) {
       const criteria = [
-        { name: "Prize A", days: 3, level: "A" },
-        { name: "Prize B", days: 7, level: "B" },
-        { name: "Prize C", days: 14, level: "C" },
-        { name: "Prize D", days: 21, level: "D" }
+        { name: "銅章", days: 3, level: "A" },
+        { name: "銀章", days: 7, level: "B" },
+        { name: "金章", days: 14, level: "C" },
+        { name: "皇冠章", days: 21, level: "D" }
       ];
 
       rewardGrid.innerHTML = criteria.map((item) => {
         const winners = data.filter(r => bestSuccessStreak(r) >= item.days).length;
         return `<div class="reward-card">
           <div class="reward-name">${item.level}</div>
-          <div class="reward-criteria">${item.days} consecutive successful days</div>
-          <div class="reward-count">${winners} therapist${winners === 1 ? "" : "s"}</div>
+          <div class="reward-criteria">${item.name}｜連續 ${item.days} 個開店日達標</div>
+          <div class="reward-count">${winners} 位玩家已解鎖</div>
         </div>`;
       }).join("");
     }
 
     function renderTable(filtered) {
       if (!filtered.length) {
-        boardWrap.innerHTML = `<div class="detail">No records found for selected filters.</div>`;
-        detailBox.textContent = "No therapist selected.";
+        boardWrap.innerHTML = `<div class="detail">目前篩選沒有玩家資料。</div>`;
+        detailBox.textContent = "尚未選擇玩家。";
         return;
       }
 
       const days = challengeDays();
-      const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(day => `<div class="weekday">${day}</div>`).join("");
+      const weekdays = ["一", "二", "三", "四", "五", "六"].map(day => `<div class="weekday">星期${day}</div>`).join("");
       const cells = calendarCells(days);
       boardWrap.innerHTML = filtered.map((r, i) => {
         const headByDate = getHeadMap(r);
@@ -492,8 +502,9 @@
             <div class="daily-line"><span class="daily-label">Tail</span><span class="daily-mark ${tailOk ? "" : "empty"}">${tailOk ? "✓" : "○"} ${tailCount}/2</span></div>
           </div>`;
         }).join("");
+        const streak = bestSuccessStreak(r);
         return `<div class="player-card" data-index="${i}">
-          <div class="player-head"><strong>${r.therapist}</strong><span>${r.brand} · ${getCompletionPercent(r)}%</span></div>
+          <div class="player-head"><strong>${r.therapist}</strong><span>${r.brand} · 完成率 ${getCompletionPercent(r)}% · <span class="level-badge">獎章 ${rewardLevel(streak)}</span></span></div>
           <div class="calendar-grid">${weekdays}${boxes}</div>
         </div>`;
       }).join("");
@@ -502,12 +513,13 @@
         card.addEventListener("click", () => {
           const idx = Number(card.dataset.index);
           const r = filtered[idx];
+          const streak = bestSuccessStreak(r);
           detailBox.innerHTML = `<strong>${r.therapist}</strong> · ${r.brand}<br>
-            Completion: ${getCompletionPercent(r)}% (${num(r.head) + num(r.tail)}/63)<br>
-            Reward: ${rewardLevel(bestSuccessStreak(r))} (${bestSuccessStreak(r)} consecutive days)<br>
-            Head: ${r.head}/21 | Tail: ${r.tail}/42<br>
-            Head Days: ${Object.keys(getHeadMap(r)).length} | Tail Days: ${Object.keys(getTailMap(r)).length}<br>
-            Insight: ${r.notes}`;
+            完成率：${getCompletionPercent(r)}%（${num(r.head) + num(r.tail)}/63）<br>
+            目前獎章：${rewardLevel(streak)}｜最佳連勝：${streak} 個開店日<br>
+            Head：${r.head}/21｜Tail：${r.tail}/42<br>
+            Head 有紀錄日：${Object.keys(getHeadMap(r)).length}｜Tail 有紀錄日：${Object.keys(getTailMap(r)).length}<br>
+            戰況提示：${r.notes}`;
         });
       });
     }
@@ -533,7 +545,7 @@
           brand: r.brand,
           head,
           tail,
-          notes: `Synced from Google Sheet. Head total: ${head}; Tail total: ${tail}`,
+          notes: `已連接 Google Sheet。Head 累計：${head}；Tail 累計：${tail}`,
           headByDate,
           tailByDate
         };
