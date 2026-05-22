@@ -339,7 +339,7 @@
     }
 
     .reward-head span { color: var(--muted); font-size: 13px; }
-    .reward-grid { display: grid; grid-template-columns: repeat(4, minmax(150px, 1fr)); gap: 10px; }
+    .reward-grid { display: grid; grid-template-columns: repeat(6, minmax(130px, 1fr)); gap: 10px; }
     .reward-card { border: 1px solid rgba(255, 214, 111, 0.28); border-radius: 10px; padding: 12px; background: rgba(9, 6, 28, 0.72); box-shadow: inset 0 0 20px rgba(255, 214, 111, 0.08); }
     .reward-name { font-family: "Orbitron", sans-serif; font-size: 24px; color: #fff4cf; }
     .reward-criteria { margin-top: 4px; color: #dfd3ff; font-size: 12px; }
@@ -440,9 +440,9 @@
     <section class="hero">
       <div class="hero-stage">
         <div>
-          <div class="hero-kicker">美力連結任務｜每日 1 Head + 2 Tail</div>
+          <div class="hero-kicker">美力蟲洞任務｜每日 2 隻 Paid Trial = 1 個蟲洞</div>
           <h1>Fibolucci 每日挑戰戰績榜</h1>
-          <p>每一次分享都在擴大信任網絡。追蹤全隊戰績、連勝獎章，讓每位美容師像闖關玩家一樣累積影響力。</p>
+          <p>每天成功銷售 Paid Trial 即可累積蟲洞。集齊指定數量，玩家就能解鎖相應獎品。</p>
           <div class="status-row">
             <div id="periodLine" class="period"></div>
             <div id="connectionStatus" class="connection-status loading">連線檢查中</div>
@@ -467,8 +467,8 @@
 
     <section class="reward-panel">
       <div class="reward-head">
-        <h2>獎章任務</h2>
-        <span>連續達成 Head + Tail 即可升級領獎</span>
+        <h2>蟲洞獎品任務</h2>
+        <span>每天 2 隻 Paid Trial = 1 個蟲洞，累積蟲洞即可解鎖獎品</span>
       </div>
       <div id="rewardGrid" class="reward-grid"></div>
     </section>
@@ -489,7 +489,7 @@
 
       <div id="boardWrap" class="board-wrap"></div>
 
-      <div id="detailBox" class="detail">點選玩家卡，即可查看連勝、獎章及 Head / Tail 明細。</div>
+      <div id="detailBox" class="detail">點選玩家卡，即可查看 Paid Trial、蟲洞及獎品解鎖進度。</div>
     </section>
   </div>
 
@@ -522,27 +522,37 @@
       return `${y}-${m}-${day}`;
     }
 
+    function paidTrialTotal(r) {
+      return num(r.head) + num(r.tail);
+    }
+
+    function wormholesFromPaidTrials(count) {
+      return Math.floor(num(count) / 2);
+    }
+
+    function totalWormholes(r) {
+      return wormholesFromPaidTrials(paidTrialTotal(r));
+    }
+
     function getCompletionPercent(r) {
-      const target = 63;
-      return Math.round((num(r.head) + num(r.tail)) / target * 100);
+      const target = 24;
+      return Math.min(100, Math.round(totalWormholes(r) / target * 100));
     }
 
     function buildSummary(data) {
       const therapistCount = data.length;
-      const totalHead = data.reduce((a, r) => a + num(r.head), 0);
-      const totalTail = data.reduce((a, r) => a + num(r.tail), 0);
-      const totalAction = totalHead + totalTail;
+      const totalPaidTrials = data.reduce((a, r) => a + paidTrialTotal(r), 0);
+      const totalWormholeCount = data.reduce((a, r) => a + totalWormholes(r), 0);
+      const unlockedPlayers = data.filter(r => prizeLevel(totalWormholes(r)) !== "-").length;
       const avgRate = therapistCount ? Math.round(data.reduce((a, r) => a + getCompletionPercent(r), 0) / therapistCount) : 0;
-      const fullComplete = data.filter(r => num(r.head) >= 21 && num(r.tail) >= 42).length;
       const totalDays = challengeDays().length;
 
       const cards = [
         { label: "參賽玩家", value: therapistCount, sub: "目前顯示人數" },
-        { label: "Head 戰績", value: totalHead, sub: "每人目標 21" },
-        { label: "Tail 戰績", value: totalTail, sub: "每人目標 42" },
-        { label: "總行動值", value: totalAction, sub: "Head + Tail" },
-        { label: "平均完成率", value: avgRate + "%", sub: "依目前篩選計算" },
-        { label: "滿分通關", value: fullComplete, sub: "達成 21 Head + 42 Tail" },
+        { label: "Paid Trial", value: totalPaidTrials, sub: "每 2 隻 = 1 個蟲洞" },
+        { label: "已集齊蟲洞", value: totalWormholeCount, sub: "依目前篩選計算" },
+        { label: "已解鎖玩家", value: unlockedPlayers, sub: "集齊 3 個或以上蟲洞" },
+        { label: "平均進度", value: avgRate + "%", sub: "以 24 個蟲洞為最終關卡" },
         { label: "開店挑戰日", value: totalDays, sub: "2026/05/22 至 2026/06/17，星期日不計" }
       ];
 
@@ -645,43 +655,39 @@
       return buildSequentialDailyCounts(r.tail, 2);
     }
 
-    function bestSuccessStreak(r) {
-      const headByDate = getHeadMap(r);
-      const tailByDate = getTailMap(r);
-      let best = 0;
-      let current = 0;
-
-      challengeDays().forEach((d) => {
-        const key = toYmd(d);
-        const isSuccess = num(headByDate[key]) >= 1 && num(tailByDate[key]) >= 2;
-        current = isSuccess ? current + 1 : 0;
-        best = Math.max(best, current);
-      });
-
-      return best;
+    function dailyPaidTrials(r, key) {
+      return num(getHeadMap(r)[key]) + num(getTailMap(r)[key]);
     }
 
-    function rewardLevel(streak) {
-      if (streak >= 21) return "D";
-      if (streak >= 14) return "C";
-      if (streak >= 7) return "B";
-      if (streak >= 3) return "A";
+    function dailyWormholes(r, key) {
+      return wormholesFromPaidTrials(dailyPaidTrials(r, key));
+    }
+
+    function prizeLevel(wormholes) {
+      if (wormholes >= 24) return "F";
+      if (wormholes >= 21) return "E";
+      if (wormholes >= 13) return "D";
+      if (wormholes >= 8) return "C";
+      if (wormholes >= 5) return "B";
+      if (wormholes >= 3) return "A";
       return "-";
     }
 
     function renderRewards(data) {
       const criteria = [
-        { name: "銅章", days: 3, level: "A" },
-        { name: "銀章", days: 7, level: "B" },
-        { name: "金章", days: 14, level: "C" },
-        { name: "皇冠章", days: 21, level: "D" }
+        { name: "獎品 A", wormholes: 3, level: "A" },
+        { name: "獎品 B", wormholes: 5, level: "B" },
+        { name: "獎品 C", wormholes: 8, level: "C" },
+        { name: "獎品 D", wormholes: 13, level: "D" },
+        { name: "獎品 E", wormholes: 21, level: "E" },
+        { name: "終極獎品", wormholes: 24, level: "F" }
       ];
 
       rewardGrid.innerHTML = criteria.map((item) => {
-        const winners = data.filter(r => bestSuccessStreak(r) >= item.days).length;
+        const winners = data.filter(r => totalWormholes(r) >= item.wormholes).length;
         return `<div class="reward-card">
           <div class="reward-name">${item.level}</div>
-          <div class="reward-criteria">${item.name}｜連續 ${item.days} 個開店日達標</div>
+          <div class="reward-criteria">${item.name}｜集齊 ${item.wormholes} 個蟲洞</div>
           <div class="reward-count">${winners} 位玩家已解鎖</div>
         </div>`;
       }).join("");
@@ -698,25 +704,22 @@
       const weekdays = ["一", "二", "三", "四", "五", "六"].map(day => `<div class="weekday">星期${day}</div>`).join("");
       const cells = calendarCells(days);
       boardWrap.innerHTML = filtered.map((r, i) => {
-        const headByDate = getHeadMap(r);
-        const tailByDate = getTailMap(r);
         const boxes = cells.map((d) => {
           if (!d) return `<div class="daybox blank"></div>`;
           const key = toYmd(d);
-          const headCount = num(headByDate[key]);
-          const tailCount = num(tailByDate[key]);
-          const headOk = headCount >= 1;
-          const tailOk = tailCount >= 2;
+          const paidTrials = dailyPaidTrials(r, key);
+          const wormholes = dailyWormholes(r, key);
+          const unlocked = wormholes > 0;
           return `<div class="daybox">
             <div class="daynum">${(d.getMonth() + 1)}/${d.getDate()}</div>
-            <div class="daily-line"><span class="daily-label">Head</span><span class="daily-mark ${headOk ? "" : "empty"}">${headOk ? "✓" : "○"} ${headCount}/1</span></div>
-            <div class="daily-line"><span class="daily-label">Tail</span><span class="daily-mark ${tailOk ? "" : "empty"}">${tailOk ? "✓" : "○"} ${tailCount}/2</span></div>
+            <div class="daily-line"><span class="daily-label">Paid Trial</span><span class="daily-mark ${unlocked ? "" : "empty"}">${paidTrials}/2</span></div>
+            <div class="daily-line"><span class="daily-label">蟲洞</span><span class="daily-mark ${unlocked ? "" : "empty"}">${unlocked ? "✓" : "○"} ${wormholes}</span></div>
           </div>`;
         }).join("");
-        const streak = bestSuccessStreak(r);
+        const wormholes = totalWormholes(r);
         const centerText = r.center ? ` · ${r.center}` : "";
         return `<div class="player-card" data-index="${i}">
-          <div class="player-head"><strong>${r.therapist}</strong><span>${r.brand}${centerText} · 完成率 ${getCompletionPercent(r)}% · <span class="level-badge">獎章 ${rewardLevel(streak)}</span></span></div>
+          <div class="player-head"><strong>${r.therapist}</strong><span>${r.brand}${centerText} · 蟲洞 ${wormholes} · <span class="level-badge">獎品 ${prizeLevel(wormholes)}</span></span></div>
           <div class="calendar-grid">${weekdays}${boxes}</div>
         </div>`;
       }).join("");
@@ -725,13 +728,13 @@
         card.addEventListener("click", () => {
           const idx = Number(card.dataset.index);
           const r = filtered[idx];
-          const streak = bestSuccessStreak(r);
+          const paidTrials = paidTrialTotal(r);
+          const wormholes = totalWormholes(r);
           const centerText = r.center ? ` · ${r.center}` : "";
           detailBox.innerHTML = `<strong>${r.therapist}</strong> · ${r.brand}${centerText}<br>
-            完成率：${getCompletionPercent(r)}%（${num(r.head) + num(r.tail)}/63）<br>
-            目前獎章：${rewardLevel(streak)}｜最佳連勝：${streak} 個開店日<br>
-            Head：${r.head}/21｜Tail：${r.tail}/42<br>
-            Head 有紀錄日：${Object.keys(getHeadMap(r)).length}｜Tail 有紀錄日：${Object.keys(getTailMap(r)).length}<br>
+            Paid Trial：${paidTrials} 隻｜已集齊蟲洞：${wormholes} 個<br>
+            目前獎品：${prizeLevel(wormholes)}｜終極進度：${getCompletionPercent(r)}%（目標 24 個蟲洞）<br>
+            每日規則：成功銷售 2 隻 Paid Trial = 1 個蟲洞<br>
             戰況提示：${r.notes}`;
         });
       });
@@ -769,15 +772,15 @@
           const head = Object.values(headByDate).reduce((a, v) => a + num(v), 0);
           const tail = Object.values(tailByDate).reduce((a, v) => a + num(v), 0);
           return {
-            therapist: r.therapist,
-            brand: r.brand,
-            center: r.center || "",
-            head,
-            tail,
-            notes: `已連接 Google Sheet。Head 累計：${head}；Tail 累計：${tail}`,
-            headByDate,
-            tailByDate
-          };
+          therapist: r.therapist,
+          brand: r.brand,
+          center: r.center || "",
+          head,
+          tail,
+          notes: `已連接 Google Sheet。Paid Trial 累計：${head + tail}；蟲洞累計：${wormholesFromPaidTrials(head + tail)}`,
+          headByDate,
+          tailByDate
+        };
         });
 
         setConnectionStatus("ok", `已連接 Apps Script｜${rows.length} 位玩家`);
