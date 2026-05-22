@@ -9,18 +9,19 @@
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Noto+Sans+TC:wght@400;600;700;900&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-1: #050214;
-      --bg-2: #14063a;
-      --panel: rgba(16, 8, 46, 0.75);
-      --panel-solid: #160a40;
-      --accent: #9f6bff;
-      --accent-2: #ffd66f;
-      --mint: #6dffdc;
-      --text: #f7f2ff;
-      --muted: #c5bae7;
-      --line: rgba(180, 139, 255, 0.28);
-      --good: #59ffb0;
-      --warn: #ffd978;
+      --bg-1: #07020f;
+      --bg-2: #1d0b24;
+      --panel: rgba(32, 13, 34, 0.76);
+      --panel-solid: #190b23;
+      --accent: #ff9f43;
+      --accent-2: #ffd078;
+      --rose: #ff5f9e;
+      --mint: #ffe1a3;
+      --text: #fff7e9;
+      --muted: #d9bfa9;
+      --line: rgba(255, 184, 96, 0.28);
+      --good: #ffe08a;
+      --warn: #ff8a5c;
     }
 
     * { box-sizing: border-box; }
@@ -30,8 +31,9 @@
       color: var(--text);
       font-family: "Noto Sans TC", sans-serif;
       background:
-        radial-gradient(circle at 18% 22%, rgba(95, 27, 203, 0.42), transparent 36%),
-        radial-gradient(circle at 78% 12%, rgba(0, 219, 255, 0.20), transparent 34%),
+        radial-gradient(circle at 16% 18%, rgba(255, 122, 58, 0.25), transparent 34%),
+        radial-gradient(circle at 76% 10%, rgba(255, 64, 139, 0.18), transparent 28%),
+        radial-gradient(circle at 55% 44%, rgba(255, 190, 86, 0.12), transparent 30%),
         linear-gradient(145deg, var(--bg-1), var(--bg-2));
       min-height: 100vh;
     }
@@ -45,8 +47,33 @@
       border: 1px solid var(--line);
       border-radius: 20px;
       padding: 24px;
-      background: linear-gradient(120deg, rgba(125, 58, 255, 0.18), rgba(7, 6, 36, 0.9));
-      box-shadow: 0 16px 36px rgba(0,0,0,0.42), inset 0 0 0 1px rgba(255,255,255,0.04);
+      position: relative;
+      overflow: hidden;
+      background:
+        linear-gradient(120deg, rgba(255, 144, 48, 0.12), rgba(9, 5, 20, 0.94)),
+        radial-gradient(circle at 73% 42%, rgba(255, 186, 78, 0.23), transparent 32%);
+      box-shadow: 0 16px 42px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.04);
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        radial-gradient(circle, rgba(255, 210, 129, 0.75) 0 1px, transparent 1.8px),
+        radial-gradient(circle, rgba(255, 90, 150, 0.5) 0 1px, transparent 2px);
+      background-size: 92px 92px, 143px 143px;
+      opacity: 0.35;
+      pointer-events: none;
+    }
+
+    .hero-stage {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1.02fr) minmax(300px, 0.98fr);
+      gap: 22px;
+      align-items: center;
     }
 
     .hero h1 {
@@ -56,13 +83,13 @@
       letter-spacing: 1px;
       line-height: 1.15;
       color: #fff4cf;
-      text-shadow: 0 0 18px rgba(255, 185, 93, 0.5);
+      text-shadow: 0 0 18px rgba(255, 185, 93, 0.64);
     }
 
     .hero-kicker {
       display: inline-block;
       margin-bottom: 8px;
-      color: var(--mint);
+      color: #ffd078;
       font-size: 13px;
       font-weight: 900;
     }
@@ -85,7 +112,127 @@
       background: rgba(255, 214, 111, 0.08);
     }
 
+    .key-visual {
+      min-height: 310px;
+      position: relative;
+      border-radius: 18px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 58% 52%, rgba(255, 202, 110, 0.28), transparent 7%),
+        radial-gradient(circle at 18% 74%, rgba(255, 160, 77, 0.22), transparent 18%),
+        radial-gradient(circle at 62% 50%, rgba(255, 91, 155, 0.18), transparent 42%),
+        linear-gradient(135deg, rgba(31, 9, 24, 0.7), rgba(8, 5, 18, 0.62));
+      border: 1px solid rgba(255, 184, 96, 0.22);
+    }
+
+    .spiral {
+      position: absolute;
+      width: 210px;
+      height: 210px;
+      left: 40%;
+      top: 17%;
+      border-radius: 50%;
+      background:
+        conic-gradient(from 120deg, transparent 0 28%, rgba(255, 213, 135, 0.95), transparent 62%),
+        radial-gradient(circle, transparent 0 40%, rgba(255, 177, 79, 0.32) 41% 42%, transparent 44% 100%);
+      filter: drop-shadow(0 0 18px rgba(255, 177, 79, 0.65));
+      animation: slowSpin 18s linear infinite;
+    }
+
+    .spiral::after {
+      content: "";
+      position: absolute;
+      inset: 48px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 210, 129, 0.68);
+      box-shadow: 0 0 20px rgba(255, 177, 79, 0.58);
+    }
+
+    .phone-glow {
+      position: absolute;
+      left: 8%;
+      bottom: 12%;
+      width: 102px;
+      height: 148px;
+      border-radius: 20px;
+      transform: rotate(-8deg);
+      background: linear-gradient(160deg, #26102d, #080511);
+      border: 1px solid rgba(255, 212, 132, 0.44);
+      box-shadow: 0 0 38px rgba(255, 168, 70, 0.44), inset 0 0 24px rgba(255, 108, 80, 0.16);
+    }
+
+    .phone-glow::before {
+      content: "gratus";
+      position: absolute;
+      inset: 20px 12px auto;
+      height: 34px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      color: #ffe7b2;
+      font-weight: 900;
+      background: linear-gradient(135deg, rgba(255, 151, 50, 0.86), rgba(255, 82, 141, 0.7));
+    }
+
+    .phone-glow::after {
+      content: "1+2";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 32px;
+      text-align: center;
+      color: #ffd078;
+      font-family: "Orbitron", sans-serif;
+      font-size: 26px;
+      font-weight: 900;
+    }
+
+    .node {
+      position: absolute;
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: #2c1021;
+      font-weight: 900;
+      background: radial-gradient(circle at 35% 30%, #fff5d6, #ffb24f 62%, #ff6b8f);
+      box-shadow: 0 0 24px rgba(255, 184, 96, 0.68);
+      border: 2px solid rgba(255, 233, 180, 0.8);
+    }
+
+    .node.small { width: 38px; height: 38px; font-size: 12px; }
+    .node:nth-of-type(3) { left: 33%; top: 17%; }
+    .node:nth-of-type(4) { left: 68%; top: 11%; }
+    .node:nth-of-type(5) { left: 78%; top: 41%; }
+    .node:nth-of-type(6) { left: 55%; bottom: 12%; }
+    .node:nth-of-type(7) { left: 29%; bottom: 24%; }
+    .node:nth-of-type(8) { left: 84%; bottom: 15%; }
+
+    .visual-tag {
+      position: absolute;
+      right: 18px;
+      padding: 9px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 184, 96, 0.48);
+      color: #ffe8a8;
+      background: rgba(14, 6, 20, 0.68);
+      box-shadow: 0 0 18px rgba(255, 153, 61, 0.18);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .visual-tag.one { top: 26px; }
+    .visual-tag.two { top: 84px; }
+    .visual-tag.three { bottom: 28px; }
+
+    @keyframes slowSpin {
+      to { transform: rotate(360deg); }
+    }
+
     .summary-grid {
+      position: relative;
+      z-index: 1;
       margin-top: 18px;
       display: grid;
       gap: 12px;
@@ -98,6 +245,7 @@
       border-radius: 14px;
       padding: 14px;
       backdrop-filter: blur(4px);
+      box-shadow: inset 0 0 18px rgba(255, 176, 75, 0.06);
     }
 
     .kpi .label {
@@ -116,7 +264,7 @@
 
     .kpi .sub {
       font-size: 12px;
-      color: var(--mint);
+      color: #ffd078;
       margin-top: 3px;
     }
 
@@ -124,7 +272,7 @@
       margin: 24px 0 10px;
       font-family: "Orbitron", sans-serif;
       font-size: clamp(20px, 3vw, 30px);
-      color: #f0dcff;
+      color: #ffe8a8;
       letter-spacing: 0.8px;
     }
 
@@ -133,7 +281,7 @@
       border: 1px solid rgba(255, 214, 111, 0.36);
       border-radius: 14px;
       padding: 16px;
-      background: linear-gradient(120deg, rgba(255, 214, 111, 0.12), rgba(18, 9, 48, 0.86));
+      background: linear-gradient(120deg, rgba(255, 159, 67, 0.16), rgba(31, 9, 24, 0.88));
     }
 
     .reward-head {
@@ -157,14 +305,14 @@
     .reward-card { border: 1px solid rgba(255, 214, 111, 0.28); border-radius: 10px; padding: 12px; background: rgba(9, 6, 28, 0.72); box-shadow: inset 0 0 20px rgba(255, 214, 111, 0.08); }
     .reward-name { font-family: "Orbitron", sans-serif; font-size: 24px; color: #fff4cf; }
     .reward-criteria { margin-top: 4px; color: #dfd3ff; font-size: 12px; }
-    .reward-count { margin-top: 10px; color: var(--mint); font-weight: 800; }
+    .reward-count { margin-top: 10px; color: #ffd078; font-weight: 800; }
 
     .filter-wrap {
       border: 1px solid var(--line);
       border-radius: 18px;
       padding: 16px;
-      background: var(--panel-solid);
-      box-shadow: inset 0 0 28px rgba(145,88,255,0.14);
+      background: linear-gradient(160deg, rgba(25, 11, 35, 0.96), rgba(18, 7, 22, 0.96));
+      box-shadow: inset 0 0 28px rgba(255, 151, 50, 0.12);
     }
 
     .filter-row {
@@ -185,8 +333,8 @@
     select {
       width: 100%;
       border-radius: 10px;
-      border: 1px solid rgba(189, 158, 255, 0.45);
-      background: rgba(13, 9, 34, 0.92);
+      border: 1px solid rgba(255, 184, 96, 0.36);
+      background: rgba(18, 8, 24, 0.92);
       color: #fff;
       padding: 10px;
       font-size: 14px;
@@ -194,17 +342,17 @@
     }
 
     .board-wrap { display: grid; gap: 14px; }
-    .player-card { border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: rgba(10, 7, 31, 0.92); }
+    .player-card { border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: rgba(18, 8, 24, 0.94); box-shadow: 0 12px 28px rgba(0,0,0,0.22), inset 0 0 20px rgba(255, 159, 67, 0.05); }
     .player-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 8px; flex-wrap: wrap; }
     .calendar-grid { display: grid; grid-template-columns: repeat(6, minmax(78px, 1fr)); gap: 8px; }
     .weekday { padding: 6px 4px; text-align: center; color: #ffe8a8; font-size: 11px; font-weight: 800; border-bottom: 1px solid rgba(255, 214, 111, 0.24); }
-    .daybox { border: 1px solid rgba(185, 149, 255, 0.35); border-radius: 10px; padding: 8px; background: rgba(26, 13, 62, 0.8); min-height: 94px; }
+    .daybox { border: 1px solid rgba(255, 184, 96, 0.3); border-radius: 10px; padding: 8px; background: rgba(35, 13, 31, 0.84); min-height: 94px; }
     .daybox.blank { visibility: hidden; }
     .daynum { font-size: 11px; color: #d5c7ff; }
     .daily-line { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 6px; font-size: 12px; color: #f4edff; }
-    .daily-label { color: #cdbdff; }
-    .daily-mark { color: #6dffdc; font-weight: 800; }
-    .empty { color: #7b6aa9; }
+    .daily-label { color: #e7c2aa; }
+    .daily-mark { color: #ffd078; font-weight: 800; }
+    .empty { color: #806b72; }
     .level-badge { color: #ffe8a8; font-weight: 900; }
 
     .pill {
@@ -231,11 +379,20 @@
     }
 
     @media (max-width: 860px) {
+      .hero-stage { grid-template-columns: 1fr; }
+      .key-visual { min-height: 260px; }
       .filter-row { grid-template-columns: 1fr; }
       .reward-grid { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
     }
 
     @media (max-width: 540px) {
+      .container { width: min(100% - 24px, 1220px); margin-top: 14px; }
+      .hero { padding: 18px; }
+      .calendar-grid { grid-template-columns: repeat(6, minmax(48px, 1fr)); gap: 5px; }
+      .weekday { font-size: 10px; padding-inline: 2px; }
+      .daybox { min-height: 86px; padding: 6px; }
+      .daily-line { font-size: 11px; gap: 4px; }
+      .visual-tag { right: 10px; font-size: 10px; padding: 7px 10px; }
       .reward-grid { grid-template-columns: 1fr; }
     }
   </style>
@@ -243,10 +400,27 @@
 <body>
   <div class="container">
     <section class="hero">
-      <div class="hero-kicker">每日 1 Head + 2 Tail 任務</div>
-      <h1>Fibolucci 每日挑戰戰績榜</h1>
-      <p>查看全隊戰績、連勝獎章，並用品牌及美容師篩選每位玩家的每日闖關進度。</p>
-      <div id="periodLine" class="period"></div>
+      <div class="hero-stage">
+        <div>
+          <div class="hero-kicker">美力連結任務｜每日 1 Head + 2 Tail</div>
+          <h1>Fibolucci 每日挑戰戰績榜</h1>
+          <p>每一次分享都在擴大信任網絡。追蹤全隊戰績、連勝獎章，讓每位美容師像闖關玩家一樣累積影響力。</p>
+          <div id="periodLine" class="period"></div>
+        </div>
+        <div class="key-visual" aria-hidden="true">
+          <div class="spiral"></div>
+          <div class="phone-glow"></div>
+          <div class="node">A</div>
+          <div class="node small">B</div>
+          <div class="node small">C</div>
+          <div class="node">D</div>
+          <div class="node small">E</div>
+          <div class="node small">F</div>
+          <div class="visual-tag one">BEAUTY SHARED</div>
+          <div class="visual-tag two">TRUST BUILT</div>
+          <div class="visual-tag three">CONNECTIONS GROW</div>
+        </div>
+      </div>
       <div id="summaryGrid" class="summary-grid"></div>
     </section>
 
