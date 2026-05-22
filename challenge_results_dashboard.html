@@ -1,26 +1,27 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Fibolucci Daily Challenge Dashboard</title>
+  <title>Fibolucci 每日挑戰戰績榜</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Noto+Sans+TC:wght@400;600;700;900&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-1: #050214;
-      --bg-2: #14063a;
-      --panel: rgba(16, 8, 46, 0.75);
-      --panel-solid: #160a40;
-      --accent: #9f6bff;
-      --accent-2: #ffd66f;
-      --mint: #6dffdc;
-      --text: #f7f2ff;
-      --muted: #c5bae7;
-      --line: rgba(180, 139, 255, 0.28);
-      --good: #59ffb0;
-      --warn: #ffd978;
+      --bg-1: #07020f;
+      --bg-2: #1d0b24;
+      --panel: rgba(32, 13, 34, 0.76);
+      --panel-solid: #190b23;
+      --accent: #ff9f43;
+      --accent-2: #ffd078;
+      --rose: #ff5f9e;
+      --mint: #ffe1a3;
+      --text: #fff7e9;
+      --muted: #d9bfa9;
+      --line: rgba(255, 184, 96, 0.28);
+      --good: #ffe08a;
+      --warn: #ff8a5c;
     }
 
     * { box-sizing: border-box; }
@@ -30,8 +31,9 @@
       color: var(--text);
       font-family: "Noto Sans TC", sans-serif;
       background:
-        radial-gradient(circle at 18% 22%, rgba(95, 27, 203, 0.42), transparent 36%),
-        radial-gradient(circle at 78% 12%, rgba(0, 219, 255, 0.20), transparent 34%),
+        radial-gradient(circle at 16% 18%, rgba(255, 122, 58, 0.25), transparent 34%),
+        radial-gradient(circle at 76% 10%, rgba(255, 64, 139, 0.18), transparent 28%),
+        radial-gradient(circle at 55% 44%, rgba(255, 190, 86, 0.12), transparent 30%),
         linear-gradient(145deg, var(--bg-1), var(--bg-2));
       min-height: 100vh;
     }
@@ -45,8 +47,33 @@
       border: 1px solid var(--line);
       border-radius: 20px;
       padding: 24px;
-      background: linear-gradient(120deg, rgba(125, 58, 255, 0.18), rgba(7, 6, 36, 0.9));
-      box-shadow: 0 16px 36px rgba(0,0,0,0.42), inset 0 0 0 1px rgba(255,255,255,0.04);
+      position: relative;
+      overflow: hidden;
+      background:
+        linear-gradient(120deg, rgba(255, 144, 48, 0.12), rgba(9, 5, 20, 0.94)),
+        radial-gradient(circle at 73% 42%, rgba(255, 186, 78, 0.23), transparent 32%);
+      box-shadow: 0 16px 42px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.04);
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        radial-gradient(circle, rgba(255, 210, 129, 0.75) 0 1px, transparent 1.8px),
+        radial-gradient(circle, rgba(255, 90, 150, 0.5) 0 1px, transparent 2px);
+      background-size: 92px 92px, 143px 143px;
+      opacity: 0.35;
+      pointer-events: none;
+    }
+
+    .hero-stage {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1.02fr) minmax(300px, 0.98fr);
+      gap: 22px;
+      align-items: center;
     }
 
     .hero h1 {
@@ -56,7 +83,15 @@
       letter-spacing: 1px;
       line-height: 1.15;
       color: #fff4cf;
-      text-shadow: 0 0 18px rgba(255, 185, 93, 0.5);
+      text-shadow: 0 0 18px rgba(255, 185, 93, 0.64);
+    }
+
+    .hero-kicker {
+      display: inline-block;
+      margin-bottom: 8px;
+      color: #ffd078;
+      font-size: 13px;
+      font-weight: 900;
     }
 
     .hero p {
@@ -77,7 +112,165 @@
       background: rgba(255, 214, 111, 0.08);
     }
 
+    .status-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-top: 10px;
+    }
+
+    .connection-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border: 1px solid rgba(255, 214, 111, 0.34);
+      border-radius: 999px;
+      padding: 6px 12px;
+      color: #ffe8a8;
+      background: rgba(16, 8, 20, 0.58);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .connection-status::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ffd078;
+      box-shadow: 0 0 12px rgba(255, 208, 120, 0.7);
+    }
+
+    .connection-status.ok::before { background: #69ffba; box-shadow: 0 0 12px rgba(105, 255, 186, 0.7); }
+    .connection-status.error::before { background: #ff5f7e; box-shadow: 0 0 12px rgba(255, 95, 126, 0.7); }
+    .connection-status.loading::before { animation: pulseDot 1s ease-in-out infinite; }
+
+    .key-visual {
+      min-height: 310px;
+      position: relative;
+      border-radius: 18px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 58% 52%, rgba(255, 202, 110, 0.28), transparent 7%),
+        radial-gradient(circle at 18% 74%, rgba(255, 160, 77, 0.22), transparent 18%),
+        radial-gradient(circle at 62% 50%, rgba(255, 91, 155, 0.18), transparent 42%),
+        linear-gradient(135deg, rgba(31, 9, 24, 0.7), rgba(8, 5, 18, 0.62));
+      border: 1px solid rgba(255, 184, 96, 0.22);
+    }
+
+    .spiral {
+      position: absolute;
+      width: 210px;
+      height: 210px;
+      left: 40%;
+      top: 17%;
+      border-radius: 50%;
+      background:
+        conic-gradient(from 120deg, transparent 0 28%, rgba(255, 213, 135, 0.95), transparent 62%),
+        radial-gradient(circle, transparent 0 40%, rgba(255, 177, 79, 0.32) 41% 42%, transparent 44% 100%);
+      filter: drop-shadow(0 0 18px rgba(255, 177, 79, 0.65));
+      animation: slowSpin 18s linear infinite;
+    }
+
+    .spiral::after {
+      content: "";
+      position: absolute;
+      inset: 48px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 210, 129, 0.68);
+      box-shadow: 0 0 20px rgba(255, 177, 79, 0.58);
+    }
+
+    .phone-glow {
+      position: absolute;
+      left: 8%;
+      bottom: 12%;
+      width: 102px;
+      height: 148px;
+      border-radius: 20px;
+      transform: rotate(-8deg);
+      background: linear-gradient(160deg, #26102d, #080511);
+      border: 1px solid rgba(255, 212, 132, 0.44);
+      box-shadow: 0 0 38px rgba(255, 168, 70, 0.44), inset 0 0 24px rgba(255, 108, 80, 0.16);
+    }
+
+    .phone-glow::before {
+      content: "gratus";
+      position: absolute;
+      inset: 20px 12px auto;
+      height: 34px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      color: #ffe7b2;
+      font-weight: 900;
+      background: linear-gradient(135deg, rgba(255, 151, 50, 0.86), rgba(255, 82, 141, 0.7));
+    }
+
+    .phone-glow::after {
+      content: "1+2";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 32px;
+      text-align: center;
+      color: #ffd078;
+      font-family: "Orbitron", sans-serif;
+      font-size: 26px;
+      font-weight: 900;
+    }
+
+    .node {
+      position: absolute;
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: #2c1021;
+      font-weight: 900;
+      background: radial-gradient(circle at 35% 30%, #fff5d6, #ffb24f 62%, #ff6b8f);
+      box-shadow: 0 0 24px rgba(255, 184, 96, 0.68);
+      border: 2px solid rgba(255, 233, 180, 0.8);
+    }
+
+    .node.small { width: 38px; height: 38px; font-size: 12px; }
+    .node:nth-of-type(3) { left: 33%; top: 17%; }
+    .node:nth-of-type(4) { left: 68%; top: 11%; }
+    .node:nth-of-type(5) { left: 78%; top: 41%; }
+    .node:nth-of-type(6) { left: 55%; bottom: 12%; }
+    .node:nth-of-type(7) { left: 29%; bottom: 24%; }
+    .node:nth-of-type(8) { left: 84%; bottom: 15%; }
+
+    .visual-tag {
+      position: absolute;
+      right: 18px;
+      padding: 9px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 184, 96, 0.48);
+      color: #ffe8a8;
+      background: rgba(14, 6, 20, 0.68);
+      box-shadow: 0 0 18px rgba(255, 153, 61, 0.18);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .visual-tag.one { top: 26px; }
+    .visual-tag.two { top: 84px; }
+    .visual-tag.three { bottom: 28px; }
+
+    @keyframes slowSpin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes pulseDot {
+      50% { transform: scale(1.45); opacity: 0.55; }
+    }
+
     .summary-grid {
+      position: relative;
+      z-index: 1;
       margin-top: 18px;
       display: grid;
       gap: 12px;
@@ -90,6 +283,7 @@
       border-radius: 14px;
       padding: 14px;
       backdrop-filter: blur(4px);
+      box-shadow: inset 0 0 18px rgba(255, 176, 75, 0.06);
     }
 
     .kpi .label {
@@ -108,7 +302,7 @@
 
     .kpi .sub {
       font-size: 12px;
-      color: var(--mint);
+      color: #ffd078;
       margin-top: 3px;
     }
 
@@ -116,7 +310,7 @@
       margin: 24px 0 10px;
       font-family: "Orbitron", sans-serif;
       font-size: clamp(20px, 3vw, 30px);
-      color: #f0dcff;
+      color: #ffe8a8;
       letter-spacing: 0.8px;
     }
 
@@ -125,7 +319,7 @@
       border: 1px solid rgba(255, 214, 111, 0.36);
       border-radius: 14px;
       padding: 16px;
-      background: linear-gradient(120deg, rgba(255, 214, 111, 0.12), rgba(18, 9, 48, 0.86));
+      background: linear-gradient(120deg, rgba(255, 159, 67, 0.16), rgba(31, 9, 24, 0.88));
     }
 
     .reward-head {
@@ -145,18 +339,18 @@
     }
 
     .reward-head span { color: var(--muted); font-size: 13px; }
-    .reward-grid { display: grid; grid-template-columns: repeat(4, minmax(150px, 1fr)); gap: 10px; }
-    .reward-card { border: 1px solid rgba(255, 214, 111, 0.28); border-radius: 10px; padding: 12px; background: rgba(9, 6, 28, 0.72); }
+    .reward-grid { display: grid; grid-template-columns: repeat(6, minmax(130px, 1fr)); gap: 10px; }
+    .reward-card { border: 1px solid rgba(255, 214, 111, 0.28); border-radius: 10px; padding: 12px; background: rgba(9, 6, 28, 0.72); box-shadow: inset 0 0 20px rgba(255, 214, 111, 0.08); }
     .reward-name { font-family: "Orbitron", sans-serif; font-size: 24px; color: #fff4cf; }
     .reward-criteria { margin-top: 4px; color: #dfd3ff; font-size: 12px; }
-    .reward-count { margin-top: 10px; color: var(--mint); font-weight: 800; }
+    .reward-count { margin-top: 10px; color: #ffd078; font-weight: 800; }
 
     .filter-wrap {
       border: 1px solid var(--line);
       border-radius: 18px;
       padding: 16px;
-      background: var(--panel-solid);
-      box-shadow: inset 0 0 28px rgba(145,88,255,0.14);
+      background: linear-gradient(160deg, rgba(25, 11, 35, 0.96), rgba(18, 7, 22, 0.96));
+      box-shadow: inset 0 0 28px rgba(255, 151, 50, 0.12);
     }
 
     .filter-row {
@@ -177,8 +371,8 @@
     select {
       width: 100%;
       border-radius: 10px;
-      border: 1px solid rgba(189, 158, 255, 0.45);
-      background: rgba(13, 9, 34, 0.92);
+      border: 1px solid rgba(255, 184, 96, 0.36);
+      background: rgba(18, 8, 24, 0.92);
       color: #fff;
       padding: 10px;
       font-size: 14px;
@@ -186,17 +380,18 @@
     }
 
     .board-wrap { display: grid; gap: 14px; }
-    .player-card { border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: rgba(10, 7, 31, 0.92); }
+    .player-card { border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: rgba(18, 8, 24, 0.94); box-shadow: 0 12px 28px rgba(0,0,0,0.22), inset 0 0 20px rgba(255, 159, 67, 0.05); }
     .player-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 8px; flex-wrap: wrap; }
     .calendar-grid { display: grid; grid-template-columns: repeat(6, minmax(78px, 1fr)); gap: 8px; }
     .weekday { padding: 6px 4px; text-align: center; color: #ffe8a8; font-size: 11px; font-weight: 800; border-bottom: 1px solid rgba(255, 214, 111, 0.24); }
-    .daybox { border: 1px solid rgba(185, 149, 255, 0.35); border-radius: 10px; padding: 8px; background: rgba(26, 13, 62, 0.8); min-height: 94px; }
+    .daybox { border: 1px solid rgba(255, 184, 96, 0.3); border-radius: 10px; padding: 8px; background: rgba(35, 13, 31, 0.84); min-height: 94px; }
     .daybox.blank { visibility: hidden; }
     .daynum { font-size: 11px; color: #d5c7ff; }
     .daily-line { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 6px; font-size: 12px; color: #f4edff; }
-    .daily-label { color: #cdbdff; }
-    .daily-mark { color: #6dffdc; font-weight: 800; }
-    .empty { color: #7b6aa9; }
+    .daily-label { color: #e7c2aa; }
+    .daily-mark { color: #ffd078; font-weight: 800; }
+    .empty { color: #806b72; }
+    .level-badge { color: #ffe8a8; font-weight: 900; }
 
     .pill {
       display: inline-block;
@@ -222,11 +417,20 @@
     }
 
     @media (max-width: 860px) {
+      .hero-stage { grid-template-columns: 1fr; }
+      .key-visual { min-height: 260px; }
       .filter-row { grid-template-columns: 1fr; }
       .reward-grid { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
     }
 
     @media (max-width: 540px) {
+      .container { width: min(100% - 24px, 1220px); margin-top: 14px; }
+      .hero { padding: 18px; }
+      .calendar-grid { grid-template-columns: repeat(6, minmax(48px, 1fr)); gap: 5px; }
+      .weekday { font-size: 10px; padding-inline: 2px; }
+      .daybox { min-height: 86px; padding: 6px; }
+      .daily-line { font-size: 11px; gap: 4px; }
+      .visual-tag { right: 10px; font-size: 10px; padding: 7px 10px; }
       .reward-grid { grid-template-columns: 1fr; }
     }
   </style>
@@ -234,53 +438,64 @@
 <body>
   <div class="container">
     <section class="hero">
-      <h1>Fibolucci Daily Challenge</h1>
-      <p>Top summary for management view, and bottom filter section to drill down by brand and therapist.</p>
-      <div id="periodLine" class="period"></div>
+      <div class="hero-stage">
+        <div>
+          <div class="hero-kicker">美力蟲洞任務｜每日 2 隻 Paid Trial = 1 個蟲洞</div>
+          <h1>Fibolucci 每日挑戰戰績榜</h1>
+          <p>每天成功銷售 Paid Trial 即可累積蟲洞。集齊指定數量，玩家就能解鎖相應獎品。</p>
+          <div class="status-row">
+            <div id="periodLine" class="period"></div>
+            <div id="connectionStatus" class="connection-status loading">連線檢查中</div>
+          </div>
+        </div>
+        <div class="key-visual" aria-hidden="true">
+          <div class="spiral"></div>
+          <div class="phone-glow"></div>
+          <div class="node">A</div>
+          <div class="node small">B</div>
+          <div class="node small">C</div>
+          <div class="node">D</div>
+          <div class="node small">E</div>
+          <div class="node small">F</div>
+          <div class="visual-tag one">BEAUTY SHARED</div>
+          <div class="visual-tag two">TRUST BUILT</div>
+          <div class="visual-tag three">CONNECTIONS GROW</div>
+        </div>
+      </div>
       <div id="summaryGrid" class="summary-grid"></div>
     </section>
 
     <section class="reward-panel">
       <div class="reward-head">
-        <h2>Reward Criteria</h2>
-        <span>Based on consecutive days where Head and Tail both succeed</span>
+        <h2>蟲洞獎品任務</h2>
+        <span>每天 2 隻 Paid Trial = 1 個蟲洞，累積蟲洞即可解鎖獎品</span>
       </div>
       <div id="rewardGrid" class="reward-grid"></div>
     </section>
 
-    <h2 class="section-title">By Brand / By Therapist Result</h2>
+    <h2 class="section-title">玩家闖關日曆</h2>
 
     <section class="filter-wrap">
       <div class="filter-row">
         <div class="field">
-          <label for="brandFilter">BRAND</label>
+          <label for="brandFilter">品牌</label>
           <select id="brandFilter"></select>
         </div>
         <div class="field">
-          <label for="therapistFilter">THERAPIST</label>
+          <label for="therapistFilter">美容師 / 玩家</label>
           <select id="therapistFilter"></select>
         </div>
       </div>
 
       <div id="boardWrap" class="board-wrap"></div>
 
-      <div id="detailBox" class="detail">Select a row to see individual therapist breakdown.</div>
+      <div id="detailBox" class="detail">點選玩家卡，即可查看 Paid Trial、蟲洞及獎品解鎖進度。</div>
     </section>
   </div>
 
   <script>
     const APPS_SCRIPT_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwWlQIj3BJjtubusxrHvJRmq_hljPsGe2hftMHxzpHFeumte5TXXOKYeu1NSjkfvVV3/exec";
-    let rows = [
-      { therapist: "Amy", brand: "Aster Wellness", head: 21, tail: 42, notes: "Strong referral sharing and daily consistency." },
-      { therapist: "Brian", brand: "Aster Wellness", head: 18, tail: 36, notes: "Great momentum, needs 3 more days to full score." },
-      { therapist: "Cindy", brand: "Aster Wellness", head: 21, tail: 40, notes: "Perfect Head, near-complete Tail target." },
-      { therapist: "Derek", brand: "Bloom Clinic", head: 15, tail: 31, notes: "Good effort, focus on daily discipline." },
-      { therapist: "Eva", brand: "Bloom Clinic", head: 20, tail: 41, notes: "High performer and stable contributor." },
-      { therapist: "Felix", brand: "Bloom Clinic", head: 17, tail: 35, notes: "Close to target; improve consistency." },
-      { therapist: "Grace", brand: "Nova Skin", head: 21, tail: 42, notes: "Model performer; ideal challenge behavior." },
-      { therapist: "Hannah", brand: "Nova Skin", head: 19, tail: 38, notes: "Solid progress with strong conversion." },
-      { therapist: "Iris", brand: "Nova Skin", head: 16, tail: 30, notes: "Needs support to improve daily completion." }
-    ];
+    let rows = [];
 
     const brandFilter = document.getElementById("brandFilter");
     const therapistFilter = document.getElementById("therapistFilter");
@@ -289,6 +504,7 @@
     const rewardGrid = document.getElementById("rewardGrid");
     const detailBox = document.getElementById("detailBox");
     const periodLine = document.getElementById("periodLine");
+    const connectionStatus = document.getElementById("connectionStatus");
 
     let challengeStart = new Date("2026-05-22T00:00:00");
     let challengeEnd = new Date("2026-06-17T23:59:59");
@@ -306,28 +522,38 @@
       return `${y}-${m}-${day}`;
     }
 
+    function paidTrialTotal(r) {
+      return num(r.head) + num(r.tail);
+    }
+
+    function wormholesFromPaidTrials(count) {
+      return Math.floor(num(count) / 2);
+    }
+
+    function totalWormholes(r) {
+      return wormholesFromPaidTrials(paidTrialTotal(r));
+    }
+
     function getCompletionPercent(r) {
-      const target = 63;
-      return Math.round((num(r.head) + num(r.tail)) / target * 100);
+      const target = 24;
+      return Math.min(100, Math.round(totalWormholes(r) / target * 100));
     }
 
     function buildSummary(data) {
       const therapistCount = data.length;
-      const totalHead = data.reduce((a, r) => a + num(r.head), 0);
-      const totalTail = data.reduce((a, r) => a + num(r.tail), 0);
-      const totalAction = totalHead + totalTail;
+      const totalPaidTrials = data.reduce((a, r) => a + paidTrialTotal(r), 0);
+      const totalWormholeCount = data.reduce((a, r) => a + totalWormholes(r), 0);
+      const unlockedPlayers = data.filter(r => prizeLevel(totalWormholes(r)) !== "-").length;
       const avgRate = therapistCount ? Math.round(data.reduce((a, r) => a + getCompletionPercent(r), 0) / therapistCount) : 0;
-      const fullComplete = data.filter(r => num(r.head) >= 21 && num(r.tail) >= 42).length;
       const totalDays = challengeDays().length;
 
       const cards = [
-        { label: "Therapists", value: therapistCount, sub: "Active participants" },
-        { label: "Total Head", value: totalHead, sub: "Target = 21 each" },
-        { label: "Total Tail", value: totalTail, sub: "Target = 42 each" },
-        { label: "Total Action", value: totalAction, sub: "Head + Tail" },
-        { label: "Avg Completion", value: avgRate + "%", sub: "Across visible records" },
-        { label: "Full Completed", value: fullComplete, sub: "Reached 21 Head + 42 Tail" },
-        { label: "Open Days", value: totalDays, sub: "May 22, 2026 to June 17, 2026, Sundays excluded" }
+        { label: "參賽玩家", value: therapistCount, sub: "目前顯示人數" },
+        { label: "Paid Trial", value: totalPaidTrials, sub: "每 2 隻 = 1 個蟲洞" },
+        { label: "已集齊蟲洞", value: totalWormholeCount, sub: "依目前篩選計算" },
+        { label: "已解鎖玩家", value: unlockedPlayers, sub: "集齊 3 個或以上蟲洞" },
+        { label: "平均進度", value: avgRate + "%", sub: "以 24 個蟲洞為最終關卡" },
+        { label: "開店挑戰日", value: totalDays, sub: "2026/05/22 至 2026/06/17，星期日不計" }
       ];
 
       summaryGrid.innerHTML = cards.map(c => `
@@ -340,7 +566,12 @@
     }
 
     function renderPeriod() {
-      periodLine.textContent = `Challenge Period: ${formatDate(challengeStart)} to ${formatDate(challengeEnd)} (Sundays excluded)`;
+      periodLine.textContent = `挑戰期間：${formatDate(challengeStart)} 至 ${formatDate(challengeEnd)}（星期日店休不計）`;
+    }
+
+    function setConnectionStatus(state, message) {
+      connectionStatus.className = `connection-status ${state}`;
+      connectionStatus.textContent = message;
     }
 
     function uniqueBrands() {
@@ -353,13 +584,13 @@
     }
 
     function fillFilters() {
-      brandFilter.innerHTML = ["ALL", ...uniqueBrands()].map(v => `<option value="${v}">${v === "ALL" ? "All Brands" : v}</option>`).join("");
+      brandFilter.innerHTML = ["ALL", ...uniqueBrands()].map(v => `<option value="${v}">${v === "ALL" ? "全部品牌" : v}</option>`).join("");
       refillTherapists();
     }
 
     function refillTherapists() {
       const list = uniqueTherapists(brandFilter.value || "ALL");
-      therapistFilter.innerHTML = ["ALL", ...list].map(v => `<option value="${v}">${v === "ALL" ? "All Therapists" : v}</option>`).join("");
+      therapistFilter.innerHTML = ["ALL", ...list].map(v => `<option value="${v}">${v === "ALL" ? "全部玩家" : v}</option>`).join("");
     }
 
     function getFilteredRows() {
@@ -424,76 +655,71 @@
       return buildSequentialDailyCounts(r.tail, 2);
     }
 
-    function bestSuccessStreak(r) {
-      const headByDate = getHeadMap(r);
-      const tailByDate = getTailMap(r);
-      let best = 0;
-      let current = 0;
-
-      challengeDays().forEach((d) => {
-        const key = toYmd(d);
-        const isSuccess = num(headByDate[key]) >= 1 && num(tailByDate[key]) >= 2;
-        current = isSuccess ? current + 1 : 0;
-        best = Math.max(best, current);
-      });
-
-      return best;
+    function dailyPaidTrials(r, key) {
+      return num(getHeadMap(r)[key]) + num(getTailMap(r)[key]);
     }
 
-    function rewardLevel(streak) {
-      if (streak >= 21) return "D";
-      if (streak >= 14) return "C";
-      if (streak >= 7) return "B";
-      if (streak >= 3) return "A";
+    function dailyWormholes(r, key) {
+      return wormholesFromPaidTrials(dailyPaidTrials(r, key));
+    }
+
+    function prizeLevel(wormholes) {
+      if (wormholes >= 24) return "F";
+      if (wormholes >= 21) return "E";
+      if (wormholes >= 13) return "D";
+      if (wormholes >= 8) return "C";
+      if (wormholes >= 5) return "B";
+      if (wormholes >= 3) return "A";
       return "-";
     }
 
     function renderRewards(data) {
       const criteria = [
-        { name: "Prize A", days: 3, level: "A" },
-        { name: "Prize B", days: 7, level: "B" },
-        { name: "Prize C", days: 14, level: "C" },
-        { name: "Prize D", days: 21, level: "D" }
+        { name: "獎品 A", wormholes: 3, level: "A" },
+        { name: "獎品 B", wormholes: 5, level: "B" },
+        { name: "獎品 C", wormholes: 8, level: "C" },
+        { name: "獎品 D", wormholes: 13, level: "D" },
+        { name: "獎品 E", wormholes: 21, level: "E" },
+        { name: "終極獎品", wormholes: 24, level: "F" }
       ];
 
       rewardGrid.innerHTML = criteria.map((item) => {
-        const winners = data.filter(r => bestSuccessStreak(r) >= item.days).length;
+        const winners = data.filter(r => totalWormholes(r) >= item.wormholes).length;
         return `<div class="reward-card">
           <div class="reward-name">${item.level}</div>
-          <div class="reward-criteria">${item.days} consecutive successful days</div>
-          <div class="reward-count">${winners} therapist${winners === 1 ? "" : "s"}</div>
+          <div class="reward-criteria">${item.name}｜集齊 ${item.wormholes} 個蟲洞</div>
+          <div class="reward-count">${winners} 位玩家已解鎖</div>
         </div>`;
       }).join("");
     }
 
     function renderTable(filtered) {
       if (!filtered.length) {
-        boardWrap.innerHTML = `<div class="detail">No records found for selected filters.</div>`;
-        detailBox.textContent = "No therapist selected.";
+        boardWrap.innerHTML = `<div class="detail">目前篩選沒有玩家資料。</div>`;
+        detailBox.textContent = "尚未選擇玩家。";
         return;
       }
 
       const days = challengeDays();
-      const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(day => `<div class="weekday">${day}</div>`).join("");
+      const weekdays = ["一", "二", "三", "四", "五", "六"].map(day => `<div class="weekday">星期${day}</div>`).join("");
       const cells = calendarCells(days);
       boardWrap.innerHTML = filtered.map((r, i) => {
-        const headByDate = getHeadMap(r);
-        const tailByDate = getTailMap(r);
         const boxes = cells.map((d) => {
           if (!d) return `<div class="daybox blank"></div>`;
           const key = toYmd(d);
-          const headCount = num(headByDate[key]);
-          const tailCount = num(tailByDate[key]);
-          const headOk = headCount >= 1;
-          const tailOk = tailCount >= 2;
+          const paidTrials = dailyPaidTrials(r, key);
+          const wormholes = dailyWormholes(r, key);
+          const unlocked = wormholes > 0;
           return `<div class="daybox">
             <div class="daynum">${(d.getMonth() + 1)}/${d.getDate()}</div>
-            <div class="daily-line"><span class="daily-label">Head</span><span class="daily-mark ${headOk ? "" : "empty"}">${headOk ? "✓" : "○"} ${headCount}/1</span></div>
-            <div class="daily-line"><span class="daily-label">Tail</span><span class="daily-mark ${tailOk ? "" : "empty"}">${tailOk ? "✓" : "○"} ${tailCount}/2</span></div>
+            <div class="daily-line"><span class="daily-label">Paid Trial</span><span class="daily-mark ${unlocked ? "" : "empty"}">${paidTrials}/2</span></div>
+            <div class="daily-line"><span class="daily-label">蟲洞</span><span class="daily-mark ${unlocked ? "" : "empty"}">${unlocked ? "✓" : "○"} ${wormholes}</span></div>
           </div>`;
         }).join("");
+        const wormholes = totalWormholes(r);
+        const centerText = r.center ? ` · ${r.center}` : "";
         return `<div class="player-card" data-index="${i}">
-          <div class="player-head"><strong>${r.therapist}</strong><span>${r.brand} · ${getCompletionPercent(r)}%</span></div>
+          <div class="player-head"><strong>${r.therapist}</strong><span>${r.brand}${centerText} · 蟲洞 ${wormholes} · <span class="level-badge">獎品 ${prizeLevel(wormholes)}</span></span></div>
           <div class="calendar-grid">${weekdays}${boxes}</div>
         </div>`;
       }).join("");
@@ -502,42 +728,68 @@
         card.addEventListener("click", () => {
           const idx = Number(card.dataset.index);
           const r = filtered[idx];
-          detailBox.innerHTML = `<strong>${r.therapist}</strong> · ${r.brand}<br>
-            Completion: ${getCompletionPercent(r)}% (${num(r.head) + num(r.tail)}/63)<br>
-            Reward: ${rewardLevel(bestSuccessStreak(r))} (${bestSuccessStreak(r)} consecutive days)<br>
-            Head: ${r.head}/21 | Tail: ${r.tail}/42<br>
-            Head Days: ${Object.keys(getHeadMap(r)).length} | Tail Days: ${Object.keys(getTailMap(r)).length}<br>
-            Insight: ${r.notes}`;
+          const paidTrials = paidTrialTotal(r);
+          const wormholes = totalWormholes(r);
+          const centerText = r.center ? ` · ${r.center}` : "";
+          detailBox.innerHTML = `<strong>${r.therapist}</strong> · ${r.brand}${centerText}<br>
+            Paid Trial：${paidTrials} 隻｜已集齊蟲洞：${wormholes} 個<br>
+            目前獎品：${prizeLevel(wormholes)}｜終極進度：${getCompletionPercent(r)}%（目標 24 個蟲洞）<br>
+            每日規則：成功銷售 2 隻 Paid Trial = 1 個蟲洞<br>
+            戰況提示：${r.notes}`;
         });
       });
     }
 
     async function loadFromAppsScript() {
       if (!APPS_SCRIPT_WEBAPP_URL || APPS_SCRIPT_WEBAPP_URL.includes("PASTE_YOUR_APPS_SCRIPT_WEBAPP_URL_HERE")) {
-        return;
+        rows = [];
+        setConnectionStatus("error", "未設定 Apps Script URL");
+        return false;
       }
-      const res = await fetch(`${APPS_SCRIPT_WEBAPP_URL}?action=challengeData`);
-      const data = await res.json();
-      if (!data.ok || !Array.isArray(data.rows)) return;
 
-      if (data.challengeStart) challengeStart = new Date(`${data.challengeStart}T00:00:00`);
-      if (data.challengeEnd) challengeEnd = new Date(`${data.challengeEnd}T23:59:59`);
+      setConnectionStatus("loading", "正在連接 Apps Script");
 
-      rows = data.rows.map(r => {
-        const headByDate = r.headByDate || {};
-        const tailByDate = r.tailByDate || {};
-        const head = Object.values(headByDate).reduce((a, v) => a + num(v), 0);
-        const tail = Object.values(tailByDate).reduce((a, v) => a + num(v), 0);
-        return {
+      try {
+        const res = await fetch(`${APPS_SCRIPT_WEBAPP_URL}?action=challengeData`);
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+        if (!data.ok) {
+          throw new Error(data.error || "Apps Script 回傳錯誤");
+        }
+        if (!Array.isArray(data.rows)) {
+          throw new Error("Apps Script 未回傳 rows 資料");
+        }
+
+        if (data.challengeStart) challengeStart = new Date(`${data.challengeStart}T00:00:00`);
+        if (data.challengeEnd) challengeEnd = new Date(`${data.challengeEnd}T23:59:59`);
+
+        rows = data.rows.map(r => {
+          const headByDate = r.headByDate || {};
+          const tailByDate = r.tailByDate || {};
+          const head = Object.values(headByDate).reduce((a, v) => a + num(v), 0);
+          const tail = Object.values(tailByDate).reduce((a, v) => a + num(v), 0);
+          return {
           therapist: r.therapist,
           brand: r.brand,
+          center: r.center || "",
           head,
           tail,
-          notes: `Synced from Google Sheet. Head total: ${head}; Tail total: ${tail}`,
+          notes: `已連接 Google Sheet。Paid Trial 累計：${head + tail}；蟲洞累計：${wormholesFromPaidTrials(head + tail)}`,
           headByDate,
           tailByDate
         };
-      });
+        });
+
+        setConnectionStatus("ok", `已連接 Apps Script｜${rows.length} 位玩家`);
+        return true;
+      } catch (error) {
+        rows = [];
+        setConnectionStatus("error", `連線失敗：${error.message}`);
+        return false;
+      }
     }
 
     function refresh() {

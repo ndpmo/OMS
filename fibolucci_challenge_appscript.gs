@@ -20,31 +20,35 @@ function doGet(e) {
 function buildChallengePayload_() {
   const ss = SpreadsheetApp.openById(CHALLENGE_SPREADSHEET_ID);
   const sh = ss.getSheetByName(CHALLENGE_SHEET_NAME) || ss.getSheets()[0];
-  const values = sh.getDataRange().getValues();
+  const values = sh.getDataRange().getDisplayValues();
   if (!values.length) {
     return { rows: [] };
   }
 
-  const headers = values[0].map(h => String(h || '').trim());
+  const headerInfo = findHeaderRow_(values);
+  if (!headerInfo) {
+    throw new Error('Missing required columns: Brand, Therapist, Prepaid Invoice Date, FALSE, TRUE');
+  }
+
+  const headerRow = headerInfo.rowIndex;
+  const headers = headerInfo.headers;
   const idx = {
-    brand: headers.indexOf('Brand'),
-    therapist: headers.indexOf('Therapist'),
-    date: headers.indexOf('Prepaid Invoice Date'),
+    brand: headers.indexOf('BRAND'),
+    center: headers.indexOf('CENTER'),
+    therapist: headers.indexOf('THERAPIST'),
+    date: headers.indexOf('PREPAID INVOICE DATE'),
     head: headers.indexOf('FALSE'),
     tail: headers.indexOf('TRUE')
   };
-
-  if (idx.brand < 0 || idx.therapist < 0 || idx.date < 0 || idx.head < 0 || idx.tail < 0) {
-    throw new Error('Missing required columns: Brand, Therapist, Prepaid Invoice Date, FALSE, TRUE');
-  }
 
   const start = new Date(CHALLENGE_START + 'T00:00:00');
   const end = new Date(CHALLENGE_END + 'T23:59:59');
   const byTherapist = {};
 
-  for (let r = 1; r < values.length; r++) {
+  for (let r = headerRow + 1; r < values.length; r++) {
     const row = values[r];
     const brand = String(row[idx.brand] || '').trim();
+    const center = idx.center >= 0 ? String(row[idx.center] || '').trim() : '';
     const therapist = String(row[idx.therapist] || '').trim();
     const rawDate = row[idx.date];
     const headCount = Number(row[idx.head] || 0);
@@ -55,9 +59,9 @@ function buildChallengePayload_() {
     const dt = parseSheetDate_(rawDate);
     if (!dt || dt < start || dt > end) continue;
 
-    const key = `${brand}||${therapist}`;
+    const key = `${brand}||${center}||${therapist}`;
     if (!byTherapist[key]) {
-      byTherapist[key] = { brand, therapist, headByDate: {}, tailByDate: {}, totalHead: 0, totalTail: 0 };
+      byTherapist[key] = { brand, center, therapist, headByDate: {}, tailByDate: {}, totalHead: 0, totalTail: 0 };
     }
 
     const dayKey = Utilities.formatDate(dt, Session.getScriptTimeZone(), 'yyyy-MM-dd');
@@ -69,13 +73,31 @@ function buildChallengePayload_() {
 
   const rows = Object.keys(byTherapist)
     .map(k => byTherapist[k])
-    .sort((a, b) => a.brand.localeCompare(b.brand) || a.therapist.localeCompare(b.therapist));
+    .sort((a, b) => a.brand.localeCompare(b.brand) || a.center.localeCompare(b.center) || a.therapist.localeCompare(b.therapist));
 
   return {
     challengeStart: CHALLENGE_START,
     challengeEnd: CHALLENGE_END,
     rows
   };
+}
+
+function findHeaderRow_(values) {
+  const maxRowsToScan = Math.min(values.length, 10);
+  for (let r = 0; r < maxRowsToScan; r++) {
+    const headers = values[r].map(h => String(h).trim().toUpperCase());
+    const hasRequired =
+      headers.indexOf('BRAND') >= 0 &&
+      headers.indexOf('THERAPIST') >= 0 &&
+      headers.indexOf('PREPAID INVOICE DATE') >= 0 &&
+      headers.indexOf('FALSE') >= 0 &&
+      headers.indexOf('TRUE') >= 0;
+
+    if (hasRequired) {
+      return { rowIndex: r, headers };
+    }
+  }
+  return null;
 }
 
 function parseSheetDate_(raw) {
