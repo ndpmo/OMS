@@ -714,8 +714,9 @@
           </div>`;
         }).join("");
         const streak = bestSuccessStreak(r);
+        const centerText = r.center ? ` · ${r.center}` : "";
         return `<div class="player-card" data-index="${i}">
-          <div class="player-head"><strong>${r.therapist}</strong><span>${r.brand} · 完成率 ${getCompletionPercent(r)}% · <span class="level-badge">獎章 ${rewardLevel(streak)}</span></span></div>
+          <div class="player-head"><strong>${r.therapist}</strong><span>${r.brand}${centerText} · 完成率 ${getCompletionPercent(r)}% · <span class="level-badge">獎章 ${rewardLevel(streak)}</span></span></div>
           <div class="calendar-grid">${weekdays}${boxes}</div>
         </div>`;
       }).join("");
@@ -725,7 +726,8 @@
           const idx = Number(card.dataset.index);
           const r = filtered[idx];
           const streak = bestSuccessStreak(r);
-          detailBox.innerHTML = `<strong>${r.therapist}</strong> · ${r.brand}<br>
+          const centerText = r.center ? ` · ${r.center}` : "";
+          detailBox.innerHTML = `<strong>${r.therapist}</strong> · ${r.brand}${centerText}<br>
             完成率：${getCompletionPercent(r)}%（${num(r.head) + num(r.tail)}/63）<br>
             目前獎章：${rewardLevel(streak)}｜最佳連勝：${streak} 個開店日<br>
             Head：${r.head}/21｜Tail：${r.tail}/42<br>
@@ -769,6 +771,7 @@
           return {
             therapist: r.therapist,
             brand: r.brand,
+            center: r.center || "",
             head,
             tail,
             notes: `已連接 Google Sheet。Head 累計：${head}；Tail 累計：${tail}`,

@@ -34,6 +34,7 @@ function buildChallengePayload_() {
   const headers = headerInfo.headers;
   const idx = {
     brand: headers.indexOf('BRAND'),
+    center: headers.indexOf('CENTER'),
     therapist: headers.indexOf('THERAPIST'),
     date: headers.indexOf('PREPAID INVOICE DATE'),
     head: headers.indexOf('FALSE'),
@@ -47,6 +48,7 @@ function buildChallengePayload_() {
   for (let r = headerRow + 1; r < values.length; r++) {
     const row = values[r];
     const brand = String(row[idx.brand] || '').trim();
+    const center = idx.center >= 0 ? String(row[idx.center] || '').trim() : '';
     const therapist = String(row[idx.therapist] || '').trim();
     const rawDate = row[idx.date];
     const headCount = Number(row[idx.head] || 0);
@@ -57,9 +59,9 @@ function buildChallengePayload_() {
     const dt = parseSheetDate_(rawDate);
     if (!dt || dt < start || dt > end) continue;
 
-    const key = `${brand}||${therapist}`;
+    const key = `${brand}||${center}||${therapist}`;
     if (!byTherapist[key]) {
-      byTherapist[key] = { brand, therapist, headByDate: {}, tailByDate: {}, totalHead: 0, totalTail: 0 };
+      byTherapist[key] = { brand, center, therapist, headByDate: {}, tailByDate: {}, totalHead: 0, totalTail: 0 };
     }
 
     const dayKey = Utilities.formatDate(dt, Session.getScriptTimeZone(), 'yyyy-MM-dd');
@@ -71,7 +73,7 @@ function buildChallengePayload_() {
 
   const rows = Object.keys(byTherapist)
     .map(k => byTherapist[k])
-    .sort((a, b) => a.brand.localeCompare(b.brand) || a.therapist.localeCompare(b.therapist));
+    .sort((a, b) => a.brand.localeCompare(b.brand) || a.center.localeCompare(b.center) || a.therapist.localeCompare(b.therapist));
 
   return {
     challengeStart: CHALLENGE_START,
