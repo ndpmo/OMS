@@ -387,9 +387,8 @@
     .daybox { border: 1px solid rgba(255, 184, 96, 0.3); border-radius: 10px; padding: 8px; background: rgba(35, 13, 31, 0.84); min-height: 94px; }
     .daybox.blank { visibility: hidden; }
     .daynum { font-size: 11px; color: #d5c7ff; }
-    .daily-line { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 6px; font-size: 12px; color: #f4edff; }
-    .daily-label { color: #e7c2aa; }
-    .daily-mark { color: #ffd078; font-weight: 800; }
+    .daily-line { display: flex; align-items: center; justify-content: center; gap: 7px; margin-top: 18px; font-size: 13px; color: #f4edff; }
+    .daily-mark { color: #ffd078; font-weight: 900; }
     .empty { color: #806b72; }
     .level-badge { color: #ffe8a8; font-weight: 900; }
 
@@ -707,13 +706,11 @@
         const boxes = cells.map((d) => {
           if (!d) return `<div class="daybox blank"></div>`;
           const key = toYmd(d);
-          const paidTrials = dailyPaidTrials(r, key);
           const wormholes = dailyWormholes(r, key);
           const unlocked = wormholes > 0;
           return `<div class="daybox">
             <div class="daynum">${(d.getMonth() + 1)}/${d.getDate()}</div>
-            <div class="daily-line"><span class="daily-label">Paid Trial</span><span class="daily-mark ${unlocked ? "" : "empty"}">${paidTrials}/2</span></div>
-            <div class="daily-line"><span class="daily-label">蟲洞</span><span class="daily-mark ${unlocked ? "" : "empty"}">${unlocked ? "✓" : "○"} ${wormholes}</span></div>
+            <div class="daily-line"><span class="daily-mark ${unlocked ? "" : "empty"}">${unlocked ? "✓ 成功" : "○ 未完成"}</span></div>
           </div>`;
         }).join("");
         const wormholes = totalWormholes(r);
