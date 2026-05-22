@@ -1,0 +1,566 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fibolucci Daily Challenge Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Noto+Sans+TC:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-1: #050214;
+      --bg-2: #14063a;
+      --panel: rgba(16, 8, 46, 0.75);
+      --panel-solid: #160a40;
+      --accent: #9f6bff;
+      --accent-2: #ffd66f;
+      --mint: #6dffdc;
+      --text: #f7f2ff;
+      --muted: #c5bae7;
+      --line: rgba(180, 139, 255, 0.28);
+      --good: #59ffb0;
+      --warn: #ffd978;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--text);
+      font-family: "Noto Sans TC", sans-serif;
+      background:
+        radial-gradient(circle at 18% 22%, rgba(95, 27, 203, 0.42), transparent 36%),
+        radial-gradient(circle at 78% 12%, rgba(0, 219, 255, 0.20), transparent 34%),
+        linear-gradient(145deg, var(--bg-1), var(--bg-2));
+      min-height: 100vh;
+    }
+
+    .container {
+      width: min(1220px, 94vw);
+      margin: 24px auto 36px;
+    }
+
+    .hero {
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 24px;
+      background: linear-gradient(120deg, rgba(125, 58, 255, 0.18), rgba(7, 6, 36, 0.9));
+      box-shadow: 0 16px 36px rgba(0,0,0,0.42), inset 0 0 0 1px rgba(255,255,255,0.04);
+    }
+
+    .hero h1 {
+      margin: 0;
+      font-family: "Orbitron", sans-serif;
+      font-size: clamp(26px, 4vw, 46px);
+      letter-spacing: 1px;
+      line-height: 1.15;
+      color: #fff4cf;
+      text-shadow: 0 0 18px rgba(255, 185, 93, 0.5);
+    }
+
+    .hero p {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: clamp(14px, 2.1vw, 19px);
+    }
+
+    .period {
+      margin-top: 10px;
+      display: inline-block;
+      border: 1px solid rgba(255, 214, 111, 0.45);
+      border-radius: 999px;
+      padding: 6px 12px;
+      color: #ffe8a8;
+      font-size: 12px;
+      letter-spacing: 0.5px;
+      background: rgba(255, 214, 111, 0.08);
+    }
+
+    .summary-grid {
+      margin-top: 18px;
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+
+    .kpi {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+      backdrop-filter: blur(4px);
+    }
+
+    .kpi .label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.9px;
+      color: #dbc9ff;
+    }
+
+    .kpi .value {
+      margin-top: 8px;
+      font-family: "Orbitron", sans-serif;
+      font-size: clamp(22px, 3.3vw, 34px);
+      color: #fff;
+    }
+
+    .kpi .sub {
+      font-size: 12px;
+      color: var(--mint);
+      margin-top: 3px;
+    }
+
+    .section-title {
+      margin: 24px 0 10px;
+      font-family: "Orbitron", sans-serif;
+      font-size: clamp(20px, 3vw, 30px);
+      color: #f0dcff;
+      letter-spacing: 0.8px;
+    }
+
+    .reward-panel {
+      margin-top: 18px;
+      border: 1px solid rgba(255, 214, 111, 0.36);
+      border-radius: 14px;
+      padding: 16px;
+      background: linear-gradient(120deg, rgba(255, 214, 111, 0.12), rgba(18, 9, 48, 0.86));
+    }
+
+    .reward-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .reward-head h2 {
+      margin: 0;
+      font-family: "Orbitron", sans-serif;
+      font-size: 22px;
+      color: #ffe8a8;
+    }
+
+    .reward-head span { color: var(--muted); font-size: 13px; }
+    .reward-grid { display: grid; grid-template-columns: repeat(4, minmax(150px, 1fr)); gap: 10px; }
+    .reward-card { border: 1px solid rgba(255, 214, 111, 0.28); border-radius: 10px; padding: 12px; background: rgba(9, 6, 28, 0.72); }
+    .reward-name { font-family: "Orbitron", sans-serif; font-size: 24px; color: #fff4cf; }
+    .reward-criteria { margin-top: 4px; color: #dfd3ff; font-size: 12px; }
+    .reward-count { margin-top: 10px; color: var(--mint); font-weight: 800; }
+
+    .filter-wrap {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px;
+      background: var(--panel-solid);
+      box-shadow: inset 0 0 28px rgba(145,88,255,0.14);
+    }
+
+    .filter-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 12px;
+      color: #d9ceff;
+      margin-bottom: 6px;
+      letter-spacing: 0.8px;
+    }
+
+    select {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid rgba(189, 158, 255, 0.45);
+      background: rgba(13, 9, 34, 0.92);
+      color: #fff;
+      padding: 10px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .board-wrap { display: grid; gap: 14px; }
+    .player-card { border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: rgba(10, 7, 31, 0.92); }
+    .player-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 8px; flex-wrap: wrap; }
+    .calendar-grid { display: grid; grid-template-columns: repeat(6, minmax(78px, 1fr)); gap: 8px; }
+    .weekday { padding: 6px 4px; text-align: center; color: #ffe8a8; font-size: 11px; font-weight: 800; border-bottom: 1px solid rgba(255, 214, 111, 0.24); }
+    .daybox { border: 1px solid rgba(185, 149, 255, 0.35); border-radius: 10px; padding: 8px; background: rgba(26, 13, 62, 0.8); min-height: 94px; }
+    .daybox.blank { visibility: hidden; }
+    .daynum { font-size: 11px; color: #d5c7ff; }
+    .daily-line { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 6px; font-size: 12px; color: #f4edff; }
+    .daily-label { color: #cdbdff; }
+    .daily-mark { color: #6dffdc; font-weight: 800; }
+    .empty { color: #7b6aa9; }
+
+    .pill {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .pill.done { background: rgba(89,255,176,0.2); color: var(--good); }
+    .pill.near { background: rgba(255,217,120,0.2); color: var(--warn); }
+
+    .detail {
+      margin-top: 12px;
+      border: 1px dashed rgba(186, 152, 255, 0.45);
+      border-radius: 12px;
+      padding: 12px;
+      color: #e7d9ff;
+      font-size: 13px;
+      background: rgba(15, 10, 38, 0.8);
+      line-height: 1.6;
+    }
+
+    @media (max-width: 860px) {
+      .filter-row { grid-template-columns: 1fr; }
+      .reward-grid { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
+    }
+
+    @media (max-width: 540px) {
+      .reward-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <section class="hero">
+      <h1>Fibolucci Daily Challenge</h1>
+      <p>Top summary for management view, and bottom filter section to drill down by brand and therapist.</p>
+      <div id="periodLine" class="period"></div>
+      <div id="summaryGrid" class="summary-grid"></div>
+    </section>
+
+    <section class="reward-panel">
+      <div class="reward-head">
+        <h2>Reward Criteria</h2>
+        <span>Based on consecutive days where Head and Tail both succeed</span>
+      </div>
+      <div id="rewardGrid" class="reward-grid"></div>
+    </section>
+
+    <h2 class="section-title">By Brand / By Therapist Result</h2>
+
+    <section class="filter-wrap">
+      <div class="filter-row">
+        <div class="field">
+          <label for="brandFilter">BRAND</label>
+          <select id="brandFilter"></select>
+        </div>
+        <div class="field">
+          <label for="therapistFilter">THERAPIST</label>
+          <select id="therapistFilter"></select>
+        </div>
+      </div>
+
+      <div id="boardWrap" class="board-wrap"></div>
+
+      <div id="detailBox" class="detail">Select a row to see individual therapist breakdown.</div>
+    </section>
+  </div>
+
+  <script>
+    const APPS_SCRIPT_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwWlQIj3BJjtubusxrHvJRmq_hljPsGe2hftMHxzpHFeumte5TXXOKYeu1NSjkfvVV3/exec";
+    let rows = [
+      { therapist: "Amy", brand: "Aster Wellness", head: 21, tail: 42, notes: "Strong referral sharing and daily consistency." },
+      { therapist: "Brian", brand: "Aster Wellness", head: 18, tail: 36, notes: "Great momentum, needs 3 more days to full score." },
+      { therapist: "Cindy", brand: "Aster Wellness", head: 21, tail: 40, notes: "Perfect Head, near-complete Tail target." },
+      { therapist: "Derek", brand: "Bloom Clinic", head: 15, tail: 31, notes: "Good effort, focus on daily discipline." },
+      { therapist: "Eva", brand: "Bloom Clinic", head: 20, tail: 41, notes: "High performer and stable contributor." },
+      { therapist: "Felix", brand: "Bloom Clinic", head: 17, tail: 35, notes: "Close to target; improve consistency." },
+      { therapist: "Grace", brand: "Nova Skin", head: 21, tail: 42, notes: "Model performer; ideal challenge behavior." },
+      { therapist: "Hannah", brand: "Nova Skin", head: 19, tail: 38, notes: "Solid progress with strong conversion." },
+      { therapist: "Iris", brand: "Nova Skin", head: 16, tail: 30, notes: "Needs support to improve daily completion." }
+    ];
+
+    const brandFilter = document.getElementById("brandFilter");
+    const therapistFilter = document.getElementById("therapistFilter");
+    const boardWrap = document.getElementById("boardWrap");
+    const summaryGrid = document.getElementById("summaryGrid");
+    const rewardGrid = document.getElementById("rewardGrid");
+    const detailBox = document.getElementById("detailBox");
+    const periodLine = document.getElementById("periodLine");
+
+    let challengeStart = new Date("2026-05-22T00:00:00");
+    let challengeEnd = new Date("2026-06-17T23:59:59");
+
+    function num(v) { return Number(v) || 0; }
+
+    function formatDate(d) {
+      return d.toLocaleDateString("en-CA", { year: "numeric", month: "2-digit", day: "2-digit" });
+    }
+
+    function toYmd(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    }
+
+    function getCompletionPercent(r) {
+      const target = 63;
+      return Math.round((num(r.head) + num(r.tail)) / target * 100);
+    }
+
+    function buildSummary(data) {
+      const therapistCount = data.length;
+      const totalHead = data.reduce((a, r) => a + num(r.head), 0);
+      const totalTail = data.reduce((a, r) => a + num(r.tail), 0);
+      const totalAction = totalHead + totalTail;
+      const avgRate = therapistCount ? Math.round(data.reduce((a, r) => a + getCompletionPercent(r), 0) / therapistCount) : 0;
+      const fullComplete = data.filter(r => num(r.head) >= 21 && num(r.tail) >= 42).length;
+      const totalDays = challengeDays().length;
+
+      const cards = [
+        { label: "Therapists", value: therapistCount, sub: "Active participants" },
+        { label: "Total Head", value: totalHead, sub: "Target = 21 each" },
+        { label: "Total Tail", value: totalTail, sub: "Target = 42 each" },
+        { label: "Total Action", value: totalAction, sub: "Head + Tail" },
+        { label: "Avg Completion", value: avgRate + "%", sub: "Across visible records" },
+        { label: "Full Completed", value: fullComplete, sub: "Reached 21 Head + 42 Tail" },
+        { label: "Open Days", value: totalDays, sub: "May 22, 2026 to June 17, 2026, Sundays excluded" }
+      ];
+
+      summaryGrid.innerHTML = cards.map(c => `
+        <div class="kpi">
+          <div class="label">${c.label}</div>
+          <div class="value">${c.value}</div>
+          <div class="sub">${c.sub}</div>
+        </div>
+      `).join("");
+    }
+
+    function renderPeriod() {
+      periodLine.textContent = `Challenge Period: ${formatDate(challengeStart)} to ${formatDate(challengeEnd)} (Sundays excluded)`;
+    }
+
+    function uniqueBrands() {
+      return [...new Set(rows.map(r => r.brand))].sort();
+    }
+
+    function uniqueTherapists(brandValue) {
+      const scoped = brandValue === "ALL" ? rows : rows.filter(r => r.brand === brandValue);
+      return [...new Set(scoped.map(r => r.therapist))].sort();
+    }
+
+    function fillFilters() {
+      brandFilter.innerHTML = ["ALL", ...uniqueBrands()].map(v => `<option value="${v}">${v === "ALL" ? "All Brands" : v}</option>`).join("");
+      refillTherapists();
+    }
+
+    function refillTherapists() {
+      const list = uniqueTherapists(brandFilter.value || "ALL");
+      therapistFilter.innerHTML = ["ALL", ...list].map(v => `<option value="${v}">${v === "ALL" ? "All Therapists" : v}</option>`).join("");
+    }
+
+    function getFilteredRows() {
+      const b = brandFilter.value;
+      const t = therapistFilter.value;
+      return rows.filter(r => (b === "ALL" || r.brand === b) && (t === "ALL" || r.therapist === t));
+    }
+
+    function challengeDays() {
+      const days = [];
+      const d = new Date(challengeStart.getTime());
+      while (d <= challengeEnd) {
+        if (d.getDay() !== 0) {
+          days.push(new Date(d.getTime()));
+        }
+        d.setDate(d.getDate() + 1);
+      }
+      return days;
+    }
+
+    function shopWeekdayIndex(d) {
+      return d.getDay() - 1;
+    }
+
+    function calendarCells(days) {
+      if (!days.length) return [];
+
+      const cells = [];
+      const firstOffset = shopWeekdayIndex(days[0]);
+      for (let i = 0; i < firstOffset; i++) {
+        cells.push(null);
+      }
+
+      days.forEach((d) => cells.push(d));
+
+      while (cells.length % 6 !== 0) {
+        cells.push(null);
+      }
+
+      return cells;
+    }
+
+    function buildSequentialDailyCounts(total, maxPerDay) {
+      const map = {};
+      let remaining = num(total);
+      challengeDays().forEach((d) => {
+        if (remaining <= 0) return;
+        const count = Math.min(maxPerDay, remaining);
+        map[toYmd(d)] = count;
+        remaining -= count;
+      });
+      return map;
+    }
+
+    function getHeadMap(r) {
+      if (r.headByDate) return r.headByDate;
+      return buildSequentialDailyCounts(r.head, 1);
+    }
+
+    function getTailMap(r) {
+      if (r.tailByDate) return r.tailByDate;
+      return buildSequentialDailyCounts(r.tail, 2);
+    }
+
+    function bestSuccessStreak(r) {
+      const headByDate = getHeadMap(r);
+      const tailByDate = getTailMap(r);
+      let best = 0;
+      let current = 0;
+
+      challengeDays().forEach((d) => {
+        const key = toYmd(d);
+        const isSuccess = num(headByDate[key]) >= 1 && num(tailByDate[key]) >= 2;
+        current = isSuccess ? current + 1 : 0;
+        best = Math.max(best, current);
+      });
+
+      return best;
+    }
+
+    function rewardLevel(streak) {
+      if (streak >= 21) return "D";
+      if (streak >= 14) return "C";
+      if (streak >= 7) return "B";
+      if (streak >= 3) return "A";
+      return "-";
+    }
+
+    function renderRewards(data) {
+      const criteria = [
+        { name: "Prize A", days: 3, level: "A" },
+        { name: "Prize B", days: 7, level: "B" },
+        { name: "Prize C", days: 14, level: "C" },
+        { name: "Prize D", days: 21, level: "D" }
+      ];
+
+      rewardGrid.innerHTML = criteria.map((item) => {
+        const winners = data.filter(r => bestSuccessStreak(r) >= item.days).length;
+        return `<div class="reward-card">
+          <div class="reward-name">${item.level}</div>
+          <div class="reward-criteria">${item.days} consecutive successful days</div>
+          <div class="reward-count">${winners} therapist${winners === 1 ? "" : "s"}</div>
+        </div>`;
+      }).join("");
+    }
+
+    function renderTable(filtered) {
+      if (!filtered.length) {
+        boardWrap.innerHTML = `<div class="detail">No records found for selected filters.</div>`;
+        detailBox.textContent = "No therapist selected.";
+        return;
+      }
+
+      const days = challengeDays();
+      const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(day => `<div class="weekday">${day}</div>`).join("");
+      const cells = calendarCells(days);
+      boardWrap.innerHTML = filtered.map((r, i) => {
+        const headByDate = getHeadMap(r);
+        const tailByDate = getTailMap(r);
+        const boxes = cells.map((d) => {
+          if (!d) return `<div class="daybox blank"></div>`;
+          const key = toYmd(d);
+          const headCount = num(headByDate[key]);
+          const tailCount = num(tailByDate[key]);
+          const headOk = headCount >= 1;
+          const tailOk = tailCount >= 2;
+          return `<div class="daybox">
+            <div class="daynum">${(d.getMonth() + 1)}/${d.getDate()}</div>
+            <div class="daily-line"><span class="daily-label">Head</span><span class="daily-mark ${headOk ? "" : "empty"}">${headOk ? "✓" : "○"} ${headCount}/1</span></div>
+            <div class="daily-line"><span class="daily-label">Tail</span><span class="daily-mark ${tailOk ? "" : "empty"}">${tailOk ? "✓" : "○"} ${tailCount}/2</span></div>
+          </div>`;
+        }).join("");
+        return `<div class="player-card" data-index="${i}">
+          <div class="player-head"><strong>${r.therapist}</strong><span>${r.brand} · ${getCompletionPercent(r)}%</span></div>
+          <div class="calendar-grid">${weekdays}${boxes}</div>
+        </div>`;
+      }).join("");
+
+      Array.from(boardWrap.querySelectorAll(".player-card")).forEach((card) => {
+        card.addEventListener("click", () => {
+          const idx = Number(card.dataset.index);
+          const r = filtered[idx];
+          detailBox.innerHTML = `<strong>${r.therapist}</strong> · ${r.brand}<br>
+            Completion: ${getCompletionPercent(r)}% (${num(r.head) + num(r.tail)}/63)<br>
+            Reward: ${rewardLevel(bestSuccessStreak(r))} (${bestSuccessStreak(r)} consecutive days)<br>
+            Head: ${r.head}/21 | Tail: ${r.tail}/42<br>
+            Head Days: ${Object.keys(getHeadMap(r)).length} | Tail Days: ${Object.keys(getTailMap(r)).length}<br>
+            Insight: ${r.notes}`;
+        });
+      });
+    }
+
+    async function loadFromAppsScript() {
+      if (!APPS_SCRIPT_WEBAPP_URL || APPS_SCRIPT_WEBAPP_URL.includes("PASTE_YOUR_APPS_SCRIPT_WEBAPP_URL_HERE")) {
+        return;
+      }
+      const res = await fetch(`${APPS_SCRIPT_WEBAPP_URL}?action=challengeData`);
+      const data = await res.json();
+      if (!data.ok || !Array.isArray(data.rows)) return;
+
+      if (data.challengeStart) challengeStart = new Date(`${data.challengeStart}T00:00:00`);
+      if (data.challengeEnd) challengeEnd = new Date(`${data.challengeEnd}T23:59:59`);
+
+      rows = data.rows.map(r => {
+        const headByDate = r.headByDate || {};
+        const tailByDate = r.tailByDate || {};
+        const head = Object.values(headByDate).reduce((a, v) => a + num(v), 0);
+        const tail = Object.values(tailByDate).reduce((a, v) => a + num(v), 0);
+        return {
+          therapist: r.therapist,
+          brand: r.brand,
+          head,
+          tail,
+          notes: `Synced from Google Sheet. Head total: ${head}; Tail total: ${tail}`,
+          headByDate,
+          tailByDate
+        };
+      });
+    }
+
+    function refresh() {
+      const data = getFilteredRows();
+      buildSummary(data);
+      renderRewards(data);
+      renderTable(data);
+    }
+
+    brandFilter.addEventListener("change", () => {
+      refillTherapists();
+      therapistFilter.value = "ALL";
+      refresh();
+    });
+
+    therapistFilter.addEventListener("change", refresh);
+
+    (async function init() {
+      await loadFromAppsScript();
+      fillFilters();
+      renderPeriod();
+      refresh();
+    })();
+  </script>
+</body>
+</html>
