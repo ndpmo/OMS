@@ -25,11 +25,11 @@ function buildChallengePayload_() {
     return { rows: [] };
   }
 
-  const headers = values[0].map(h => String(h || '').trim());
+  const headers = values[0].map(h => String(h).trim().toUpperCase());
   const idx = {
-    brand: headers.indexOf('Brand'),
-    therapist: headers.indexOf('Therapist'),
-    date: headers.indexOf('Prepaid Invoice Date'),
+    brand: headers.indexOf('BRAND'),
+    therapist: headers.indexOf('THERAPIST'),
+    date: headers.indexOf('PREPAID INVOICE DATE'),
     head: headers.indexOf('FALSE'),
     tail: headers.indexOf('TRUE')
   };
