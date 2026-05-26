@@ -3589,7 +3589,8 @@
       }
 
       function normalizeRole(value) {
-        return String(value || "").replace(/\s+/g, "").trim().toUpperCase();
+        const normalized = String(value || "").replace(/\s+/g, "").trim().toUpperCase();
+        return normalized === "NJ" ? "E1" : normalized;
       }
 
       function displayRole(value) {
