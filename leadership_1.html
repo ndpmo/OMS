@@ -1689,23 +1689,26 @@
       td:nth-child(7) { width: 220px; }
 
       th:nth-child(8),
-      td:nth-child(8) { width: 190px; }
+      td:nth-child(8) { width: 160px; }
 
       th:nth-child(9),
-      td:nth-child(9) { width: 150px; }
+      td:nth-child(9) { width: 190px; }
 
       th:nth-child(10),
-      td:nth-child(10) { width: 145px; }
+      td:nth-child(10) { width: 150px; }
 
       th:nth-child(11),
-      td:nth-child(11) { width: 280px; }
+      td:nth-child(11) { width: 145px; }
 
-      th:nth-child(10),
-      th:nth-child(11) {
+      th:nth-child(12),
+      td:nth-child(12) { width: 280px; }
+
+      th:nth-child(11),
+      th:nth-child(12) {
         white-space: nowrap;
       }
 
-      td:nth-child(11) .secondary-button {
+      td:nth-child(12) .secondary-button {
         width: 100%;
         min-height: 38px;
         padding: 0 10px;
@@ -2610,8 +2613,9 @@
                   <th>銷售表現 (本月 + 對上3個月)</th>
                   <th>Offer target</th>
                   <th>2026 5月後招聘</th>
-                  <th>Offer target completion</th>
-                  <th>Assessment date time</th>
+                  <th>MTD % + MTD TARGET</th>
+                  <th>Target completion Date</th>
+                  <th>Assessment date</th>
                   <th>Carried out by</th>
                   <th>History</th>
                   <th>Follow Up</th>
@@ -3404,6 +3408,89 @@
           return numeric * 100;
         }
         return numeric;
+      }
+
+      function parseDateValue(raw) {
+        if (raw == null || raw === "") return null;
+        const text = String(raw).trim();
+        if (!text) return null;
+
+        const excelSerial = Number(text);
+        if (Number.isFinite(excelSerial) && !/[-/:]/.test(text) && excelSerial > 20000 && excelSerial < 80000) {
+          const excelEpoch = Date.UTC(1899, 11, 30);
+          const parsed = new Date(excelEpoch + excelSerial * 86400000);
+          return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+        }
+
+        const iso = text.match(/\d{4}-\d{2}-\d{2}/);
+        if (iso) {
+          const [year, month, day] = iso[0].split("-").map(Number);
+          const parsed = new Date(year, month - 1, day);
+          if (parsed.getFullYear() === year && parsed.getMonth() === month - 1 && parsed.getDate() === day) {
+            return parsed;
+          }
+        }
+
+        const fallback = new Date(text);
+        if (Number.isFinite(fallback.getTime())) {
+          return new Date(fallback.getFullYear(), fallback.getMonth(), fallback.getDate());
+        }
+        return null;
+      }
+
+      function calculateOfferMtdProgress(offerTarget, totalConverted, targetCompletionDateRaw) {
+        const target = Number(offerTarget);
+        if (!Number.isFinite(target) || target <= 0) {
+          return { mtdTarget: 0, mtdPercent: 0 };
+        }
+
+        const deadline = parseDateValue(targetCompletionDateRaw);
+        if (!deadline) {
+          const convertedNoDeadline = Number(totalConverted) || 0;
+          const fallbackPercent = target > 0 ? Math.floor((convertedNoDeadline / target) * 100) : 0;
+          return { mtdTarget: target, mtdPercent: fallbackPercent };
+        }
+
+        const today = new Date();
+        const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const monthStart = new Date(todayOnly.getFullYear(), todayOnly.getMonth(), 1);
+
+        let progressRatio = 0;
+        if (deadline < monthStart) {
+          progressRatio = 1;
+        } else {
+          const totalDays = Math.max(1, Math.floor((deadline - monthStart) / 86400000) + 1);
+          const effectiveDate = todayOnly < deadline ? todayOnly : deadline;
+          const elapsedDays = effectiveDate < monthStart
+            ? 0
+            : Math.floor((effectiveDate - monthStart) / 86400000) + 1;
+          progressRatio = Math.max(0, Math.min(1, elapsedDays / totalDays));
+        }
+
+        let mtdTarget = Math.ceil(target * progressRatio);
+        if (progressRatio > 0 && mtdTarget === 0) mtdTarget = 1;
+        mtdTarget = Math.min(target, mtdTarget);
+
+        const converted = Number(totalConverted) || 0;
+        const mtdPercent = mtdTarget > 0 ? Math.floor((converted / mtdTarget) * 100) : 0;
+        return { mtdTarget, mtdPercent };
+      }
+
+      function mtdCompletionClass(value) {
+        const numeric = Number(value);
+        if (!Number.isFinite(numeric)) return "";
+        return numeric >= 100 ? "sales-good" : "sales-risk";
+      }
+
+      function formatYmdDate(dateObj) {
+        return `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, "0")}-${String(dateObj.getDate()).padStart(2, "0")}`;
+      }
+
+      function formatTargetCompletionDate(raw) {
+        const parsed = parseDateValue(raw);
+        if (parsed) return formatYmdDate(parsed);
+        const text = String(raw ?? "").trim();
+        return text || "-";
       }
 
       function formatJoinDate(rawDate) {
@@ -4272,7 +4359,7 @@
 
         return `
           <tr class="${sectionClass}">
-            <td colspan="11">
+            <td colspan="12">
               <div class="assessment-section-title">
                 <strong>${title}</strong>
                 <span>${rows.length} records · ${label}</span>
@@ -4298,9 +4385,16 @@
         }
         const offerTarget = parseNumber(assessment.offerTarget);
         const totalConverted = parseNumber(person.offerSinceMay2026) + parseNumber(person.onboardSinceMay2026);
-        const offerTargetCompletion = offerTarget > 0
-          ? `${Math.floor((totalConverted / offerTarget) * 100)}%`
-          : "-";
+        const mtdProgress = calculateOfferMtdProgress(offerTarget, totalConverted, assessment.targetCompletionDate);
+        const joinStatus = participationValue(assessment);
+        const hideOfferMetrics = joinStatus === "C" || joinStatus === "N";
+        const offerTargetCompletion = `${Math.max(0, Number(mtdProgress.mtdPercent) || 0)}%`;
+        const mtdTargetText = String(Math.max(0, Number(mtdProgress.mtdTarget) || 0));
+        const mtdClass = hideOfferMetrics ? "" : mtdCompletionClass(mtdProgress.mtdPercent);
+        const offerTargetText = hideOfferMetrics ? "-" : (assessment.offerTarget !== undefined && assessment.offerTarget !== "" ? assessment.offerTarget : "-");
+        const mtdPercentText = hideOfferMetrics ? "-" : offerTargetCompletion;
+        const mtdTargetDisplayText = hideOfferMetrics ? "-" : mtdTargetText;
+        const targetCompletionDateText = formatTargetCompletionDate(assessment.targetCompletionDate);
         const locationText = person.floor && person.floor !== person.center
           ? `${person.center} | ${person.floor}`
           : person.center;
@@ -4324,7 +4418,7 @@
                 M-3: <strong class="${salesStatusClass(person.feb)}">${formatPercent(person.feb)}</strong>
               </div>
             </td>
-            <td><strong style="color: #fff;">${assessment.offerTarget !== undefined && assessment.offerTarget !== "" ? assessment.offerTarget : "-"}</strong></td>
+            <td><strong style="color: #fff;">${offerTargetText}</strong></td>
             <td>
               <div class="staff-meta">
                 CV: ${formatPlain(person.cvSinceMay2026)}<br>
@@ -4332,8 +4426,12 @@
                 On board: ${formatPlain(person.onboardSinceMay2026)}
               </div>
             </td>
-            <td><strong class="kpi-offer-target-completion">${offerTargetCompletion}</strong></td>
-            <td><span class="staff-meta">${assessment.assessmentDateTime || "-"}</span></td>
+            <td>
+              <strong class="kpi-offer-target-completion ${mtdClass}">${mtdPercentText}</strong>
+              <div class="staff-meta">MTD Target: ${mtdTargetDisplayText}</div>
+            </td>
+            <td><span class="staff-meta">${targetCompletionDateText}</span></td>
+            <td><span class="staff-meta">${assessmentDateOnly(assessment.assessmentDateTime) || "-"}</span></td>
             <td><span class="staff-meta">${assessment.carriedOutBy || "-"}</span></td>
             <td>${renderAssessmentActions(person, assessment)}</td>
           </tr>
@@ -4357,7 +4455,7 @@
 
         if (!rows.length) {
           const message = isLoading ? "正在載入資料..." : "沒有已完成評估的人員符合目前篩選條件。";
-          elements.staffTable.innerHTML = `<tr><td colspan="11">${message}</td></tr>`;
+          elements.staffTable.innerHTML = `<tr><td colspan="12">${message}</td></tr>`;
           return;
         }
 
