@@ -495,7 +495,10 @@
             const raw = tripletIdx.map(i => ((row[headersS1[i]] ?? "") + "").trim());
             const nonEmpty = raw.filter(v => v && v !== "-");
             if (nonEmpty.length === 0) return (fallbackValue ?? "").toString().trim();
-            if (nonEmpty.length === 1) return nonEmpty[0];
+            if (nonEmpty.length === 1) {
+                const parsedSingle = parseDate(nonEmpty[0]);
+                return parsedSingle ? formatDateAsDMonY(parsedSingle) : (fallbackValue ?? "").toString().trim();
+            }
 
             if (nonEmpty.length === 3) {
                 const dmy = parseDateByParts(nonEmpty[0], nonEmpty[1], nonEmpty[2]);
@@ -506,7 +509,7 @@
 
             const joined = nonEmpty.join(' ');
             const parsed = parseDate(joined);
-            return parsed ? formatDateAsDMonY(parsed) : joined;
+            return parsed ? formatDateAsDMonY(parsed) : (fallbackValue ?? "").toString().trim();
         }
         function hydrateS1DateFields(row) {
             const leadHeader = headersS1[S1_IDX.LEAD_DATE];
