@@ -491,13 +491,13 @@
             if (dt.getFullYear() !== y || dt.getMonth() !== m - 1 || dt.getDate() !== d) return null;
             return dt;
         }
-        function buildDateFromTripletColumns(row, tripletIdx, fallbackValue) {
+        function buildDateFromTripletColumns(row, tripletIdx, fallbackValue, allowFallback = true) {
             const raw = tripletIdx.map(i => ((row[headersS1[i]] ?? "") + "").trim());
             const nonEmpty = raw.filter(v => v && v !== "-");
-            if (nonEmpty.length === 0) return (fallbackValue ?? "").toString().trim();
+            if (nonEmpty.length === 0) return allowFallback ? (fallbackValue ?? "").toString().trim() : "-";
             if (nonEmpty.length === 1) {
                 const parsedSingle = parseDate(nonEmpty[0]);
-                return parsedSingle ? formatDateAsDMonY(parsedSingle) : (fallbackValue ?? "").toString().trim();
+                return parsedSingle ? formatDateAsDMonY(parsedSingle) : (allowFallback ? (fallbackValue ?? "").toString().trim() : "-");
             }
 
             if (nonEmpty.length === 3) {
@@ -509,7 +509,7 @@
 
             const joined = nonEmpty.join(' ');
             const parsed = parseDate(joined);
-            return parsed ? formatDateAsDMonY(parsed) : (fallbackValue ?? "").toString().trim();
+            return parsed ? formatDateAsDMonY(parsed) : (allowFallback ? (fallbackValue ?? "").toString().trim() : "-");
         }
         function hydrateS1DateFields(row) {
             const leadHeader = headersS1[S1_IDX.LEAD_DATE];
@@ -518,7 +518,7 @@
 
             if (leadHeader) row[leadHeader] = buildDateFromTripletColumns(row, S1_DATE_SRC.LEAD, row[leadHeader]);
             if (offerHeader) row[offerHeader] = buildDateFromTripletColumns(row, S1_DATE_SRC.OFFER, row[offerHeader]);
-            if (onboardHeader) row[onboardHeader] = buildDateFromTripletColumns(row, S1_DATE_SRC.ONBOARD, row[onboardHeader]);
+            if (onboardHeader) row[onboardHeader] = buildDateFromTripletColumns(row, S1_DATE_SRC.ONBOARD, row[onboardHeader], false);
         }
         function csvEscape(v) {
             const s = (v ?? "").toString();
