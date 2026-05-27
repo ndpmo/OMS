@@ -254,7 +254,7 @@
                 <div class="overflow-x-auto custom-scrollbar text-left">
                     <table class="w-full border-collapse">
                         <thead class="bg-blue-50/50 border-b-2 border-blue-100 text-blue-950 font-black text-sm text-center">
-                            <tr><th class="text-left px-6">BRAND</th><th class="text-center px-4">Lead Date</th><th class="text-center px-4">Offer Date</th><th class="text-center px-4">Status</th><th class="text-center px-4">RJ/NJ</th><th class="text-left px-6">Name (N)</th><th class="text-left px-6">REFER BY</th></tr>
+                            <tr><th class="text-left px-6">BRAND</th><th class="text-center px-4">Lead Date</th><th class="text-center px-4">Offer Date</th><th class="text-center px-4">On Board Date</th><th class="text-center px-4">Status</th><th class="text-center px-4">RJ/NJ</th><th class="text-left px-6">Name (N)</th><th class="text-left px-6">REFER BY</th></tr>
                         </thead>
                         <tbody id="sharedDetailTableBody" class="divide-y divide-slate-100 font-bold text-base md:text-lg"></tbody>
                     </table>
@@ -369,7 +369,8 @@
                                 <th class="text-left border-r border-teal-100 px-6">Core Team</th>
                                 <th class="border-r border-teal-100 text-indigo-700 px-4">Lead</th>
                                 <th class="border-r border-teal-100 text-emerald-700 px-4">NJ Offer</th>
-                                <th class="text-emerald-700 px-4">RJ Offer</th>
+                                <th class="border-r border-teal-100 text-emerald-700 px-4">RJ Offer</th>
+                                <th class="text-amber-700 px-4">Consider Offer</th>
                             </tr>
                         </thead>
                         <tbody id="hrPerformanceBody" class="divide-y divide-slate-200 readable-nums font-bold text-center"></tbody>
@@ -1183,7 +1184,7 @@
                     return sid && validIdSet.has(sid);
                 });
 
-                let leads = 0, nj = 0, rj = 0;
+                let leads = 0, nj = 0, consider = 0, rj = 0;
                 relRows.forEach(row => {
                     const ld = parseDate(row[headersS1[S1_IDX.LEAD_DATE]]);
                     const od = parseDate(row[headersS1[S1_IDX.OFFER_DATE]]);
@@ -1195,6 +1196,17 @@
                     const odTs = od ? od.getTime() : null;
                     const onbTs = onbD ? onbD.getTime() : null;
                     const filterTs = dateFilterType === 'OFFER' ? odTs : ldTs;
+                    const noOnboard = !onbTs;
+                    const hasOfferDate = !!odTs;
+                    const statusRaw = (row[headersS1[S1_IDX.STATUS]] || "").toString().trim();
+                    const statusUpper = statusRaw.toUpperCase();
+                    const isBlankStatus = !statusRaw || statusRaw === "-";
+                    const isPendingCcdReply = statusUpper.includes("PENDING CCD REPLY");
+                    const isPendingStatus = statusUpper.includes("PENDING");
+                    const isConsiderOffer = !isPendingCcdReply && !isPendingStatus && (
+                        statusUpper.includes("OFFER") ||
+                        (hasOfferDate && noOnboard && !isBlankStatus)
+                    );
 
                     if (filterTs && filterTs >= pStartTs && filterTs <= pEndLimitTs) leads++;
 
@@ -1202,9 +1214,12 @@
                     if (useOb && poStart && document.getElementById('hrPerfObEnd')?.value) {
                         if (!onbTs || onbTs < poStartTs || onbTs > poEndLimitTs) validOb = false;
                     }
-                    if (validOb && filterTs && filterTs >= pStartTs && filterTs <= pEndLimitTs && (st.includes("OFFER") || st.includes("ACCEPT"))) {
+                    if (!isConsiderOffer && validOb && filterTs && filterTs >= pStartTs && filterTs <= pEndLimitTs && (st.includes("OFFER") || st.includes("ACCEPT"))) {
                         if (rjnj === "NJ") nj++;
                         else if (rjnj === "RJ") rj++;
+                    }
+                    if (isConsiderOffer && filterTs && filterTs >= pStartTs && filterTs <= pEndLimitTs) {
+                        consider++;
                     }
                 });
 
@@ -1214,7 +1229,8 @@
                         <td class="text-left border-r border-teal-100 px-6">${teamName}</td>
                         <td class="border-r border-teal-100 text-indigo-700 text-xl px-4 underline decoration-indigo-300 decoration-2 underline-offset-4 cursor-pointer" onclick='showCoreTeamDetail(${JSON.stringify(teamName)}, ${JSON.stringify(brandName)}, "LEAD")'>${leads}</td>
                         <td class="border-r border-teal-100 text-emerald-700 text-xl px-4 underline decoration-emerald-300 decoration-2 underline-offset-4 cursor-pointer" onclick='showCoreTeamDetail(${JSON.stringify(teamName)}, ${JSON.stringify(brandName)}, "NJ")'>${nj}</td>
-                        <td class="text-emerald-700 text-xl px-4 underline decoration-emerald-300 decoration-2 underline-offset-4 cursor-pointer" onclick='showCoreTeamDetail(${JSON.stringify(teamName)}, ${JSON.stringify(brandName)}, "RJ")'>${rj}</td>
+                        <td class="border-r border-teal-100 text-emerald-700 text-xl px-4 underline decoration-emerald-300 decoration-2 underline-offset-4 cursor-pointer" onclick='showCoreTeamDetail(${JSON.stringify(teamName)}, ${JSON.stringify(brandName)}, "RJ")'>${rj}</td>
+                        <td class="text-amber-700 text-xl px-4 underline decoration-amber-300 decoration-2 underline-offset-4 cursor-pointer" onclick='showCoreTeamDetail(${JSON.stringify(teamName)}, ${JSON.stringify(brandName)}, "CO")'>${consider}</td>
                     </tr>`;
             });
         }
@@ -1250,7 +1266,7 @@
             );
             const validIdSet = new Set(Array.from(team.ids).filter(id => taFlowIdSet.has(id)));
 
-            const metricLabel = metric === 'LEAD' ? 'Lead' : (metric === 'NJ' ? 'NJ Offer' : 'RJ Offer');
+            const metricLabel = metric === 'LEAD' ? 'Lead' : (metric === 'NJ' ? 'NJ Offer' : (metric === 'CO' ? 'Consider Offer' : 'RJ Offer'));
             title.innerHTML = `<span class="w-3 h-3 bg-teal-500 rounded-full mr-3 inline-block"></span> [${brandName}] ${teamName} - ${metricLabel} Details`;
 
             const rows = dataS1.filter(row => {
@@ -1270,6 +1286,17 @@
                 const odTs = od ? od.getTime() : null;
                 const onbTs = onbD ? onbD.getTime() : null;
                 const filterTs = dateFilterType === 'OFFER' ? odTs : ldTs;
+                const noOnboard = !onbTs;
+                const hasOfferDate = !!odTs;
+                const statusRaw = (row[headersS1[S1_IDX.STATUS]] || "").toString().trim();
+                const statusUpper = statusRaw.toUpperCase();
+                const isBlankStatus = !statusRaw || statusRaw === "-";
+                const isPendingCcdReply = statusUpper.includes("PENDING CCD REPLY");
+                const isPendingStatus = statusUpper.includes("PENDING");
+                const isConsiderOffer = !isPendingCcdReply && !isPendingStatus && (
+                    statusUpper.includes("OFFER") ||
+                    (hasOfferDate && noOnboard && !isBlankStatus)
+                );
 
                 if (metric === 'LEAD') return filterTs && filterTs >= pStartTs && filterTs <= pEndLimitTs;
 
@@ -1277,7 +1304,11 @@
                 if (useOb && poStart && document.getElementById('hrPerfObEnd')?.value) {
                     if (!onbTs || onbTs < poStartTs || onbTs > poEndLimitTs) validOb = false;
                 }
+                if (metric === 'CO') {
+                    return validOb && filterTs && filterTs >= pStartTs && filterTs <= pEndLimitTs && isConsiderOffer;
+                }
                 if (!(validOb && filterTs && filterTs >= pStartTs && filterTs <= pEndLimitTs && (st.includes("OFFER") || st.includes("ACCEPT")))) return false;
+                if (isConsiderOffer) return false;
                 if (metric === 'NJ') return rjnj === 'NJ';
                 if (metric === 'RJ') return rjnj === 'RJ';
                 return false;
@@ -1288,6 +1319,7 @@
                     <td class="text-left border-r border-blue-50 text-indigo-600 font-black text-sm px-6">${row[headersS1[S1_IDX.BRAND]] || '-'}</td>
                     <td class="border-r border-blue-50 text-slate-800 text-sm px-4">${row[headersS1[S1_IDX.LEAD_DATE]] || "-"}</td>
                     <td class="border-r border-blue-50 text-slate-800 text-sm px-4">${row[headersS1[S1_IDX.OFFER_DATE]] || "-"}</td>
+                    <td class="border-r border-blue-50 text-slate-800 text-sm px-4">${row[headersS1[S1_IDX.ONBOARD_DATE]] || "-"}</td>
                     <td class="border-r border-blue-50 text-slate-900 text-sm font-black px-4">${row[headersS1[S1_IDX.STATUS]] || "-"}</td>
                     <td class="border-r border-blue-50 text-indigo-700 uppercase text-sm px-4">${row[headersS1[S1_IDX.RJNJ]] || '-'}</td>
                     <td class="text-left border-r border-blue-50 text-slate-900 font-black text-sm px-6">${row[headersS1[S1_IDX.NAME]] || '-'}</td>
@@ -1469,6 +1501,7 @@
                     <td class="text-left border-r border-blue-50 text-indigo-600 font-black text-sm px-6">${row[headersS1[S1_IDX.BRAND]]}</td>
                     <td class="border-r border-blue-50 text-slate-800 text-sm px-4">${row[headersS1[S1_IDX.LEAD_DATE]] || "-"}</td>
                     <td class="border-r border-blue-50 text-slate-800 text-sm px-4">${row[headersS1[S1_IDX.OFFER_DATE]] || "-"}</td>
+                    <td class="border-r border-blue-50 text-slate-800 text-sm px-4">${row[headersS1[S1_IDX.ONBOARD_DATE]] || "-"}</td>
                     <td class="border-r border-blue-50 text-slate-900 text-sm font-black px-4">${row[headersS1[S1_IDX.STATUS]] || "-"}</td>
                     <td class="border-r border-blue-50 text-indigo-700 uppercase text-sm px-4">${row[headersS1[S1_IDX.RJNJ]]}</td>
                     <td class="text-left border-r border-blue-50 text-slate-900 font-black text-sm px-6">${row[headersS1[S1_IDX.NAME]]}</td>
