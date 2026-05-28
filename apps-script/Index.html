@@ -165,6 +165,7 @@
       }
 
       .message,
+      .run-status,
       .status {
         color: var(--muted);
         font-size: 13px;
@@ -218,6 +219,38 @@
         font-size: 12px;
       }
 
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        min-height: 24px;
+        border-radius: 999px;
+        padding: 0 9px;
+        font-size: 12px;
+        font-weight: 800;
+        background: #eee6da;
+        color: #5f5141;
+      }
+
+      .status-active {
+        background: rgba(11, 111, 104, 0.14);
+        color: var(--teal);
+      }
+
+      .status-error {
+        background: rgba(201, 59, 53, 0.14);
+        color: var(--red);
+      }
+
+      .status-cooldown {
+        background: rgba(198, 139, 46, 0.18);
+        color: #8d6118;
+      }
+
+      .status-checking {
+        background: rgba(43, 99, 191, 0.14);
+        color: #2b63bf;
+      }
+
       @media (max-width: 980px) {
         .shell {
           padding: 18px;
@@ -268,6 +301,7 @@
           <button class="ghost" onclick="refreshAll()">立即刷新</button>
         </div>
         <p id="status" class="status">載入中...</p>
+        <p id="run-status" class="run-status">狀態：等待操作。</p>
         <div class="table-wrap">
           <table>
             <thead>
@@ -317,8 +351,11 @@
 
       function refreshAll() {
         setMessage('正在刷新全部筆記...');
+        document.querySelector('#run-status').textContent = '狀態：正在呼叫 Apps Script，請稍候。';
         google.script.run.withSuccessHandler((summary) => {
-          setMessage(`刷新完成：更新 ${summary.refreshed || 0}，冷卻中 ${summary.skipped || 0}。`);
+          const text = `刷新完成：更新 ${summary.refreshed || 0}，冷卻中 ${summary.skipped || 0}，錯誤 ${summary.errors || 0}。`;
+          setMessage(text);
+          document.querySelector('#run-status').textContent = `狀態：${text}`;
           boot();
         }).withFailureHandler(showError).refreshAllTrackedPosts();
       }
@@ -327,6 +364,9 @@
         document.querySelector('#status').textContent = data.hasToken
           ? 'Apify Token 已儲存；按「立即刷新」才會更新，每篇筆記最多每小時一次。'
           : '新增筆記前，請先儲存 Apify Token。';
+        if (!data.hasToken) {
+          document.querySelector('#run-status').textContent = '狀態：缺少 Apify Token，請先儲存 Token。';
+        }
 
         const rows = data.tracks || [];
         document.querySelector('#rows').innerHTML = rows.length
@@ -353,9 +393,32 @@
             <td>${change(latest, 'hourly')}</td>
             <td>${change(latest, 'daily')}</td>
             <td>${date(track.last_checked_at || latest.fetched_at)}</td>
-            <td>${escapeHtml(track.status || '-')}<span class="sub">${escapeHtml(track.error || '')}</span></td>
+            <td>${statusBadge(track.status)}${statusHint(track, latest)}</td>
           </tr>
         `;
+      }
+
+      function statusBadge(status) {
+        const normalized = String(status || 'unknown').toLowerCase();
+        const labels = {
+          queued: '等待刷新',
+          checking: '讀取中',
+          active: '已更新',
+          cooldown: '冷卻中',
+          error: '錯誤',
+          unknown: '未知'
+        };
+        return `<span class="status-badge status-${normalized}">${labels[normalized] || escapeHtml(status || '未知')}</span>`;
+      }
+
+      function statusHint(track, latest) {
+        const status = String(track.status || '').toLowerCase();
+        if (track.error) return `<span class="sub">${escapeHtml(track.error)}</span>`;
+        if (status === 'queued') return '<span class="sub">已加入清單，按「立即刷新」才會抓取數據。</span>';
+        if (status === 'checking') return '<span class="sub">正在向 Apify 讀取資料。</span>';
+        if (status === 'active') return `<span class="sub">上次成功：${date(track.last_checked_at || latest.fetched_at)}</span>`;
+        if (status === 'cooldown') return '<span class="sub">一小時內已更新過，為節省成本暫不重抓。</span>';
+        return '<span class="sub">等待下一步操作。</span>';
       }
 
       function change(row, prefix) {
@@ -393,6 +456,7 @@
 
       function showError(error) {
         setMessage(error.message || String(error));
+        document.querySelector('#run-status').textContent = `狀態：操作失敗，${error.message || String(error)}`;
       }
 
       function escapeHtml(value) {

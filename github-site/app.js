@@ -3,6 +3,7 @@ const input = document.querySelector('#url-input');
 const message = document.querySelector('#form-message');
 const body = document.querySelector('#tracks-body');
 const storageStatus = document.querySelector('#storage-status');
+const runStatus = document.querySelector('#run-status');
 const refreshAll = document.querySelector('#refresh-all');
 const tokenPanel = document.querySelector('#token-panel');
 const tokenInput = document.querySelector('#token-input');
@@ -25,12 +26,16 @@ form.addEventListener('submit', async (event) => {
 
 refreshAll.addEventListener('click', async () => {
   setMessage('正在刷新全部筆記...');
+  runStatus.textContent = '狀態：正在呼叫 Apps Script，請稍候。';
   try {
     const summary = await callApi('refreshAll');
     await loadDashboard();
-    setMessage(`刷新完成：更新 ${summary.refreshed || 0}，冷卻中 ${summary.skipped || 0}。`);
+    const text = `刷新完成：更新 ${summary.refreshed || 0}，冷卻中 ${summary.skipped || 0}，錯誤 ${summary.errors || 0}。`;
+    setMessage(text);
+    runStatus.textContent = `狀態：${text}`;
   } catch (error) {
     setMessage(error.message, true);
+    runStatus.textContent = `狀態：刷新失敗，${error.message}`;
   }
 });
 
@@ -43,6 +48,7 @@ saveToken.addEventListener('click', async () => {
     await loadDashboard();
   } catch (error) {
     setMessage(error.message, true);
+    runStatus.textContent = `狀態：Token 儲存失敗，${error.message}`;
   }
 });
 
@@ -60,6 +66,9 @@ function render(data) {
   storageStatus.textContent = data.hasToken
     ? 'Apps Script 已連接；按「立即刷新」才會更新，每篇筆記最多每小時一次。'
     : 'Apps Script 已連接，但仍需要先儲存 Apify Token。';
+  if (!data.hasToken) {
+    runStatus.textContent = '狀態：缺少 Apify Token，請先儲存 Token。';
+  }
   tokenPanel.hidden = Boolean(data.hasToken);
 
   const rows = data.tracks || [];
@@ -87,9 +96,32 @@ function renderTrack(track) {
       <td>${change(latest, 'hourly')}</td>
       <td>${change(latest, 'daily')}</td>
       <td>${date(track.last_checked_at || latest.fetched_at)}</td>
-      <td>${escapeHtml(track.status || '-')}<span class="sub">${escapeHtml(track.error || '')}</span></td>
+      <td>${statusBadge(track.status)}${statusHint(track, latest)}</td>
     </tr>
   `;
+}
+
+function statusBadge(status) {
+  const normalized = String(status || 'unknown').toLowerCase();
+  const labels = {
+    queued: '等待刷新',
+    checking: '讀取中',
+    active: '已更新',
+    cooldown: '冷卻中',
+    error: '錯誤',
+    unknown: '未知'
+  };
+  return `<span class="status-badge status-${normalized}">${labels[normalized] || escapeHtml(status || '未知')}</span>`;
+}
+
+function statusHint(track, latest) {
+  const status = String(track.status || '').toLowerCase();
+  if (track.error) return `<span class="sub">${escapeHtml(track.error)}</span>`;
+  if (status === 'queued') return '<span class="sub">已加入清單，按「立即刷新」才會抓取數據。</span>';
+  if (status === 'checking') return '<span class="sub">正在向 Apify 讀取資料。</span>';
+  if (status === 'active') return `<span class="sub">上次成功：${date(track.last_checked_at || latest.fetched_at)}</span>`;
+  if (status === 'cooldown') return '<span class="sub">一小時內已更新過，為節省成本暫不重抓。</span>';
+  return '<span class="sub">等待下一步操作。</span>';
 }
 
 function callApi(action, params = {}) {

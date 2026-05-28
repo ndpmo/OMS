@@ -78,6 +78,7 @@ h2 {
 
 .lede,
 .storage-status,
+.run-status,
 .message {
   color: var(--muted);
   line-height: 1.55;
@@ -204,6 +205,38 @@ th {
   display: block;
   color: var(--muted);
   font-size: 12px;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  border-radius: 999px;
+  padding: 0 9px;
+  font-size: 12px;
+  font-weight: 800;
+  background: #eee6da;
+  color: #5f5141;
+}
+
+.status-active {
+  background: rgba(11, 111, 104, 0.14);
+  color: var(--teal);
+}
+
+.status-error {
+  background: rgba(201, 59, 53, 0.14);
+  color: var(--red);
+}
+
+.status-cooldown {
+  background: rgba(198, 139, 46, 0.18);
+  color: #8d6118;
+}
+
+.status-checking {
+  background: rgba(43, 99, 191, 0.14);
+  color: #2b63bf;
 }
 
 .empty-row td {

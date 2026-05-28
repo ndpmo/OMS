@@ -110,7 +110,7 @@ function refreshOne(noteId, options) {
   const cooldown = getCooldown_(track.last_checked_at);
   if (!options.force && cooldown.blocked) {
     updateTrackStatus_(tracksSheet, trackIndex, 'cooldown', `請於 ${cooldown.nextAllowedText} 後再刷新。`);
-    return { skipped: true, reason: 'cooldown', nextAllowedAt: cooldown.nextAllowedAt };
+    return { ok: true, skipped: true, reason: 'cooldown', noteId, nextAllowedAt: cooldown.nextAllowedAt };
   }
 
   try {
@@ -124,6 +124,7 @@ function refreshOne(noteId, options) {
 
     resultsSheet.appendRow(makeRow_(sample, hourlyDelta, dailyDelta));
     updateTrackStatus_(tracksSheet, trackIndex, 'active', '', sample.fetchedAt);
+    return { ok: true, skipped: false, noteId };
   } catch (error) {
     updateTrackStatus_(tracksSheet, trackIndex, 'error', error.message);
     throw error;
@@ -134,14 +135,21 @@ function refreshAllTrackedPosts() {
   setup();
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   const tracks = getObjects_(ss.getSheetByName(TRACKS_SHEET_NAME));
-  const summary = { refreshed: 0, skipped: 0, errors: 0 };
+  const summary = { refreshed: 0, skipped: 0, errors: 0, details: [] };
   tracks.forEach((track) => {
     if (track.note_id) {
       try {
         const result = refreshOne(track.note_id);
-        result && result.skipped ? summary.skipped++ : summary.refreshed++;
+        if (result && result.skipped) {
+          summary.skipped++;
+          summary.details.push(result);
+        } else {
+          summary.refreshed++;
+          summary.details.push(result || { ok: true, noteId: track.note_id });
+        }
       } catch (error) {
         summary.errors++;
+        summary.details.push({ ok: false, noteId: track.note_id, error: error.message });
         console.error(`${track.note_id}: ${error.message}`);
       }
     }
