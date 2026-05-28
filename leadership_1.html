@@ -444,7 +444,7 @@
 
       .metric-detail-item {
         display: grid;
-        grid-template-columns: 1fr auto;
+        grid-template-columns: minmax(150px, 1fr) minmax(150px, 1fr) minmax(100px, auto) minmax(90px, auto) minmax(90px, auto);
         gap: 10px;
         align-items: center;
         padding: 10px 12px;
@@ -460,6 +460,47 @@
       .metric-detail-item span {
         color: var(--muted);
         font-size: 0.86rem;
+        text-align: left;
+        white-space: normal;
+      }
+
+      .metric-detail-header {
+        display: grid;
+        grid-template-columns: minmax(150px, 1fr) minmax(150px, 1fr) minmax(100px, auto) minmax(90px, auto) minmax(90px, auto);
+        gap: 10px;
+        padding: 2px 12px 6px;
+        color: var(--muted);
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .metric-detail-item .team-size-cell,
+      .metric-detail-header .team-size-header,
+      .metric-detail-item .mtd-cell,
+      .metric-detail-header .mtd-header {
+        text-align: right;
+      }
+
+      .metric-detail-item .position-cell,
+      .metric-detail-header .position-header {
+        text-align: center;
+      }
+
+      .metric-detail-item .team-size-cell,
+      .metric-detail-header .team-size-header {
+        text-align: center;
+      }
+
+      .metric-detail-item .mtd-cell.mtd-good {
+        color: var(--green);
+        font-weight: 800;
+      }
+
+      .metric-detail-item .mtd-cell.mtd-bad {
+        color: var(--red);
+        font-weight: 800;
       }
 
       .mission-panel {
@@ -3851,6 +3892,8 @@
           const key = String(person?.staffId || "").trim();
           return assessments[key] || null;
         };
+        const hasAssessmentDateOnly = (person) =>
+          /\d{4}-\d{2}-\d{2}/.test(String(withAssessment(person)?.assessmentDateTime || "").trim());
         const byJoin = (person, value) => participationValue(withAssessment(person)) === value;
         const byRole = (role) => staff.filter((person) => normalizeRole(person.position) === role);
         const byE1Eligible = () => staff.filter(isEligibleE1);
@@ -3865,12 +3908,24 @@
           consider_as: byRole("AS").filter((person) => byJoin(person, "C")),
           consider_tl: byRole("TL").filter((person) => byJoin(person, "C")),
           consider_e1: byRole("E1").filter((person) => byJoin(person, "C")),
-          pending_as: byRole("AS").filter((person) => !hasAssessment(person) && Number(person.apr) >= 100 && Number(person.mar) >= 100),
-          pending_tl: byRole("TL").filter((person) => !hasAssessment(person) && Number(person.apr) >= 100 && Number(person.mar) >= 100),
-          pending_e1: byE1Eligible().filter((person) => !hasAssessment(person))
+          pending_as: byRole("AS").filter((person) => Number(person.apr) >= 100 && Number(person.mar) >= 100 && !hasAssessmentDateOnly(person)),
+          pending_tl: byRole("TL").filter((person) => Number(person.apr) >= 100 && Number(person.mar) >= 100 && !hasAssessmentDateOnly(person)),
+          pending_e1: byE1Eligible().filter((person) => !hasAssessmentDateOnly(person))
         };
 
         return map[metricKey] || [];
+      }
+
+      function metricTeamSizeText(person) {
+        const role = normalizeRole(person.position);
+        if (["S", "AS"].includes(role)) {
+          const hc = staff.filter((p) => p.as === person.as && !["S", "AS"].includes(normalizeRole(p.position))).length;
+          return String(hc);
+        }
+
+        const teamE1 = staff.filter((p) => p.team === person.team && normalizeRole(p.position) === "E1").length;
+        if (role === "TL") return String(teamE1);
+        return "0";
       }
 
       function metricTitleByKey(metricKey) {
@@ -3896,14 +3951,40 @@
         if (!people.length) {
           elements.metricDetailContent.innerHTML = `<div class="metric-detail-item"><strong>沒有人員</strong><span>-</span></div>`;
         } else {
-          elements.metricDetailContent.innerHTML = people
+          const rowsHtml = people
             .sort((a, b) =>
               String(a.brand || "").localeCompare(String(b.brand || "")) ||
               String(a.floor || a.center || "").localeCompare(String(b.floor || b.center || "")) ||
               String(a.therapist || "").localeCompare(String(b.therapist || ""))
             )
-            .map((person) => `<div class="metric-detail-item"><strong>${escapeHtml(person.therapist || "-")}</strong><span>${escapeHtml(person.floor || person.center || "-")}</span></div>`)
+            .map((person) => {
+              const floor = person.floor || person.center || "-";
+              const roleLabel = displayRole(person.position);
+              const teamSize = metricTeamSizeText(person);
+              const mtdValue = Number(person.mayMtd ?? salesPercent(person));
+              const mtd = formatPercent(mtdValue);
+              const mtdClass = Number.isFinite(mtdValue) && mtdValue >= 100 ? "mtd-good" : "mtd-bad";
+              return `
+                <div class="metric-detail-item">
+                  <strong>${escapeHtml(person.therapist || "-")}</strong>
+                  <span>${escapeHtml(floor)}</span>
+                  <span class="position-cell">${escapeHtml(roleLabel)}</span>
+                  <span class="team-size-cell">${escapeHtml(teamSize)}</span>
+                  <span class="mtd-cell ${mtdClass}">${escapeHtml(mtd)}</span>
+                </div>
+              `;
+            })
             .join("");
+          elements.metricDetailContent.innerHTML = `
+            <div class="metric-detail-header">
+              <span>Name</span>
+              <span>Floor</span>
+              <span class="position-header">Position</span>
+              <span class="team-size-header">Team Size</span>
+              <span class="mtd-header">MTD</span>
+            </div>
+            ${rowsHtml}
+          `;
         }
         elements.metricDetailDialog.showModal();
       }

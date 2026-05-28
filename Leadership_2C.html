@@ -444,7 +444,7 @@
 
       .metric-detail-item {
         display: grid;
-        grid-template-columns: 1fr auto;
+        grid-template-columns: minmax(150px, 1fr) minmax(150px, 1fr) minmax(130px, 0.9fr) minmax(90px, auto) minmax(90px, auto);
         gap: 10px;
         align-items: center;
         padding: 10px 12px;
@@ -460,6 +460,49 @@
       .metric-detail-item span {
         color: var(--muted);
         font-size: 0.86rem;
+        text-align: left;
+        white-space: normal;
+      }
+
+      .metric-detail-header {
+        display: grid;
+        grid-template-columns: minmax(150px, 1fr) minmax(150px, 1fr) minmax(130px, 0.9fr) minmax(90px, auto) minmax(90px, auto);
+        gap: 10px;
+        padding: 2px 12px 6px;
+        color: var(--muted);
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .metric-detail-item .team-size-cell,
+      .metric-detail-header .team-size-header,
+      .metric-detail-item .mtd-cell,
+      .metric-detail-header .mtd-header {
+        text-align: right;
+      }
+
+      .metric-detail-item .position-cell,
+      .metric-detail-header .position-header {
+        text-align: center;
+        justify-self: center;
+        width: 100%;
+      }
+
+      .metric-detail-item .team-size-cell,
+      .metric-detail-header .team-size-header {
+        text-align: center;
+      }
+
+      .metric-detail-item .mtd-cell.mtd-good {
+        color: var(--green);
+        font-weight: 800;
+      }
+
+      .metric-detail-item .mtd-cell.mtd-bad {
+        color: var(--red);
+        font-weight: 800;
       }
 
       .mission-panel {
@@ -982,7 +1025,7 @@
       .org-chart.is-tl-view,
       .org-chart.is-e1-view,
       .org-chart.is-compact-view {
-        grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
         align-items: start;
       }
 
@@ -1137,10 +1180,14 @@
 
       .personal-details.is-expanded .detail-panels {
         display: grid;
-        grid-template-columns: repeat(4, minmax(120px, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 8px;
         width: 100%;
         min-width: 0;
+      }
+
+      .org-node .personal-details.is-expanded .detail-panels {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
       }
 
       .detail-group {
@@ -1212,7 +1259,7 @@
         font-size: 0.76rem;
         font-weight: 750;
         line-height: 1.2;
-        white-space: nowrap;
+        overflow-wrap: anywhere;
       }
 
       .sales-good {
@@ -1439,6 +1486,13 @@
         border: 1px solid rgba(255, 255, 255, 0.085);
         border-radius: 8px;
         background: rgba(255, 255, 255, 0.042);
+        min-width: 0;
+        overflow: hidden;
+      }
+
+      .therapist-node > .title-mismatch-chip,
+      .therapist-node > .assessment-label {
+        grid-column: 1 / -1;
       }
 
       .node-dot {
@@ -3840,6 +3894,8 @@
           const key = String(person?.staffId || "").trim();
           return assessments[key] || null;
         };
+        const hasAssessmentDateOnly = (person) =>
+          /\d{4}-\d{2}-\d{2}/.test(String(withAssessment(person)?.assessmentDateTime || "").trim());
         const byJoin = (person, value) => participationValue(withAssessment(person)) === value;
         const byRole = (role) => staff.filter((person) => normalizeRole(person.position) === role);
         const byE1Eligible = () => staff.filter(isEligibleE1);
@@ -3854,12 +3910,24 @@
           consider_as: byRole("AS").filter((person) => byJoin(person, "C")),
           consider_tl: byRole("TL").filter((person) => byJoin(person, "C")),
           consider_e1: byRole("E1").filter((person) => byJoin(person, "C")),
-          pending_as: byRole("AS").filter((person) => !hasAssessment(person) && Number(person.apr) >= 100 && Number(person.mar) >= 100),
-          pending_tl: byRole("TL").filter((person) => !hasAssessment(person) && Number(person.apr) >= 100 && Number(person.mar) >= 100),
-          pending_e1: byE1Eligible().filter((person) => !hasAssessment(person))
+          pending_as: byRole("AS").filter((person) => Number(person.apr) >= 100 && Number(person.mar) >= 100 && !hasAssessmentDateOnly(person)),
+          pending_tl: byRole("TL").filter((person) => Number(person.apr) >= 100 && Number(person.mar) >= 100 && !hasAssessmentDateOnly(person)),
+          pending_e1: byE1Eligible().filter((person) => !hasAssessmentDateOnly(person))
         };
 
         return map[metricKey] || [];
+      }
+
+      function metricTeamSizeText(person) {
+        const role = normalizeRole(person.position);
+        if (["S", "AS"].includes(role)) {
+          const hc = staff.filter((p) => p.as === person.as && !["S", "AS"].includes(normalizeRole(p.position))).length;
+          return String(hc);
+        }
+
+        const teamE1 = staff.filter((p) => p.team === person.team && normalizeRole(p.position) === "E1").length;
+        if (role === "TL") return String(teamE1);
+        return "0";
       }
 
       function metricTitleByKey(metricKey) {
@@ -3885,14 +3953,40 @@
         if (!people.length) {
           elements.metricDetailContent.innerHTML = `<div class="metric-detail-item"><strong>沒有人員</strong><span>-</span></div>`;
         } else {
-          elements.metricDetailContent.innerHTML = people
+          const rowsHtml = people
             .sort((a, b) =>
               String(a.brand || "").localeCompare(String(b.brand || "")) ||
               String(a.floor || a.center || "").localeCompare(String(b.floor || b.center || "")) ||
               String(a.therapist || "").localeCompare(String(b.therapist || ""))
             )
-            .map((person) => `<div class="metric-detail-item"><strong>${escapeHtml(person.therapist || "-")}</strong><span>${escapeHtml(person.floor || person.center || "-")}</span></div>`)
+            .map((person) => {
+              const floor = person.floor || person.center || "-";
+              const roleLabel = displayRole(person.position);
+              const teamSize = metricTeamSizeText(person);
+              const mtdValue = Number(person.mayMtd ?? salesPercent(person));
+              const mtd = formatPercent(mtdValue);
+              const mtdClass = Number.isFinite(mtdValue) && mtdValue >= 100 ? "mtd-good" : "mtd-bad";
+              return `
+                <div class="metric-detail-item">
+                  <strong>${escapeHtml(person.therapist || "-")}</strong>
+                  <span>${escapeHtml(floor)}</span>
+                  <span class="position-cell">${escapeHtml(roleLabel)}</span>
+                  <span class="team-size-cell">${escapeHtml(teamSize)}</span>
+                  <span class="mtd-cell ${mtdClass}">${escapeHtml(mtd)}</span>
+                </div>
+              `;
+            })
             .join("");
+          elements.metricDetailContent.innerHTML = `
+            <div class="metric-detail-header">
+              <span>Name</span>
+              <span>Floor</span>
+              <span class="position-header">Position</span>
+              <span class="team-size-header">Team Size</span>
+              <span class="mtd-header">MTD</span>
+            </div>
+            ${rowsHtml}
+          `;
         }
         elements.metricDetailDialog.showModal();
       }
@@ -4285,7 +4379,6 @@
           <div class="personal-details">
             <div class="details-actions">
               <button class="details-toggle" type="button" aria-expanded="false">Performance Data</button>
-              ${alreadyAssessed ? "" : `<button type="button" class="assessment-button" onclick="openAssessmentForm('${person.staffId}', '${assessmentContext.suggestedTier || ''}', ${assessmentContext.currentCount || 0})">評估</button>`}
             </div>
             <div class="detail-panels">
               ${renderDetailGroup("Job History", jobHistoryDetails)}
@@ -4335,12 +4428,6 @@
 
         if (needsSignatureDocument(assessment)) {
           actions.push(`<button class="secondary-button" type="button" data-resubmit-doc="${person.staffId}">補交文件</button>`);
-        }
-
-        if (participationValue(assessment) === "N") {
-          actions.push(`<button class="secondary-button" type="button" data-revise-decision="${person.staffId}">改變決定</button>`);
-        } else {
-          actions.push(`<button class="secondary-button" type="button" data-followup="${person.staffId}">Follow Up</button>`);
         }
 
         return `<div class="assessment-actions">${actions.join("")}</div>`;
@@ -5329,16 +5416,16 @@
         return Number.isFinite(numeric) ? `${Math.round(numeric)}%` : "-";
       }
 
+      function formatPlain(value) {
+        const text = String(value ?? "").trim();
+        return text === "" || text === "0" ? "-" : text;
+      }
+
       function assessmentDateOnly(value) {
         const text = String(value || "").trim();
         if (!text) return "";
         const match = text.match(/\d{4}-\d{2}-\d{2}/);
         return match ? match[0] : "";
-      }
-
-      function formatPlain(value) {
-        const text = String(value ?? "").trim();
-        return text === "" || text === "0" ? "-" : text;
       }
 
       function salesStatusClass(value) {
