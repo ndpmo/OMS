@@ -3391,9 +3391,9 @@
         const numeric = Number(strVal.replace(/[^\d.-]/g, ""));
         if (!Number.isFinite(numeric)) return 0;
         
-        // 修正 Google Sheets 自動將百分比轉為小數的問題（例如 69% 會變成 0.69）
-        // 只要是絕對值小於等於 20（代表 2000% 以下），就自動乘回 100
-        if (numeric !== 0 && Math.abs(numeric) <= 20) {
+        // 修正 Google Sheets 將百分比儲存成小數比例（例如 10.6% 會變成 0.106）
+        // 只在值落在 (-1, 1) 時才乘回 100，避免 10.6 被誤放大成 1060
+        if (numeric !== 0 && Math.abs(numeric) < 1) {
           return numeric * 100;
         }
         return numeric;
