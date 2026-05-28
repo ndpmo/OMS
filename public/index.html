@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Redbook Hourly Tracker</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="entry">
+        <p class="eyebrow">Xiaohongshu tracker</p>
+        <h1>Track a Little Redbook post every hour.</h1>
+        <p class="lede">Share the dashboard, keep the API key on the server, and write every hourly snapshot into a sheet-ready record.</p>
+        <form id="track-form" class="submit-box">
+          <label for="url-input">Post URL or note ID</label>
+          <textarea
+            id="url-input"
+            placeholder="https://www.xiaohongshu.com/explore/640dd4e2000000001203d865..."
+            rows="5"
+            required
+          ></textarea>
+          <button type="submit">
+            <span>Start tracking</span>
+            <span aria-hidden="true">↗</span>
+          </button>
+          <p id="form-message" class="message"></p>
+        </form>
+        <a class="export-link" href="/api/export.csv">Download CSV for Excel</a>
+      </section>
+
+      <section class="results">
+        <div class="table-head">
+          <div>
+            <p class="eyebrow">Live results</p>
+            <h2>Hourly performance table</h2>
+          </div>
+          <button id="refresh-all" class="ghost" type="button">Refresh now</button>
+        </div>
+        <div id="storage-status" class="storage-status"></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Post</th>
+                <th>KOL</th>
+                <th>Likes</th>
+                <th>Comments</th>
+                <th>Saves</th>
+                <th>Shares</th>
+                <th>Hourly change</th>
+                <th>Daily change</th>
+                <th>Last check</th>
+                <th>Next</th>
+              </tr>
+            </thead>
+            <tbody id="tracks-body">
+              <tr class="empty-row">
+                <td colspan="10">Submit a post URL to start the first check.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div id="history" class="history"></div>
+      </section>
+    </main>
+    <script src="/app.js"></script>
+  </body>
+</html>

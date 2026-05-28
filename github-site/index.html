@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Redbook Hourly Tracker</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="entry">
+        <p class="eyebrow">Xiaohongshu tracker</p>
+        <h1>Public tracker, Sheet-backed data.</h1>
+        <p class="lede">This page can live on GitHub Pages. Apps Script handles Apify calls, hourly refreshes, and Google Sheet writes.</p>
+
+        <form id="track-form" class="submit-box">
+          <label for="url-input">Post URL or note ID</label>
+          <textarea
+            id="url-input"
+            placeholder="https://www.xiaohongshu.com/explore/640dd4e2000000001203d865"
+            rows="5"
+            required
+          ></textarea>
+          <button type="submit">Start tracking</button>
+          <p id="form-message" class="message"></p>
+        </form>
+      </section>
+
+      <section class="results">
+        <div class="table-head">
+          <div>
+            <p class="eyebrow">Live results</p>
+            <h2>Hourly performance table</h2>
+          </div>
+          <button id="refresh-all" class="ghost" type="button">Refresh now</button>
+        </div>
+        <p id="storage-status" class="storage-status">Loading...</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Post</th>
+                <th>KOL</th>
+                <th>Likes</th>
+                <th>Comments</th>
+                <th>Saves</th>
+                <th>Shares</th>
+                <th>Hourly change</th>
+                <th>Daily change</th>
+                <th>Last check</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="tracks-body">
+              <tr class="empty-row">
+                <td colspan="10">Connect Apps Script, then submit a post URL.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+    <script src="./config.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
