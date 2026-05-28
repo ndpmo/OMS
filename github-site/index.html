@@ -22,13 +22,14 @@
         </div>
 
         <form id="track-form" class="submit-box">
-          <label for="url-input">貼上筆記連結或 Note ID</label>
-          <input
+          <label for="url-input">貼上筆記連結或 Note ID（可一次貼多個）</label>
+          <textarea
             id="url-input"
-            placeholder="https://www.xiaohongshu.com/explore/640dd4e2000000001203d865"
+            rows="3"
+            placeholder="每行一個連結，或用逗號 / 空格分隔"
             required
-          />
-          <button type="submit">開始追蹤</button>
+          ></textarea>
+          <button type="submit">加入追蹤</button>
           <p id="form-message" class="message"></p>
         </form>
       </section>

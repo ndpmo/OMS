@@ -57,30 +57,41 @@ function saveApifyToken(token) {
 
 function addTrack(urlOrId) {
   setup();
-  const noteId = extractNoteId_(urlOrId);
-  if (!noteId) {
-    throw new Error('Please submit a valid Xiaohongshu URL or 24-character note ID.');
+  const inputs = extractNoteInputs_(urlOrId);
+  if (!inputs.length) {
+    throw new Error('Please submit at least one valid Xiaohongshu URL or 24-character note ID.');
   }
 
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   const sheet = ss.getSheetByName(TRACKS_SHEET_NAME);
   const rows = getObjects_(sheet);
-  const existingIndex = rows.findIndex((row) => row.note_id === noteId);
+  const existingIds = new Set(rows.map((row) => row.note_id));
   const now = new Date();
+  let added = 0;
+  let skipped = 0;
 
-  if (existingIndex === -1) {
+  inputs.forEach((input) => {
+    if (existingIds.has(input.noteId)) {
+      skipped++;
+      return;
+    }
     sheet.appendRow([
-      noteId,
-      String(urlOrId).trim(),
+      input.noteId,
+      input.raw,
       now,
       '',
       now,
       'queued',
       ''
     ]);
-  }
+    existingIds.add(input.noteId);
+    added++;
+  });
 
-  return getDashboardData();
+  const data = getDashboardData();
+  data.added = added;
+  data.skipped = skipped;
+  return data;
 }
 
 function refreshOne(noteId, options) {
@@ -271,6 +282,26 @@ function extractNoteId_(input) {
   if (match) return match[1];
   if (/^[a-f0-9]{24}$/i.test(text)) return text;
   return '';
+}
+
+function extractNoteInputs_(input) {
+  const text = String(input || '').trim();
+  if (!text) return [];
+  const matches = [];
+  const seen = {};
+  const pattern = /https?:\/\/[^\s,，]+|[a-f0-9]{24}/gi;
+  let match;
+
+  while ((match = pattern.exec(text)) !== null) {
+    const raw = match[0].trim();
+    const noteId = extractNoteId_(raw);
+    if (noteId && !seen[noteId]) {
+      matches.push({ noteId, raw });
+      seen[noteId] = true;
+    }
+  }
+
+  return matches;
 }
 
 function ensureSheet_(ss, name, headers) {

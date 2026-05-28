@@ -14,10 +14,10 @@ form.addEventListener('submit', async (event) => {
   event.preventDefault();
   setMessage('正在讀取筆記數據...');
   try {
-    await callApi('addTrack', { url: input.value });
+    const data = await callApi('addTrack', { url: input.value });
     input.value = '';
-    setMessage('已開始追蹤。');
-    await loadDashboard();
+    setMessage(`已加入 ${data.added || 0} 個；略過重複 ${data.skipped || 0} 個。按「立即刷新」才會抓取數據。`);
+    render(data);
   } catch (error) {
     setMessage(error.message, true);
   }
