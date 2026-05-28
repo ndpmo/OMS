@@ -12,6 +12,14 @@ Small standalone website for tracking Xiaohongshu / Little Redbook post metrics 
 - Stores a local CSV at `data/redbook-hourly-results.csv`.
 - Optionally syncs each row to Google Sheets.
 
+Current Apify actor:
+
+```text
+dltik/rednote-xiaohongshu-scraper
+```
+
+This actor is configured in `apps-script/Code.gs` because it is priced at `$5 / 1,000 result fetcheds` on Apify at the time this tracker was updated.
+
 ## Run Locally
 
 ```bash

@@ -1,7 +1,7 @@
 const SPREADSHEET_ID = '1W6r0sQaQ96t1x2pF6ZodgVFqt6-odVWu-l1RWJXr7sw';
 const SHEET_NAME = 'Hourly Results';
 const TRACKS_SHEET_NAME = 'Tracked Posts';
-const APIFY_ACTOR_URL = 'https://api.apify.com/v2/acts/sian.agency~xiaohongshu-rednote-scraper/run-sync-get-dataset-items';
+const APIFY_ACTOR_URL = 'https://api.apify.com/v2/acts/dltik~rednote-xiaohongshu-scraper/run-sync-get-dataset-items';
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
 const HEADERS = [
@@ -173,8 +173,7 @@ function handleApiGet_(params) {
     } else if (action === 'addTrack') {
       data = addTrack(params.url || params.noteId || '');
     } else if (action === 'refreshAll') {
-      refreshAllTrackedPosts();
-      data = getDashboardData();
+      data = refreshAllTrackedPosts();
     } else if (action === 'saveToken') {
       data = saveApifyToken(params.token || '');
     } else {
@@ -204,8 +203,9 @@ function fetchMetrics_(noteId) {
     method: 'post',
     contentType: 'application/json',
     payload: JSON.stringify({
-      operation: 'noteDetail',
-      noteId
+      mode: 'post',
+      noteUrls: [noteId],
+      maxResultsPerInput: 1
     }),
     muteHttpExceptions: true
   });
@@ -220,20 +220,22 @@ function fetchMetrics_(noteId) {
   }
 
   const item = items[0];
+  const author = item.author || item.user || item.userInfo || {};
+  const interact = item.interactInfo || item.interaction || item.stats || {};
   return {
-    fetchedAt: item._fetchedAt || new Date(),
-    noteId: item.noteId || item.id || noteId,
-    title: item.noteTitle || item.title || '',
-    author: item.userName || (item.user && (item.user.nickname || item.user.name)) || '',
-    userId: item.userId || (item.user && item.user.id) || '',
-    redId: item.userRedId || (item.user && item.user.red_id) || '',
-    type: item.noteType || item.type || '',
-    likes: numberOrBlank_(item.likedCount ?? item.liked_count),
-    comments: numberOrBlank_(item.commentsCount ?? item.comments_count),
-    saves: numberOrBlank_(item.collectedCount ?? item.collected_count),
-    shares: numberOrBlank_(item.sharedCount ?? item.shared_count),
-    views: numberOrBlank_(item.viewCount ?? item.view_count),
-    pageUrl: item.notePageUrl || `https://www.xiaohongshu.com/explore/${noteId}`
+    fetchedAt: item.scrapedAt || item._fetchedAt || item.fetchedAt || new Date(),
+    noteId: item.noteId || item.id || item.note_id || noteId,
+    title: item.title || item.noteTitle || item.displayTitle || item.descTitle || '',
+    author: item.userName || item.nickname || author.nickname || author.name || author.userName || '',
+    userId: item.userId || item.user_id || author.userId || author.id || '',
+    redId: item.userRedId || item.redId || item.red_id || author.redId || author.red_id || '',
+    type: item.noteType || item.type || item.note_type || '',
+    likes: numberOrBlank_(firstValue_(item.likedCount, item.likes, item.likeCount, item.liked_count, interact.likedCount, interact.likes, interact.likeCount)),
+    comments: numberOrBlank_(firstValue_(item.commentsCount, item.commentCount, item.comments, item.comments_count, interact.commentCount, interact.comments)),
+    saves: numberOrBlank_(firstValue_(item.collectedCount, item.collectCount, item.collects, item.saves, item.collected_count, interact.collectedCount, interact.collectCount, interact.collects)),
+    shares: numberOrBlank_(firstValue_(item.sharedCount, item.shareCount, item.shares, item.shared_count, interact.sharedCount, interact.shareCount, interact.shares)),
+    views: numberOrBlank_(firstValue_(item.viewCount, item.views, item.view_count, interact.viewCount, interact.views)),
+    pageUrl: item.notePageUrl || item.url || item.noteUrl || `https://www.xiaohongshu.com/explore/${noteId}`
   };
 }
 
@@ -333,6 +335,13 @@ function diff_(current, previous) {
 function numberOrBlank_(value) {
   const number = Number(value);
   return Number.isFinite(number) ? number : '';
+}
+
+function firstValue_() {
+  for (let i = 0; i < arguments.length; i++) {
+    if (arguments[i] !== undefined && arguments[i] !== null && arguments[i] !== '') return arguments[i];
+  }
+  return '';
 }
 
 function updateTrackStatus_(sheet, zeroBasedDataIndex, status, error, checkedAt) {
