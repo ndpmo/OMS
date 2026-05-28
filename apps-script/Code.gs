@@ -44,7 +44,6 @@ function setup() {
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   ensureSheet_(ss, SHEET_NAME, HEADERS);
   ensureSheet_(ss, TRACKS_SHEET_NAME, TRACK_HEADERS);
-  installHourlyTrigger_();
   return getDashboardData();
 }
 
@@ -81,11 +80,11 @@ function addTrack(urlOrId) {
     ]);
   }
 
-  refreshOne(noteId);
   return getDashboardData();
 }
 
-function refreshOne(noteId) {
+function refreshOne(noteId, options) {
+  options = options || {};
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   ensureSheet_(ss, SHEET_NAME, HEADERS);
   ensureSheet_(ss, TRACKS_SHEET_NAME, TRACK_HEADERS);
@@ -94,6 +93,13 @@ function refreshOne(noteId) {
   const trackIndex = tracks.findIndex((row) => row.note_id === noteId);
   if (trackIndex === -1) {
     throw new Error('Tracked post not found.');
+  }
+
+  const track = tracks[trackIndex];
+  const cooldown = getCooldown_(track.last_checked_at);
+  if (!options.force && cooldown.blocked) {
+    updateTrackStatus_(tracksSheet, trackIndex, 'cooldown', `請於 ${cooldown.nextAllowedText} 後再刷新。`);
+    return { skipped: true, reason: 'cooldown', nextAllowedAt: cooldown.nextAllowedAt };
   }
 
   try {
@@ -117,15 +123,19 @@ function refreshAllTrackedPosts() {
   setup();
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   const tracks = getObjects_(ss.getSheetByName(TRACKS_SHEET_NAME));
+  const summary = { refreshed: 0, skipped: 0, errors: 0 };
   tracks.forEach((track) => {
     if (track.note_id) {
       try {
-        refreshOne(track.note_id);
+        const result = refreshOne(track.note_id);
+        result && result.skipped ? summary.skipped++ : summary.refreshed++;
       } catch (error) {
+        summary.errors++;
         console.error(`${track.note_id}: ${error.message}`);
       }
     }
   });
+  return summary;
 }
 
 function getDashboardData() {
@@ -336,10 +346,15 @@ function updateTrackStatus_(sheet, zeroBasedDataIndex, status, error, checkedAt)
   ]]);
 }
 
-function installHourlyTrigger_() {
-  const handler = 'refreshAllTrackedPosts';
-  const exists = ScriptApp.getProjectTriggers().some((trigger) => trigger.getHandlerFunction() === handler);
-  if (!exists) {
-    ScriptApp.newTrigger(handler).timeBased().everyHours(1).create();
-  }
+function getCooldown_(lastCheckedAt) {
+  if (!lastCheckedAt) return { blocked: false };
+  const last = new Date(lastCheckedAt).getTime();
+  if (!Number.isFinite(last)) return { blocked: false };
+  const nextAllowedAt = new Date(last + 60 * 60 * 1000);
+  const blocked = Date.now() < nextAllowedAt.getTime();
+  return {
+    blocked,
+    nextAllowedAt,
+    nextAllowedText: Utilities.formatDate(nextAllowedAt, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm')
+  };
 }

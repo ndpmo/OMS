@@ -26,9 +26,9 @@ form.addEventListener('submit', async (event) => {
 refreshAll.addEventListener('click', async () => {
   setMessage('正在刷新全部筆記...');
   try {
-    await callApi('refreshAll');
+    const summary = await callApi('refreshAll');
     await loadDashboard();
-    setMessage('刷新完成。');
+    setMessage(`刷新完成：更新 ${summary.refreshed || 0}，冷卻中 ${summary.skipped || 0}。`);
   } catch (error) {
     setMessage(error.message, true);
   }
@@ -58,7 +58,7 @@ async function loadDashboard() {
 
 function render(data) {
   storageStatus.textContent = data.hasToken
-    ? 'Apps Script 已連接；Google Sheet 是主要資料庫。頁面會每小時自動刷新。'
+    ? 'Apps Script 已連接；按「立即刷新」才會更新，每篇筆記最多每小時一次。'
     : 'Apps Script 已連接，但仍需要先儲存 Apify Token。';
   tokenPanel.hidden = Boolean(data.hasToken);
 
@@ -165,4 +165,3 @@ function escapeHtml(value) {
 }
 
 loadDashboard();
-setInterval(loadDashboard, 60 * 60 * 1000);

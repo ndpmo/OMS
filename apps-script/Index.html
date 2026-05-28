@@ -234,8 +234,8 @@
       <section class="top-panel">
         <div class="intro">
           <p class="eyebrow">小紅書數據追蹤</p>
-          <h1>每小時自動更新表</h1>
-          <p class="lede">資料寫入 Google Sheet；頁面每小時自動刷新一次。</p>
+          <h1>手動刷新追蹤表</h1>
+          <p class="lede">資料寫入 Google Sheet；只在按下刷新時更新，每篇筆記最多每小時更新一次。</p>
         </div>
 
         <div class="controls">
@@ -312,12 +312,15 @@
 
       function refreshAll() {
         setMessage('正在刷新全部筆記...');
-        google.script.run.withSuccessHandler(() => boot()).withFailureHandler(showError).refreshAllTrackedPosts();
+        google.script.run.withSuccessHandler((summary) => {
+          setMessage(`刷新完成：更新 ${summary.refreshed || 0}，冷卻中 ${summary.skipped || 0}。`);
+          boot();
+        }).withFailureHandler(showError).refreshAllTrackedPosts();
       }
 
       function render(data) {
         document.querySelector('#status').textContent = data.hasToken
-          ? 'Apify Token 已儲存；每小時觸發器已啟用。頁面會每小時自動刷新。'
+          ? 'Apify Token 已儲存；按「立即刷新」才會更新，每篇筆記最多每小時一次。'
           : '新增筆記前，請先儲存 Apify Token。';
 
         const rows = data.tracks || [];
@@ -397,7 +400,6 @@
       }
 
       boot();
-      setInterval(boot, 60 * 60 * 1000);
     </script>
   </body>
 </html>
