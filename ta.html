@@ -1,0 +1,1825 @@
+
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>員工推薦進度查詢系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Orbitron:wght@400;700&display=swap');
+        
+        body { 
+            font-family: 'Noto Sans TC', sans-serif; 
+            background: radial-gradient(circle at top left, #f0edff, #e9f2ff, #f8fafc);
+            background-attachment: fixed;
+            min-height: 100vh;
+            color: #0f172a;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: radial-gradient(#6366f11a 1px, transparent 1px);
+            background-size: 35px 35px;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .cyber-card {
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            box-shadow: 0 10px 40px -10px rgba(99, 102, 241, 0.12);
+            border-radius: 1.25rem;
+            transition: all 0.3s ease;
+        }
+
+        .header-glow { text-shadow: 0 0 15px rgba(99, 102, 241, 0.25); }
+        .readable-nums { font-variant-numeric: tabular-nums; letter-spacing: 0; }
+        
+        th, td { white-space: nowrap; padding: 1rem 0.75rem !important; }
+        .text-left { text-align: left !important; }
+        .text-center { text-align: center !important; }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #c7d2fe; border-radius: 10px; }
+        .font-cyber { font-family: 'Orbitron', sans-serif; }
+
+        .batch-card, .weekly-card, .lead-card, .pending-card { cursor: pointer; transition: all 0.3s; }
+        .batch-card:hover, .weekly-card:hover, .lead-card:hover, .pending-card:hover { transform: translateY(-5px); }
+        .batch-card.active, .weekly-card.active, .lead-card.active, .pending-card.active {
+            border-color: #6366f1;
+            background: #eef2ff;
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
+        }
+
+        .month-btn {
+            padding: 0.4rem 1.2rem;
+            border-radius: 9999px;
+            font-weight: 900;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+            cursor: pointer;
+        }
+        .month-btn.active {
+            background-color: #4f46e5;
+            color: white;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+        .month-btn.inactive {
+            background-color: white;
+            color: #64748b;
+            border-color: #e2e8f0;
+        }
+        .month-btn.inactive:hover { background-color: #f8fafc; }
+
+        .date-selector-input {
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            padding: 0.25rem 0.5rem;
+            font-weight: 700;
+            font-size: 0.75rem;
+            color: #475569;
+            cursor: pointer;
+        }
+
+        .filter-label {
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+            color: #64748b;
+            letter-spacing: 0.05em;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            user-select: none;
+            cursor: pointer;
+        }
+        
+        .checkbox-container input {
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+            accent-color: #6366f1;
+        }
+
+        .summary-accent {
+            background: linear-gradient(90deg, rgba(99, 102, 241, 0.1), transparent);
+            border-left: 4px solid #6366f1;
+        }
+    </style>
+</head>
+<body class="py-6 md:py-12 px-3 md:px-6 text-left">
+
+    <div class="max-w-7xl mx-auto">
+        <!-- 頂部標題與同步時間 -->
+        <div class="flex flex-col md:flex-row justify-between items-center md:items-start mb-8 md:mb-12 gap-6">
+            <div class="w-full text-left">
+                <h1 class="text-3xl md:text-5xl font-black text-slate-900 mb-2 tracking-tight header-glow">
+                    推薦進度查詢 <span class="text-indigo-600 font-cyber text-2xl md:text-3xl uppercase">Dashboard</span>
+                </h1>
+                <p class="text-slate-800 font-bold text-sm md:text-lg flex items-center bg-white/60 px-4 py-2 rounded-full w-fit border border-white/80 shadow-sm">
+                    <svg class="w-4 h-4 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    範圍：2025/12/15 之後記錄 (排除 LSL/Hipo E1)
+                </p>
+            </div>
+            <div onclick="init()" class="cyber-card px-6 py-4 border-l-4 border-indigo-500 text-indigo-900 font-black text-sm md:text-base shadow-md cursor-pointer hover:bg-indigo-50 active:scale-95 flex items-center justify-between group">
+                <span id="lastUpdateDisplay">試算表狀態：讀取中...</span>
+                <svg class="w-5 h-5 text-indigo-400 group-hover:rotate-180 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+            </div>
+        </div>
+
+        <!-- 查詢篩選區 -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8 md:mb-12">
+            <div class="lg:col-span-1 cyber-card p-6">
+                <h3 class="text-indigo-950 font-black mb-4 flex items-center uppercase tracking-widest text-sm text-left">手動查詢 <span class="ml-auto opacity-20 font-cyber text-lg">01</span></h3>
+                <input type="text" id="staffId" placeholder="Staff ID 例如: 11852" class="w-full px-4 py-3 mb-3 rounded-xl border-2 border-indigo-50 font-bold outline-none">
+                <button onclick="manualSearch()" class="w-full py-4 bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-black rounded-xl shadow-lg active:scale-95 uppercase">執行查詢</button>
+            </div>
+
+            <div class="lg:col-span-2 cyber-card p-6">
+                <h3 class="text-violet-950 font-black mb-4 flex items-center uppercase tracking-widest text-sm text-left">快速篩選 <span class="ml-auto opacity-20 font-cyber text-lg">02</span></h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-left">
+                    <select id="filterBrand" onchange="updateFloorFilter()" class="w-full px-3 py-3 rounded-xl border-2 border-violet-50 font-bold outline-none cursor-pointer"><option value="">請選擇品牌</option></select>
+                    <select id="filterFloor" onchange="updateNameFilter()" disabled class="w-full px-3 py-3 rounded-xl border-2 border-violet-50 font-bold outline-none cursor-pointer"><option value="">請選擇 Floor</option></select>
+                    <select id="filterName" onchange="searchByFilter()" disabled class="w-full px-3 py-3 rounded-xl border-2 border-violet-50 font-bold outline-none cursor-pointer"><option value="">請選擇姓名</option></select>
+                </div>
+                <div class="mt-4 flex justify-end"><button onclick="resetFilters()" class="px-4 py-2 bg-slate-100 text-slate-600 font-bold rounded-xl text-xs">重設篩選</button></div>
+            </div>
+
+            <div class="lg:col-span-1 cyber-card p-6 hidden" id="inactiveCheckPanel">
+                <h3 class="text-rose-950 font-black mb-4 flex items-center uppercase tracking-widest text-sm text-left">未推薦檢查 <span class="ml-auto opacity-20 font-cyber text-lg text-right">03</span></h3>
+                <div class="grid grid-cols-1 gap-2">
+                    <button onclick="checkInactiveByDays(14)" class="btn-inactive py-2.5 px-4 bg-white border-2 border-rose-100 text-rose-800 font-bold rounded-xl text-xs flex justify-between items-center text-left">最近 2 星期無推薦 <svg class="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg></button>
+                    <button onclick="checkInactiveByDays(30)" class="btn-inactive py-2.5 px-4 bg-white border-2 border-rose-100 text-rose-800 font-bold rounded-xl text-xs flex justify-between items-center text-left">最近 1 個月無推薦 <svg class="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 入職批次追蹤 (當月與後4個月) -->
+        <div id="onBoardBatchArea" class="mb-10 text-left">
+            <div class="flex flex-col md:flex-row md:items-center gap-6 mb-8 text-left">
+                <h2 class="text-xl md:text-2xl font-black text-slate-900 px-2 border-l-8 border-indigo-500 pl-4 tracking-wider uppercase text-left">入職批次追蹤 <span class="font-cyber text-indigo-500 ml-2">ON BOARD BATCHES</span></h2>
+                <div class="flex flex-wrap items-center gap-2 bg-white/50 p-2 rounded-2xl border border-white shadow-sm text-left" id="monthSelector">
+                    <!-- JS 自動產生 5 個月的按鈕 -->
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 text-left" id="batchContainer">
+                <!-- 由 JS 動態插入卡片 -->
+            </div>
+        </div>
+
+        <!-- Lead 統計區 -->
+        <div id="weeklyLeadArea" class="mb-10 text-left">
+            <div class="flex flex-col md:flex-row md:items-center gap-4 mb-6">
+                <h2 class="text-xl md:text-2xl font-black text-slate-900 px-2 border-l-8 border-violet-500 pl-4 tracking-wider uppercase text-left">Lead 統計 <span class="font-cyber text-violet-500 ml-2">WEEKLY LEADS</span></h2>
+                <div class="flex items-center gap-2 bg-white/50 p-2 rounded-xl border border-white text-left">
+                    <input type="date" id="leadStart" onchange="calculateWeeklyLeads()" class="date-selector-input">
+                    <span class="font-bold text-slate-400 text-xs">至</span>
+                    <input type="date" id="leadEnd" onchange="calculateWeeklyLeads()" class="date-selector-input">
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div onclick="toggleLeadList('DERMES')" class="lead-card cyber-card p-6 border-b-8 border-rose-400 text-left">
+                    <p class="text-xs font-black text-slate-500 uppercase tracking-widest mb-1">Leads (AC Date)</p>
+                    <p class="text-xl font-black text-slate-900 mb-3">DERMES</p>
+                    <div class="flex items-center justify-between"><div class="flex flex-col text-left"><span class="text-2xl font-black text-rose-500 readable-nums" id="weekly-lead-rj-DERMES">RJ: 0</span><span class="text-2xl font-black text-rose-500 readable-nums" id="weekly-lead-nj-DERMES">NJ: 0</span></div><span class="px-4 py-2 bg-rose-50 text-rose-600 rounded-xl text-4xl font-black shadow-inner" id="weekly-lead-total-DERMES">0</span></div>
+                </div>
+                <div onclick="toggleLeadList('REENEX')" class="lead-card cyber-card p-6 border-b-8 border-indigo-400 text-left">
+                    <p class="text-xs font-black text-slate-500 uppercase tracking-widest mb-1">Leads (AC Date)</p>
+                    <p class="text-xl font-black text-slate-900 mb-3">REENEX</p>
+                    <div class="flex items-center justify-between"><div class="flex flex-col text-left"><span class="text-2xl font-black text-indigo-500 readable-nums" id="weekly-lead-rj-REENEX">RJ: 0</span><span class="text-2xl font-black text-indigo-500 readable-nums" id="weekly-lead-nj-REENEX">NJ: 0</span></div><span class="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-4xl font-black shadow-inner" id="weekly-lead-total-REENEX">0</span></div>
+                </div>
+                <div onclick="toggleLeadList('ELYZE')" class="lead-card cyber-card p-6 border-b-8 border-emerald-400 text-left">
+                    <p class="text-xs font-black text-slate-500 uppercase tracking-widest mb-1 text-left">Leads (AC Date)</p>
+                    <p class="text-xl font-black text-slate-900 mb-3 text-left">ELYZE</p>
+                    <div class="flex items-center justify-between text-left"><div class="flex flex-col text-left"><span class="text-2xl font-black text-emerald-500 readable-nums" id="weekly-lead-rj-ELYZE">RJ: 0</span><span class="text-2xl font-black text-emerald-500 readable-nums" id="weekly-lead-nj-ELYZE">NJ: 0</span></div><span class="px-4 py-2 bg-emerald-50 text-emerald-700 rounded-xl text-4xl font-black shadow-inner" id="weekly-lead-total-ELYZE">0</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Weekly Offer 統計區 -->
+        <div id="weeklyOfferArea" class="mb-10 text-left">
+            <div class="flex flex-col gap-4 mb-6 text-left">
+                <h2 class="text-xl md:text-2xl font-black text-slate-900 px-2 border-l-8 border-blue-500 pl-4 tracking-wider uppercase text-left">Offer 統計 <span class="font-cyber text-blue-500 ml-2">WEEKLY OFFERS</span></h2>
+                <div class="flex flex-col md:flex-row gap-4 text-left">
+                    <div class="flex items-center gap-2 bg-white/60 p-2 rounded-xl border border-white shadow-sm text-left"><span class="filter-label ml-1">Offer Date:</span><input type="date" id="offerStart" onchange="calculateWeeklyOffers()" class="date-selector-input"><span class="font-bold text-slate-400 text-xs">至</span><input type="date" id="offerEnd" onchange="calculateWeeklyOffers()" class="date-selector-input"></div>
+                    <div class="flex items-center gap-3 bg-blue-50/50 p-2 rounded-xl border border-blue-100 shadow-sm text-left"><label class="checkbox-container ml-1"><input type="checkbox" id="useObFilter" onchange="calculateWeeklyOffers()"><span class="filter-label ml-2 text-blue-700">套用 On Board Date:</span></label><div class="flex items-center gap-2 text-left"><input type="date" id="obOfferStart" onchange="calculateWeeklyOffers()" class="date-selector-input border-blue-100"><span class="font-bold text-blue-300 text-xs">至</span><input type="date" id="obOfferEnd" onchange="calculateWeeklyOffers()" class="date-selector-input border-blue-100"></div></div>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+                <div onclick="toggleWeeklyList('DERMES')" class="weekly-card cyber-card p-6 border-b-8 border-rose-500 text-left">
+                    <p class="text-xs font-black text-slate-500 uppercase tracking-widest mb-1 text-left">Offer (Accepted/Offered)</p>
+                    <p class="text-xl font-black text-slate-900 mb-3 text-left">DERMES</p>
+                    <div class="flex items-center justify-between text-left"><div class="flex flex-col text-left"><span class="text-2xl font-black text-rose-600 readable-nums" id="weekly-rj-DERMES">RJ: 0</span><span class="text-2xl font-black text-rose-600 readable-nums" id="weekly-nj-DERMES">NJ: 0</span></div><span class="px-4 py-2 bg-rose-50 text-rose-700 rounded-xl text-4xl font-black shadow-inner" id="weekly-total-DERMES">0</span></div>
+                </div>
+                <div onclick="toggleWeeklyList('REENEX')" class="weekly-card cyber-card p-6 border-b-8 border-indigo-500 text-left">
+                    <p class="text-xs font-black text-slate-500 uppercase tracking-widest mb-1 text-left">Offer (Accepted/Offered)</p>
+                    <p class="text-xl font-black text-slate-900 mb-3 text-left">REENEX</p>
+                    <div class="flex items-center justify-between text-left"><div class="flex flex-col text-left"><span class="text-2xl font-black text-indigo-600 readable-nums" id="weekly-rj-REENEX">RJ: 0</span><span class="text-2xl font-black text-indigo-600 readable-nums" id="weekly-nj-REENEX">NJ: 0</span></div><span class="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl text-4xl font-black shadow-inner" id="weekly-total-REENEX">0</span></div>
+                </div>
+                <div onclick="toggleWeeklyList('ELYZE')" class="weekly-card cyber-card p-6 border-b-8 border-emerald-500 text-left">
+                    <p class="text-xs font-black text-slate-500 uppercase tracking-widest mb-1 text-left">Offer (Accepted/Offered)</p>
+                    <p class="text-xl font-black text-slate-900 mb-3 text-left">ELYZE</p>
+                    <div class="flex items-center justify-between text-left"><div class="flex flex-col text-left"><span class="text-2xl font-black text-emerald-600 readable-nums" id="weekly-rj-ELYZE">RJ: 0</span><span class="text-2xl font-black text-emerald-600 readable-nums" id="weekly-nj-ELYZE">NJ: 0</span></div><span class="px-4 py-2 bg-emerald-50 text-emerald-700 rounded-xl text-4xl font-black shadow-inner" id="weekly-total-ELYZE">0</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="pendingOfferArea" class="mb-12 text-left">
+            <div class="flex flex-col md:flex-row md:items-center gap-4 mb-6">
+                <h2 class="text-xl md:text-2xl font-black text-slate-900 px-2 border-l-8 border-orange-500 pl-4 tracking-wider uppercase">待定 Offer <span class="font-cyber text-orange-500 ml-2">PENDING OFFERS</span></h2>
+                <div class="flex items-center gap-2 bg-white/50 p-2 rounded-xl border border-white text-left">
+                    <input type="date" id="pendingStart" onchange="calculatePendingOffers()" class="date-selector-input"><span class="font-bold text-slate-400 text-xs">至</span><input type="date" id="pendingEnd" onchange="calculatePendingOffers()" class="date-selector-input">
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+                <div onclick="togglePendingList('DERMES')" class="pending-card cyber-card p-6 border-b-8 border-orange-400"><p class="text-xs font-black text-slate-500 uppercase mb-1">Offered but NOT Accept</p><p class="text-xl font-black text-slate-900 mb-3">DERMES</p><div class="flex items-center justify-between"><div class="flex flex-col text-left"><span class="text-2xl font-black text-orange-600 readable-nums" id="pending-rj-DERMES">RJ: 0</span><span class="text-2xl font-black text-orange-600 readable-nums" id="pending-nj-DERMES">NJ: 0</span></div><span class="px-4 py-2 bg-orange-50 text-orange-700 rounded-xl text-4xl font-black shadow-inner" id="pending-total-DERMES">0</span></div></div>
+                <div onclick="togglePendingList('REENEX')" class="pending-card cyber-card p-6 border-b-8 border-orange-400"><p class="text-xs font-black text-slate-500 uppercase mb-1">Offered but NOT Accept</p><p class="text-xl font-black text-slate-900 mb-3 text-left">REENEX</p><div class="flex items-center justify-between"><div class="flex flex-col text-left"><span class="text-2xl font-black text-orange-600 readable-nums" id="pending-rj-REENEX">RJ: 0</span><span class="text-2xl font-black text-orange-600 readable-nums" id="pending-nj-REENEX">NJ: 0</span></div><span class="px-4 py-2 bg-orange-50 text-orange-700 rounded-xl text-4xl font-black shadow-inner" id="pending-total-REENEX">0</span></div></div>
+                <div onclick="togglePendingList('ELYZE')" class="pending-card cyber-card p-6 border-b-8 border-orange-400"><p class="text-xs font-black text-slate-500 uppercase mb-1 text-left">Offered but NOT Accept</p><p class="text-xl font-black text-slate-900 mb-3 text-left">ELYZE</p><div class="flex items-center justify-between"><div class="flex flex-col text-left"><span class="text-2xl font-black text-orange-600 readable-nums" id="pending-rj-ELYZE">RJ: 0</span><span class="text-2xl font-black text-orange-600 readable-nums" id="pending-nj-ELYZE">NJ: 0</span></div><span class="px-4 py-2 bg-orange-50 text-orange-700 rounded-xl text-4xl font-black shadow-inner" id="pending-total-ELYZE">0</span></div></div>
+            </div>
+        </div>
+
+        <!-- 名單明細容器 -->
+        <div id="sharedDetailArea" class="hidden mt-8 mb-24 space-y-6">
+            <h3 id="sharedDetailTitle" class="text-lg font-black text-slate-800 flex items-center bg-white/40 px-4 py-2 rounded-xl w-fit border border-white text-left"><span class="w-3 h-3 bg-blue-500 rounded-full mr-3"></span> 名單明細</h3>
+            <div class="cyber-card overflow-hidden shadow-2xl">
+                <div class="overflow-x-auto custom-scrollbar text-left">
+                    <table class="w-full border-collapse">
+                        <thead class="bg-blue-50/50 border-b-2 border-blue-100 text-blue-950 font-black text-sm text-center">
+                            <tr><th class="text-left px-6">BRAND</th><th class="text-center px-4">Lead Date</th><th class="text-center px-4">Offer Date</th><th class="text-center px-4">On Board Date</th><th class="text-center px-4">Status</th><th class="text-center px-4">RJ/NJ</th><th class="text-left px-6">Name (N)</th><th class="text-left px-6">REFER BY</th></tr>
+                        </thead>
+                        <tbody id="sharedDetailTableBody" class="divide-y divide-slate-100 font-bold text-base md:text-lg"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 彙總統計區 -->
+        <div id="statsArea" class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-12 hidden text-center">
+            <div class="cyber-card p-4 md:p-8 border-l-4 border-blue-500"><p class="text-xs text-slate-500 font-black mb-1">總推薦</p><p id="totalCount" class="text-2xl md:text-5xl font-black text-slate-900 readable-nums">0</p></div>
+            <div class="cyber-card p-4 md:p-8 border-l-4 border-emerald-500"><p class="text-xs text-slate-500 font-black mb-1 text-center">已入職</p><p id="joinedCount" class="text-2xl md:text-5xl font-black text-emerald-600 readable-nums">0</p></div>
+            <div class="cyber-card p-4 md:p-8 border-l-4 border-rose-500"><p class="text-xs text-slate-500 font-black mb-1 text-center">Drop</p><p id="withdrawCount" class="text-2xl md:text-5xl font-black text-rose-600 readable-nums">0</p></div>
+            <div class="cyber-card p-4 md:p-8 border-l-4 border-amber-500"><p class="text-xs text-slate-500 font-black mb-1 text-center">處理中</p><p id="pendingCount" class="text-2xl md:text-5xl font-black text-amber-600 readable-nums">0</p></div>
+        </div>
+
+        <div id="referralTrackingInfo" class="hidden mb-10 px-6 py-4 rounded-2xl summary-accent bg-white/40 text-left"><p id="trackingText" class="text-lg md:text-xl font-black text-indigo-900"></p></div>
+        <div id="resultArea" class="hidden space-y-12 mb-16 text-left">
+            <div id="sectionRJ"><h2 class="text-xl md:text-2xl font-black text-slate-900 mb-4 px-2 border-l-8 border-indigo-600 pl-4 tracking-wider uppercase text-left">RJ 推薦明細 <span class="font-cyber text-indigo-500 ml-2">Referral Join</span></h2><div class="cyber-card overflow-hidden"><div class="overflow-x-auto custom-scrollbar"><table class="w-full border-collapse"><thead class="bg-indigo-50 border-b-2 border-indigo-100 text-indigo-950 font-black text-sm text-center"><tr><th class="text-left px-6">被介紹人 (N)</th><th class="text-center px-4">日期資訊 (B+C+D)</th><th class="text-center px-4">Status</th><th class="text-center px-4">On Board Date</th><th class="text-center px-4">最終標記</th></tr></thead><tbody id="resultTableBodyRJ" class="divide-y divide-slate-200"></tbody></table></div></div></div>
+            <div id="sectionNJ"><h2 class="text-xl md:text-2xl font-black text-slate-900 mb-4 px-2 border-l-8 border-violet-600 pl-4 tracking-wider uppercase text-left">NJ 推薦明細 <span class="font-cyber text-violet-500 ml-2">New Joiner</span></h2><div class="cyber-card overflow-hidden"><div class="overflow-x-auto custom-scrollbar"><table class="w-full border-collapse"><thead class="bg-violet-50 border-b-2 border-violet-100 text-violet-950 font-black text-sm text-center"><tr><th class="text-left px-6">被介紹人 (N)</th><th class="text-center px-4">日期資訊 (B+C+D)</th><th class="text-center px-4">Status</th><th class="text-center px-4">On Board Date</th><th class="text-center px-4">最終標記</th></tr></thead><tbody id="resultTableBodyNJ" class="divide-y divide-slate-200"></tbody></table></div></div></div>
+        </div>
+
+        <div id="resultAreaSheet2" class="hidden mb-16 text-left">
+            <h2 id="resultAreaSheet2Title" class="text-xl md:text-2xl font-black text-slate-900 mb-4 px-2 border-l-8 border-sky-600 pl-4 tracking-wider uppercase text-left">相關資訊 <span class="font-cyber text-sky-500 ml-2">REFERENCE INFO</span></h2>
+            <div class="cyber-card overflow-hidden"><div class="overflow-x-auto custom-scrollbar"><table class="w-full border-collapse"><thead class="bg-sky-50 text-sky-950 border-b-2 border-sky-100 font-black uppercase text-xs text-center"><tr><th class="text-left border-r border-sky-100 px-6">Name</th><th class="border-r px-4">1月+2月 Resign No</th><th class="border-r px-4 text-slate-600 text-[10px]">Total Offer (已減無返工Offer)</th><th class="border-r px-4">Should on Board</th><th class="border-r px-4">On board</th><th class="border-r px-4">Gap</th><th class="px-4">NJ Offer</th></tr></thead><tbody id="sheet2TableBody" class="divide-y divide-slate-200 text-lg readable-nums font-bold text-center"></tbody></table></div></div>
+        </div>
+
+        <div id="brandSummaryArea" class="mb-16 text-left hidden">
+            <h2 class="text-xl md:text-2xl font-black text-slate-900 mb-6 px-2 border-l-8 border-emerald-600 pl-4 tracking-wider uppercase text-left">Brand Summary <span class="font-cyber text-emerald-500 ml-2">GLOBAL DATA</span></h2>
+            <div class="cyber-card overflow-hidden"><table class="w-full border-collapse text-lg"><thead class="bg-emerald-50 text-emerald-950 border-b-2 border-emerald-100 font-black uppercase text-sm text-center"><tr><th class="text-left px-10">Brand Name</th><th>Total Offer</th><th class="leading-tight">Total Should on Board</th><th class="text-emerald-900">Total On board</th><th>Total Gap</th><th>NJ Offer</th></tr></thead><tbody id="brandSummaryBody" class="divide-y divide-slate-200 readable-nums font-bold text-center"></tbody></table></div>
+        </div>
+
+        <div id="picSummaryArea" class="mb-16 text-left hidden">
+            <h2 class="text-xl md:text-2xl font-black text-slate-900 mb-6 px-2 border-l-8 border-blue-600 pl-4 tracking-wider uppercase text-left">PIC Summary <span class="font-cyber text-blue-500 ml-2">BY PIC</span></h2>
+            <div class="cyber-card overflow-hidden"><table class="w-full border-collapse"><thead class="bg-blue-50 text-blue-950 border-b-2 border-blue-100 font-black uppercase text-xs md:text-sm text-center"><tr><th class="text-left border-r border-blue-100 px-6">Brand</th><th class="text-left border-r border-blue-100 px-6">PIC</th><th class="border-r px-4">1月+2月<br>Resign No</th><th class="border-r px-4 text-slate-600 text-[10px]">Total Offer<br>(已減無返工Offer)</th><th class="border-r px-4">Should on Board</th><th class="border-r border-blue-100 text-emerald-800 px-4">On board</th><th class="border-r border-blue-100 px-4">Gap</th><th class="px-4">NJ Offer</th></tr></thead><tbody id="picSummaryBody" class="divide-y divide-slate-200 readable-nums font-bold text-center"></tbody></table></div>
+        </div>
+
+        <!-- Weekly PIC Performance BY PIC -->
+        <div id="picPerformanceArea" class="mb-12 text-left hidden">
+            <div class="flex flex-col gap-4 mb-6">
+                <h2 class="text-xl md:text-2xl font-black text-slate-900 px-2 border-l-8 border-indigo-600 pl-4 tracking-wider uppercase text-left">Weekly PIC Performance <span class="font-cyber text-indigo-500 ml-2">BY PIC</span></h2>
+                <div class="flex flex-col md:flex-row gap-4 text-left">
+                    <div class="flex items-center gap-2 bg-white/60 p-2 rounded-xl border border-white shadow-sm"><span class="filter-label ml-1">Lead/Offer Date:</span><input type="date" id="perfStart" onchange="calculateSummaries()" class="date-selector-input"><span class="font-bold text-slate-400 text-xs">至</span><input type="date" id="perfEnd" onchange="calculateSummaries()" class="date-selector-input"></div>
+                    <div class="flex items-center gap-3 bg-indigo-50/50 p-2 rounded-xl border border-indigo-100 shadow-sm"><label class="checkbox-container ml-1"><input type="checkbox" id="usePerfObFilter" onchange="calculateSummaries()"><span class="filter-label ml-2 text-indigo-700">套用 On Board Date:</span></label><div class="flex items-center gap-2"><input type="date" id="perfObStart" onchange="calculateSummaries()" class="date-selector-input border-indigo-100"><span class="font-bold text-indigo-300 text-xs">至</span><input type="date" id="perfObEnd" onchange="calculateSummaries()" class="date-selector-input border-indigo-100"></div></div>
+                </div>
+            </div>
+            <div class="cyber-card overflow-hidden">
+                <div class="overflow-x-auto custom-scrollbar text-center">
+                    <table class="w-full border-collapse text-center">
+                        <thead class="bg-indigo-50 text-indigo-950 border-b-2 border-indigo-100 font-black uppercase text-xs md:text-sm">
+                            <tr>
+                                <th class="text-left border-r border-indigo-100 px-6">Brand</th>
+                                <th class="text-left border-r border-indigo-100 px-6">PIC</th>
+                                <th class="border-r border-indigo-100 text-amber-700 px-4">Commitment</th>
+                                <th class="border-r border-indigo-100 text-indigo-700 px-4">Lead</th>
+                                <th class="border-r border-indigo-100 text-emerald-700 px-4">NJ Offer</th>
+                                <th class="text-emerald-700 px-4">RJ Offer</th>
+                            </tr>
+                        </thead>
+                        <tbody id="picPerformanceBody" class="divide-y divide-slate-200 readable-nums font-bold"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Core Team Performance -->
+        <div id="hrPerformanceArea" class="mb-24 text-left hidden">
+            <div class="flex flex-col gap-4 mb-6">
+                <h2 class="text-xl md:text-2xl font-black text-slate-900 px-2 border-l-8 border-teal-600 pl-4 tracking-wider uppercase text-left">Core Team Performance <span class="font-cyber text-teal-500 ml-2">BY CORE TEAM</span></h2>
+                <div class="flex flex-col md:flex-row flex-wrap gap-4 text-left z-10">
+                    <div class="flex items-center gap-2 bg-white/60 p-2 rounded-xl border border-white shadow-sm">
+                        <span class="filter-label ml-1">Lead/Offer Date:</span>
+                        <input type="date" id="hrPerfStart" onchange="calculateHrPerformance()" class="date-selector-input">
+                        <span class="font-bold text-slate-400 text-xs">至</span>
+                        <input type="date" id="hrPerfEnd" onchange="calculateHrPerformance()" class="date-selector-input">
+                    </div>
+                    <div class="flex items-center gap-2 bg-white/60 p-2 rounded-xl border border-white shadow-sm">
+                        <span class="filter-label ml-1">Filter By:</span>
+                        <input type="hidden" id="hrDateFilterType" value="LEAD">
+                        <div class="flex items-center gap-2">
+                            <button type="button" id="btnHrFilterLead" onclick="setHrDateFilterType('LEAD')" class="px-3 py-1.5 rounded-lg text-xs font-black border-2 border-indigo-200 bg-indigo-600 text-white">Lead Date</button>
+                            <button type="button" id="btnHrFilterOffer" onclick="setHrDateFilterType('OFFER')" class="px-3 py-1.5 rounded-lg text-xs font-black border-2 border-slate-200 bg-white text-slate-600">Offer Date</button>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 bg-teal-50/50 p-2 rounded-xl border border-teal-100 shadow-sm">
+                        <label class="checkbox-container ml-1">
+                            <input type="checkbox" id="useHrPerfObFilter" onchange="calculateHrPerformance()">
+                            <span class="filter-label ml-2 text-teal-700">套用 On Board Date:</span>
+                        </label>
+                        <div class="flex items-center gap-2">
+                            <input type="date" id="hrPerfObStart" onchange="calculateHrPerformance()" class="date-selector-input border-teal-100">
+                            <span class="font-bold text-teal-300 text-xs">至</span>
+                            <input type="date" id="hrPerfObEnd" onchange="calculateHrPerformance()" class="date-selector-input border-teal-100">
+                        </div>
+                    </div>
+                    
+                    <!-- Core Team Name Filter -->
+                    <div class="flex items-center gap-2 bg-teal-50/50 p-2 rounded-xl border border-teal-100 shadow-sm relative">
+                        <span class="filter-label ml-1 text-teal-700">Core Team Name List:</span>
+                        <select id="coreTeamFilter" onchange="calculateHrPerformance()" class="date-selector-input border-teal-100 outline-none min-w-[180px] bg-white">
+                            <option value="ALL">ALL</option>
+                        </select>
+                    </div>
+
+                </div>
+            </div>
+            <div class="cyber-card overflow-hidden">
+                <div class="overflow-x-auto custom-scrollbar text-center">
+                    <table class="w-full border-collapse text-center">
+                        <thead class="bg-teal-50 text-teal-950 border-b-2 border-teal-100 font-black uppercase text-xs md:text-sm">
+                            <tr>
+                                <th class="text-left border-r border-teal-100 px-6">Brand</th>
+                                <th class="text-left border-r border-teal-100 px-6">Core Team</th>
+                                <th class="border-r border-teal-100 text-indigo-700 px-4">Lead</th>
+                                <th class="border-r border-teal-100 text-emerald-700 px-4">NJ Offer</th>
+                                <th class="border-r border-teal-100 text-emerald-700 px-4">RJ Offer</th>
+                                <th class="text-amber-700 px-4">Consider Offer</th>
+                            </tr>
+                        </thead>
+                        <tbody id="hrPerformanceBody" class="divide-y divide-slate-200 readable-nums font-bold text-center"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="loadingStatus" class="text-center py-10 text-indigo-700 font-black flex flex-col items-center justify-center gap-4"><svg class="animate-spin h-8 w-8 text-indigo-600" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span class="tracking-[0.2em] uppercase font-cyber text-sm">Synchronizing Database...</span></div>
+        <div id="initialPrompt" class="text-center py-32 md:py-48 opacity-20 uppercase font-cyber text-2xl">Enter Staff ID to Start_</div>
+        <div id="noResult" class="hidden text-center py-20 cyber-card mx-2"><p class="text-slate-500 text-xl font-black uppercase font-cyber">NO RECORD FOUND</p></div>
+        <div id="inactiveResultArea" class="hidden mb-16 text-left space-y-10"><h2 class="text-xl md:text-2xl font-black text-slate-900 mb-6 px-2 border-l-8 border-rose-600 pl-4 tracking-wider uppercase text-left"><span id="inactiveTitleSpan" class="font-cyber text-rose-500 ml-2"></span></h2><div id="inactiveBrandContainer" class="space-y-10 text-left"></div></div>
+    </div>
+
+    <script>
+        // --- 核心變數 ---
+        let dataS1 = [], headersS1 = [], dataS2 = [], headersS2 = [], dataS3 = [], headersS3 = [], dataS4 = [], headersS4 = [], dataCoreTeam = [], headersCoreTeam = [];
+        let currentDetailMode = ""; let currentDetailKey = "";
+        let availableMonths = [];
+        let selectedBatchMonths = [];
+        let selectedPositions = ['E1']; // 預設顯示 E1
+
+        // 【重點設定】更新試算表來源
+        const SHEET_DOC_ID = '1kh_1yam1k5BZ1lkrUMZWQQr213b2ObmIMX_x6LtVbjU';
+        const SHEET1_GID = '0'; // 第一頁的 GID 預設為 0
+        const SHEET2_GID = '946029870'; 
+        const SHEET3_GID = '1612736070'; // 新增 Sheet 3 的 GID
+        const SHEET4_GID = '1807698538'; // 新增 Sheet 4 (Commitment) 的 GID
+        const CORE_TEAM_GID = '1610056086'; // Core Team 分頁
+        const CORE_TEAM_SHEET_NAME = 'Core Team';
+
+        const SHEET1_BASE_URL = `https://docs.google.com/spreadsheets/d/${SHEET_DOC_ID}/gviz/tq?tqx=out:csv&gid=${SHEET1_GID}`;
+        const SHEET2_BASE_URL = `https://docs.google.com/spreadsheets/d/${SHEET_DOC_ID}/gviz/tq?tqx=out:csv&gid=${SHEET2_GID}`;
+        const SHEET3_BASE_URL = `https://docs.google.com/spreadsheets/d/${SHEET_DOC_ID}/gviz/tq?tqx=out:csv&gid=${SHEET3_GID}`;
+        const SHEET4_BASE_URL = `https://docs.google.com/spreadsheets/d/${SHEET_DOC_ID}/gviz/tq?tqx=out:csv&gid=${SHEET4_GID}`;
+        const CORE_TEAM_BASE_URL = `https://docs.google.com/spreadsheets/d/${SHEET_DOC_ID}/gviz/tq?tqx=out:csv&gid=${CORE_TEAM_GID}`;
+        
+        const excludedNames = ['jennifer.tokf', 'milk.yungcy', 'abel.wongyw', 'lavina.chan'];
+        
+        // 欄位順序對照表 (A欄=0, B欄=1, C欄=2...)
+        const S1_IDX = { BRAND: 0, FLOOR: 11, OFFER_DATE: 29, RJNJ: 12, NAME: 13, STAFF_ID: 9, STAFF_NAME: 10, ONBOARD_DATE: 27, LEAD_DATE: 28, STATUS: 22 };
+        // TA Flow 日期來源欄位
+        // Lead Date = B,C,D / Offer Date = P,Q,R / On board Date = T,U,V
+        const S1_DATE_SRC = { LEAD: [1, 2, 3], OFFER: [15, 16, 17], ONBOARD: [19, 20, 21] };
+        const S2_IDX = { BRAND: 0, FLOOR: 1, PIC: 2, POS: 3, STAFF_ID: 4, NAME: 5, RESIGN: 9, OFFER: 13, SHOULD: 15, ONBOARD: 14, GAP: 17, NJ_OFFER: 21 };
+
+        // 顏色庫
+        const monthColors = [
+            { border: 'border-emerald-500', text: 'text-emerald-600', bg: 'bg-emerald-100', accent: 'text-emerald-700' },
+            { border: 'border-indigo-500', text: 'text-indigo-600', bg: 'bg-indigo-100', accent: 'text-indigo-700' },
+            { border: 'border-rose-500', text: 'text-rose-600', bg: 'bg-rose-100', accent: 'text-rose-700' },
+            { border: 'border-amber-500', text: 'text-amber-600', bg: 'bg-amber-100', accent: 'text-amber-700' },
+            { border: 'border-violet-500', text: 'text-violet-600', bg: 'bg-violet-100', accent: 'text-violet-700' },
+            { border: 'border-sky-500', text: 'text-sky-600', bg: 'bg-sky-100', accent: 'text-sky-700' }
+        ];
+
+        // 點擊外部關閉 Position 選單
+        document.addEventListener('click', function(event) {
+            const menu = document.getElementById('posDropdownMenu');
+            if (!menu) return;
+            const button = menu.previousElementSibling;
+            if (!menu.classList.contains('hidden') && !menu.contains(event.target) && !button.contains(event.target)) {
+                menu.classList.add('hidden');
+            }
+        });
+
+        // --- 工具函式 ---
+        function getThisMonday() { 
+            const today = new Date(); 
+            const diff = today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1); 
+            return new Date(today.getFullYear(), today.getMonth(), diff, 0, 0, 0, 0); 
+        }
+        function getLocalDateFromInput(val) { 
+            if (!val) return null; 
+            const [y, m, d] = val.split('-').map(Number); 
+            return new Date(y, m - 1, d, 0, 0, 0, 0); 
+        }
+        function formatDateToISO(date) { 
+            const y = date.getFullYear(); 
+            const m = String(date.getMonth() + 1).padStart(2, '0'); 
+            const d = String(date.getDate()).padStart(2, '0'); 
+            return `${y}-${m}-${d}`; 
+        }
+        function parseDate(d) { 
+            if (!d || d === '-' || d.trim() === "") return null; 
+            const ms = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]; 
+            const p = d.split(/[\s/-]+/); 
+            if (p.length === 3) { 
+                let day = parseInt(p[0]), mIdx = ms.indexOf(p[1].toLowerCase().substring(0, 3)), yr = parseInt(p[2]); 
+                if (day && mIdx !== -1 && yr) return new Date(yr, mIdx, day, 0, 0, 0, 0); 
+                const mNum = parseInt(p[1]);
+                if (day && !isNaN(mNum) && mNum >= 1 && mNum <= 12 && yr) return new Date(yr, mNum - 1, day, 0, 0, 0, 0);
+            } 
+            const ts = Date.parse(d); 
+            return isNaN(ts) ? null : new Date(ts); 
+        }
+        function formatDateAsDMonY(dateObj) {
+            const ms = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            return `${dateObj.getDate()} ${ms[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
+        }
+        function parseDateByParts(dayPart, monthPart, yearPart) {
+            const d = parseInt((dayPart ?? "").toString().trim(), 10);
+            const yRaw = parseInt((yearPart ?? "").toString().trim(), 10);
+            if (!d || !yRaw) return null;
+            let y = yRaw;
+            if (y < 100) y += 2000;
+
+            const mRaw = (monthPart ?? "").toString().trim();
+            let m = parseInt(mRaw, 10);
+            if (isNaN(m)) {
+                const ms = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+                const mi = ms.indexOf(mRaw.toLowerCase().substring(0, 3));
+                m = mi >= 0 ? mi + 1 : NaN;
+            }
+            if (!m || m < 1 || m > 12) return null;
+
+            const dt = new Date(y, m - 1, d, 0, 0, 0, 0);
+            if (dt.getFullYear() !== y || dt.getMonth() !== m - 1 || dt.getDate() !== d) return null;
+            return dt;
+        }
+        function buildDateFromTripletColumns(row, tripletIdx, fallbackValue, allowFallback = true) {
+            const raw = tripletIdx.map(i => ((row[headersS1[i]] ?? "") + "").trim());
+            const nonEmpty = raw.filter(v => v && v !== "-");
+            if (nonEmpty.length === 0) return allowFallback ? (fallbackValue ?? "").toString().trim() : "-";
+            if (nonEmpty.length === 1) {
+                const parsedSingle = parseDate(nonEmpty[0]);
+                return parsedSingle ? formatDateAsDMonY(parsedSingle) : (allowFallback ? (fallbackValue ?? "").toString().trim() : "-");
+            }
+
+            if (nonEmpty.length === 3) {
+                const dmy = parseDateByParts(nonEmpty[0], nonEmpty[1], nonEmpty[2]);
+                if (dmy) return formatDateAsDMonY(dmy);
+                const ymd = parseDateByParts(nonEmpty[2], nonEmpty[1], nonEmpty[0]);
+                if (ymd) return formatDateAsDMonY(ymd);
+            }
+
+            const joined = nonEmpty.join(' ');
+            const parsed = parseDate(joined);
+            return parsed ? formatDateAsDMonY(parsed) : (allowFallback ? (fallbackValue ?? "").toString().trim() : "-");
+        }
+        function hydrateS1DateFields(row) {
+            const leadHeader = headersS1[S1_IDX.LEAD_DATE];
+            const offerHeader = headersS1[S1_IDX.OFFER_DATE];
+            const onboardHeader = headersS1[S1_IDX.ONBOARD_DATE];
+
+            if (leadHeader) row[leadHeader] = buildDateFromTripletColumns(row, S1_DATE_SRC.LEAD, row[leadHeader]);
+            if (offerHeader) row[offerHeader] = buildDateFromTripletColumns(row, S1_DATE_SRC.OFFER, row[offerHeader]);
+            if (onboardHeader) row[onboardHeader] = buildDateFromTripletColumns(row, S1_DATE_SRC.ONBOARD, row[onboardHeader], false);
+        }
+        function csvEscape(v) {
+            const s = (v ?? "").toString();
+            if (s.includes('"') || s.includes(',') || s.includes('\n') || s.includes('\r')) {
+                return `"${s.replace(/"/g, '""')}"`;
+            }
+            return s;
+        }
+        function gvizTableToCsv(table) {
+            const cols = (table?.cols || []).map(c => c?.label || "");
+            const lines = [];
+            lines.push(cols.map(csvEscape).join(','));
+            (table?.rows || []).forEach(r => {
+                const arr = cols.map((_, idx) => {
+                    const cell = r?.c?.[idx];
+                    if (!cell) return "";
+                    return cell.f != null ? cell.f : cell.v;
+                });
+                lines.push(arr.map(csvEscape).join(','));
+            });
+            return lines.join('\n');
+        }
+        function loadGvizCsvByJsonp(gid) {
+            return new Promise((resolve, reject) => {
+                const cb = `__gviz_cb_${gid}_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+                const script = document.createElement('script');
+                const timeout = setTimeout(() => {
+                    cleanup();
+                    reject(new Error(`Sheet ${gid} JSONP timeout`));
+                }, 15000);
+                function cleanup() {
+                    clearTimeout(timeout);
+                    if (script.parentNode) script.parentNode.removeChild(script);
+                    try { delete window[cb]; } catch (_) { window[cb] = undefined; }
+                }
+                window[cb] = (resp) => {
+                    try {
+                        const csv = gvizTableToCsv(resp?.table);
+                        cleanup();
+                        resolve(csv);
+                    } catch (e) {
+                        cleanup();
+                        reject(e);
+                    }
+                };
+                script.onerror = () => {
+                    cleanup();
+                    reject(new Error(`Sheet ${gid} JSONP failed`));
+                };
+                script.src = `https://docs.google.com/spreadsheets/d/${SHEET_DOC_ID}/gviz/tq?gid=${encodeURIComponent(gid)}&tqx=${encodeURIComponent(`out:json;responseHandler:${cb}`)}`;
+                document.body.appendChild(script);
+            });
+        }
+        function loadGvizCsvByJsonpBySheetName(sheetName) {
+            return new Promise((resolve, reject) => {
+                const cb = `__gviz_cb_sheet_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+                const script = document.createElement('script');
+                const timeout = setTimeout(() => {
+                    cleanup();
+                    reject(new Error(`Sheet ${sheetName} JSONP timeout`));
+                }, 15000);
+                function cleanup() {
+                    clearTimeout(timeout);
+                    if (script.parentNode) script.parentNode.removeChild(script);
+                    try { delete window[cb]; } catch (_) { window[cb] = undefined; }
+                }
+                window[cb] = (resp) => {
+                    try {
+                        const csv = gvizTableToCsv(resp?.table);
+                        cleanup();
+                        resolve(csv);
+                    } catch (e) {
+                        cleanup();
+                        reject(e);
+                    }
+                };
+                script.onerror = () => {
+                    cleanup();
+                    reject(new Error(`Sheet ${sheetName} JSONP failed`));
+                };
+                script.src = `https://docs.google.com/spreadsheets/d/${SHEET_DOC_ID}/gviz/tq?sheet=${encodeURIComponent(sheetName)}&tqx=${encodeURIComponent(`out:json;responseHandler:${cb}`)}`;
+                document.body.appendChild(script);
+            });
+        }
+        function getZColumnClass(v) { 
+            if (v.toUpperCase().includes('WITHDRAW')) return "bg-rose-100 text-rose-800 text-center"; 
+            if (v.toUpperCase().includes('ONBOARD')) return "bg-emerald-100 text-emerald-900 text-center"; 
+            return "bg-amber-100 text-amber-800 text-center"; 
+        }
+
+        // 智慧判斷日期區間並計算總天數 (支援多欄位及比例計算)
+        function getCommitmentColsInfo(headers, baseYear) {
+            const monthMap = { jan:0, feb:1, mar:2, apr:3, arp:3, may:4, jun:5, jul:6, aug:7, sep:8, oct:9, nov:10, dec:11 };
+            let cols = [];
+            for (let i = 0; i < headers.length; i++) {
+                const h = headers[i];
+                if (h.toUpperCase() === 'BRAND' || h.toUpperCase() === 'PIC') continue;
+                
+                const cleanH = h.replace(/[\r\n]+/g, ' ');
+                const parts = cleanH.split('-');
+                if (parts.length >= 2) {
+                    const parseStr = (str) => {
+                        const match = str.toLowerCase().match(/(\d+)\s*([a-z]+)/);
+                        if (!match) return null;
+                        const day = parseInt(match[1]);
+                        const mStr = match[2].substring(0, 3);
+                        const mIdx = monthMap[mStr];
+                        if (mIdx !== undefined) return new Date(baseYear, mIdx, day);
+                        return null;
+                    };
+                    const d1 = parseStr(parts[0]);
+                    const d2 = parseStr(parts[1]);
+                    if (d1 && d2) {
+                        d1.setHours(0, 0, 0, 0);
+                        d2.setHours(23, 59, 59, 999);
+                        const t1 = d1.getTime();
+                        const t2 = d2.getTime();
+                        const totalDays = Math.round((t2 - t1) / 86400000);
+                        if (totalDays > 0) {
+                            cols.push({ colName: h, start: t1, end: t2, totalDays });
+                        }
+                    }
+                }
+            }
+            return cols;
+        }
+
+        // --- 入職批次統計 ---
+        function calculateBatchCounts() {
+            const container = document.getElementById("batchContainer"); if (!container) return;
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            const batchMap = new Map();
+
+            const todayMidnight = new Date();
+            todayMidnight.setHours(0, 0, 0, 0);
+            const todayTs = todayMidnight.getTime();
+
+            dataS1.forEach(row => {
+                const source = (row[headersS1[5]] || "").trim().toUpperCase();
+                if (!source.includes("OPERATION")) return;
+
+                const dateStr = (row[headersS1[S1_IDX.ONBOARD_DATE]] || "").trim();
+                if (!dateStr || dateStr === "-" || dateStr === "") return;
+                const d = parseDate(dateStr);
+                const dTs = d ? d.getTime() : null;
+                
+                // 檢查資料月份是否在勾選中，且日期 >= 今天 (出當日之後的班次)
+                if (dTs && dTs >= todayTs && selectedBatchMonths.includes(d.getMonth() + 1)) {
+                    const normalizedKey = `${d.getDate()} ${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+                    if (!batchMap.has(normalizedKey)) batchMap.set(normalizedKey, { total: 0, nj: 0, rj: 0, rawDate: dTs });
+                    
+                    const s = batchMap.get(normalizedKey);
+                    s.total++;
+                    const rjnjType = (row[headersS1[S1_IDX.RJNJ]] || "").trim().toUpperCase();
+                    if (rjnjType === "NJ") s.nj++;
+                    else if (rjnjType === "RJ") s.rj++;
+                }
+            });
+
+            const sortedKeys = Array.from(batchMap.keys()).sort((a, b) => batchMap.get(a).rawDate - batchMap.get(b).rawDate);
+            container.innerHTML = '';
+            
+            if (sortedKeys.length === 0) {
+                container.innerHTML = '<div class="col-span-full p-10 cyber-card text-slate-400 font-bold italic text-center">選擇月份內暫無未來入職批次記錄</div>';
+            } else {
+                sortedKeys.forEach((dateStr, index) => {
+                    const s = batchMap.get(dateStr);
+                    const colorSet = monthColors[index % monthColors.length];
+                    container.innerHTML += `
+                        <div onclick="toggleBatchList('${dateStr}')" class="batch-card cyber-card p-6 border-b-8 ${colorSet.border}">
+                            <p class="text-xs font-black text-slate-500 uppercase tracking-widest mb-1 text-left">On board Date</p>
+                            <p class="text-lg font-black text-slate-900 mb-3 text-left">${dateStr}</p>
+                            <div class="flex items-center justify-between">
+                                <div class="flex flex-col items-start">
+                                    <span class="text-4xl font-black ${colorSet.text} readable-nums text-center leading-none">${s.total}</span>
+                                    <div class="flex flex-col text-[10px] font-black text-slate-400 mt-2 uppercase tracking-tighter text-left">
+                                        <span>(RJ: ${s.rj})</span>
+                                        <span>(NJ: ${s.nj})</span>
+                                    </div>
+                                </div>
+                                <span class="px-3 py-1 ${colorSet.bg} ${colorSet.accent} rounded-lg text-xs font-black mt-auto mb-2">總人數</span>
+                            </div>
+                        </div>`;
+                });
+            }
+        }
+
+        function toggleMonth(m) {
+            const idx = selectedBatchMonths.indexOf(m);
+            if (idx > -1) {
+                if (selectedBatchMonths.length > 1) selectedBatchMonths.splice(idx, 1);
+            } else {
+                selectedBatchMonths.push(m);
+            }
+            updateMonthButtons();
+            calculateBatchCounts();
+        }
+
+        function updateMonthButtons() {
+            availableMonths.forEach(m => {
+                const btn = document.getElementById(`btn-month-${m}`);
+                if (btn) {
+                    btn.className = selectedBatchMonths.includes(m) ? "month-btn active" : "month-btn inactive";
+                }
+            });
+        }
+
+        // --- 統計模塊 ---
+        function calculateWeeklyLeads() {
+            const startEl = document.getElementById('leadStart');
+            const endEl = document.getElementById('leadEnd');
+            if (!startEl?.value || !endEl?.value) return; 
+            
+            const start = getLocalDateFromInput(startEl.value);
+            const end = getLocalDateFromInput(endEl.value);
+            if(!start || !end) return;
+            const startTs = start.getTime();
+            const endLimitTs = new Date(end.getTime()).setHours(23,59,59,999);
+            
+            ['DERMES', 'REENEX', 'ELYZE'].forEach(brand => {
+                const list = dataS1.filter(row => {
+                    const source = (row[headersS1[5]] || "").trim().toUpperCase();
+                    if (!source.includes("OPERATION")) return false;
+                    if ((row[headersS1[S1_IDX.BRAND]]||"").trim().toUpperCase() !== brand) return false;
+                    const ld = parseDate(row[headersS1[S1_IDX.LEAD_DATE]]);
+                    const ldTs = ld ? ld.getTime() : null;
+                    return ldTs && ldTs >= startTs && ldTs <= endLimitTs;
+                });
+                const elRj = document.getElementById(`weekly-lead-rj-${brand}`);
+                const elNj = document.getElementById(`weekly-lead-nj-${brand}`);
+                const elTotal = document.getElementById(`weekly-lead-total-${brand}`);
+                
+                if(elRj) elRj.innerText = `RJ: ${list.filter(r => (r[headersS1[S1_IDX.RJNJ]]||"").trim().toUpperCase() === "RJ").length}`;
+                if(elNj) elNj.innerText = `NJ: ${list.filter(r => (r[headersS1[S1_IDX.RJNJ]]||"").trim().toUpperCase() === "NJ").length}`;
+                if(elTotal) elTotal.innerText = list.length;
+            });
+            if (currentDetailMode === "LEAD") showSharedDetail("LEAD", currentDetailKey);
+        }
+
+        function calculateWeeklyOffers() {
+            const startEl = document.getElementById('offerStart');
+            const endEl = document.getElementById('offerEnd');
+            if (!startEl?.value || !endEl?.value) return;
+            
+            const oStart = getLocalDateFromInput(startEl.value);
+            const oEnd = getLocalDateFromInput(endEl.value);
+            if(!oStart || !oEnd) return;
+            
+            const oStartTs = oStart.getTime();
+            const oLimitTs = new Date(oEnd.getTime()).setHours(23,59,59,999);
+            
+            const obS = getLocalDateFromInput(document.getElementById('obOfferStart')?.value);
+            const obE = getLocalDateFromInput(document.getElementById('obOfferEnd')?.value);
+            const obSTs = obS ? obS.getTime() : 0;
+            const obETs = obE ? new Date(obE.getTime()).setHours(23,59,59,999) : Infinity;
+            const useOb = document.getElementById('useObFilter')?.checked;
+            
+            ['DERMES', 'REENEX', 'ELYZE'].forEach(brand => {
+                const list = dataS1.filter(row => {
+                    const source = (row[headersS1[5]] || "").trim().toUpperCase();
+                    if (!source.includes("OPERATION")) return false;
+                    if((row[headersS1[S1_IDX.BRAND]]||"").trim().toUpperCase() !== brand) return false;
+                    const od = parseDate(row[headersS1[S1_IDX.OFFER_DATE]]);
+                    const odTs = od ? od.getTime() : null;
+                    const st = (row[headersS1[S1_IDX.STATUS]]||"").toUpperCase();
+                    if(!(odTs && odTs >= oStartTs && odTs <= oLimitTs && (st.includes("OFFER") || st.includes("ACCEPT")))) return false;
+                    if(useOb && obS && obE) { 
+                        const obd = parseDate(row[headersS1[S1_IDX.ONBOARD_DATE]]); 
+                        const obdTs = obd ? obd.getTime() : null;
+                        if(!obdTs || obdTs < obSTs || obdTs > obETs) return false; 
+                    }
+                    return true;
+                });
+                const elRj = document.getElementById(`weekly-rj-${brand}`);
+                const elNj = document.getElementById(`weekly-nj-${brand}`);
+                const elTotal = document.getElementById(`weekly-total-${brand}`);
+                
+                if(elRj) elRj.innerText = `RJ: ${list.filter(r => (r[headersS1[S1_IDX.RJNJ]]||"").trim().toUpperCase() === "RJ").length}`;
+                if(elNj) elNj.innerText = `NJ: ${list.filter(r => (r[headersS1[S1_IDX.RJNJ]]||"").trim().toUpperCase() === "NJ").length}`;
+                if(elTotal) elTotal.innerText = list.length;
+            });
+            if (currentDetailMode === "WEEKLY") showSharedDetail("WEEKLY", currentDetailKey);
+        }
+
+        function calculatePendingOffers() {
+            const sEl = document.getElementById('pendingStart');
+            const eEl = document.getElementById('pendingEnd');
+            if (!sEl?.value || !eEl?.value) return;
+            
+            const start = getLocalDateFromInput(sEl.value);
+            const end = getLocalDateFromInput(eEl.value);
+            if(!start || !end) return;
+            const startTs = start.getTime();
+            const endLimitTs = new Date(end.getTime()).setHours(23,59,59,999);
+            
+            ['DERMES', 'REENEX', 'ELYZE'].forEach(brand => {
+                const list = dataS1.filter(row => {
+                    const source = (row[headersS1[5]] || "").trim().toUpperCase();
+                    if (!source.includes("OPERATION")) return false;
+                    if ((row[headersS1[S1_IDX.BRAND]]||"").trim().toUpperCase() !== brand) return false;
+                    const od = parseDate(row[headersS1[S1_IDX.OFFER_DATE]]);
+                    const odTs = od ? od.getTime() : null;
+                    const stMatch = !(row[headersS1[S1_IDX.STATUS]]||"").toUpperCase().includes("ACCEPT");
+                    return odTs && odTs >= startTs && odTs <= endLimitTs && stMatch;
+                });
+                
+                const elRj = document.getElementById(`pending-rj-${brand}`);
+                const elNj = document.getElementById(`pending-nj-${brand}`);
+                const elTotal = document.getElementById(`pending-total-${brand}`);
+                
+                if(elRj) elRj.innerText = `RJ: ${list.filter(r => (r[headersS1[S1_IDX.RJNJ]]||"").trim().toUpperCase() === "RJ").length}`;
+                if(elNj) elNj.innerText = `NJ: ${list.filter(r => (r[headersS1[S1_IDX.RJNJ]]||"").trim().toUpperCase() === "NJ").length}`;
+                if(elTotal) elTotal.innerText = list.length;
+            });
+            if (currentDetailMode === "PENDING") showSharedDetail("PENDING", currentDetailKey);
+        }
+
+        // --- PIC 與 HR 效能表統計 (嚴格 Timestamp 版) ---
+        function calculateSummaries() {
+            const sumBody = document.getElementById('brandSummaryBody'), picBody = document.getElementById('picSummaryBody'), perfBody = document.getElementById('picPerformanceBody');
+            if(!sumBody || !picBody || !perfBody) return;
+            sumBody.innerHTML = ''; picBody.innerHTML = ''; perfBody.innerHTML = '';
+            let gt = { o:0, s:0, ob:0, g:0, njo:0 };
+            
+            const pStartEl = document.getElementById('perfStart'), pEndEl = document.getElementById('perfEnd');
+            if (!pStartEl || !pEndEl) return;
+            
+            const pStart = getLocalDateFromInput(pStartEl.value);
+            const pEnd = getLocalDateFromInput(pEndEl.value);
+            const pStartTs = pStart ? pStart.getTime() : 0;
+            const pEndLimitTs = pEnd ? new Date(pEnd.getTime()).setHours(23,59,59,999) : Infinity;
+            
+            const usePerfObFilter = document.getElementById('usePerfObFilter')?.checked;
+            const poStart = getLocalDateFromInput(document.getElementById('perfObStart')?.value);
+            const poEnd = getLocalDateFromInput(document.getElementById('perfObEnd')?.value);
+            const poStartTs = poStart ? poStart.getTime() : 0;
+            const poEndLimitTs = poEnd ? new Date(poEnd.getTime()).setHours(23,59,59,999) : Infinity;
+
+            // 取得 Sheet 4 中所有符合格式的日期欄位與其天數資訊
+            const baseYear = pStart ? pStart.getFullYear() : new Date().getFullYear();
+            const validS4Cols = getCommitmentColsInfo(headersS4, baseYear);
+            const s4PicCol = headersS4.find(h => h.trim().toUpperCase() === 'PIC');
+            const s4BrandCol = headersS4.find(h => h.trim().toUpperCase() === 'BRAND');
+
+            ['DERMES', 'ELYZE', 'REENEX'].forEach(brand => {
+                const brDataS2 = dataS2.filter(i => (i[headersS2[S2_IDX.BRAND]]||"").trim().toUpperCase() === brand && !(i[headersS2[S2_IDX.NAME]]||"").toUpperCase().includes("TOTAL"));
+                let bs = { o:0, s:0, ob:0, g:0, njo:0 };
+                brDataS2.forEach(i => { 
+                    bs.o += parseFloat((i[headersS2[S2_IDX.OFFER]]||"0").replace(/,/g,'')) || 0; 
+                    bs.s += parseFloat((i[headersS2[S2_IDX.SHOULD]]||"0").replace(/,/g,'')) || 0; 
+                    bs.ob += parseFloat((i[headersS2[S2_IDX.ONBOARD]]||"0").replace(/,/g,'')) || 0; 
+                    bs.g += parseFloat((i[headersS2[S2_IDX.GAP]]||"0").replace(/,/g,'')) || 0; 
+                    bs.njo += parseFloat((i[headersS2[S2_IDX.NJ_OFFER]]||"0").replace(/,/g,'')) || 0; 
+                });
+                gt.o+=bs.o; gt.s+=bs.s; gt.ob+=bs.ob; gt.g+=bs.g; gt.njo+=bs.njo;
+                sumBody.innerHTML += `
+                    <tr class="hover:bg-emerald-50 transition font-bold text-center">
+                        <td class="px-10 py-5 text-left">${brand}</td>
+                        <td>${bs.o.toLocaleString()}</td>
+                        <td>${bs.s.toLocaleString()}</td>
+                        <td class="text-emerald-800 text-2xl">${bs.ob.toLocaleString()}</td>
+                        <td class="${bs.g<0?'text-rose-700 font-black':''}">${bs.g.toLocaleString()}</td>
+                        <td>${bs.njo.toLocaleString()}</td>
+                    </tr>`;
+                
+                const uniquePICs = [...new Set(brDataS2.map(i => i[headersS2[S2_IDX.PIC]]).filter(v => v))];
+                let perfRows = []; // 準備陣列來處理合併儲存格
+                
+                uniquePICs.forEach(picName => {
+                    const picRowsS2 = brDataS2.filter(i => i[headersS2[S2_IDX.PIC]] === picName);
+                    let ps = { r:0, o:0, s:0, ob:0, g:0, njo:0 };
+                    picRowsS2.forEach(i => { 
+                        ps.r += (parseFloat(i[headersS2[9]])||0) + (parseFloat(i[headersS2[10]])||0); 
+                        ps.o += parseFloat((i[headersS2[S2_IDX.OFFER]]||"0").replace(/,/g,'')) || 0; 
+                        ps.s += parseFloat((i[headersS2[S2_IDX.SHOULD]]||"0").replace(/,/g,'')) || 0; 
+                        ps.ob += parseFloat((i[headersS2[S2_IDX.ONBOARD]]||"0").replace(/,/g,'')) || 0; 
+                        ps.g += parseFloat((i[headersS2[S2_IDX.GAP]]||"0").replace(/,/g,'')) || 0; 
+                        ps.njo += parseFloat((i[headersS2[S2_IDX.NJ_OFFER]]||"0").replace(/,/g,'')) || 0; 
+                    });
+                    
+                    picBody.innerHTML += `
+                        <tr class="hover:bg-blue-50 transition font-bold text-center">
+                            <td class="text-left border-r border-blue-50 px-6">${brand}</td>
+                            <td class="text-left border-r border-blue-50 px-6">${picName}</td>
+                            <td class="text-rose-700 font-black border-r border-blue-50 px-4">${ps.r}</td>
+                            <td class="border-r border-blue-50 text-slate-600 text-xs px-4">${ps.o}</td>
+                            <td class="border-r border-blue-50 px-4">${ps.s}</td>
+                            <td class="text-emerald-800 font-black text-lg border-r border-blue-50 px-4">${ps.ob}</td>
+                            <td class="border-r border-blue-50 ${ps.g<0?'text-rose-700 font-black':''} px-4">${ps.g}</td>
+                            <td class="px-4">${ps.njo}</td>
+                        </tr>`;
+                    
+                    if (pStart && pEndEl.value) {
+                        const picFloors = picRowsS2.map(i => (i[headersS2[S2_IDX.FLOOR]]||"").trim().toUpperCase());
+                        
+                        const s1RowsForPic = dataS1.filter(row1 => {
+                            const source = (row1[headersS1[5]] || "").trim().toUpperCase();
+                            if (!source.includes("OPERATION")) return false;
+
+                            const bMatch = (row1[headersS1[S1_IDX.BRAND]]||"").trim().toUpperCase() === brand;
+                            const rowFloor = (row1[headersS1[S1_IDX.FLOOR]]||"").trim().toUpperCase();
+                            const fMatch = picFloors.includes(rowFloor);
+                            if(!bMatch || !fMatch) return false;
+                            
+                            if(usePerfObFilter && poStart && poEndEl.value) {
+                                const onbD = parseDate(row1[headersS1[S1_IDX.ONBOARD_DATE]]);
+                                const onbTs = onbD ? onbD.getTime() : null;
+                                if(!onbTs || onbTs < poStartTs || onbTs > poEndLimitTs) return false;
+                            }
+                            return true;
+                        });
+                        
+                        const leads = s1RowsForPic.filter(r => { 
+                            const ld = parseDate(r[headersS1[S1_IDX.LEAD_DATE]]); 
+                            const ldTs = ld ? ld.getTime() : null;
+                            return ldTs && ldTs >= pStartTs && ldTs <= pEndLimitTs; 
+                        }).length;
+                        
+                        const offerRows = s1RowsForPic.filter(r => {
+                            const od = parseDate(r[headersS1[S1_IDX.OFFER_DATE]]);
+                            const odTs = od ? od.getTime() : null;
+                            const st = (r[headersS1[S1_IDX.STATUS]]||"").toUpperCase();
+                            return odTs && odTs >= pStartTs && odTs <= pEndLimitTs && (st.includes("OFFER") || st.includes("ACCEPT"));
+                        });
+                        
+                        const njOffers = offerRows.filter(r => (r[headersS1[S1_IDX.RJNJ]]||"").trim().toUpperCase() === "NJ").length;
+                        const rjOffers = offerRows.filter(r => (r[headersS1[S1_IDX.RJNJ]]||"").trim().toUpperCase() === "RJ").length;
+
+                        // 判斷基礎名字
+                        const getBaseName = (name) => name.includes('-') ? name.split('-')[1].trim() : name.trim();
+                        const baseName = getBaseName(picName);
+
+                        // 從 Sheet 4 獲取對應的 Commitment 並按選擇日期計算比例
+                        let commitmentTotal = 0;
+                        if (s4PicCol && s4BrandCol) {
+                            // 先找完全符合的 PIC 名字
+                            let s4Row = dataS4.find(r => (r[s4BrandCol]||"").trim().toUpperCase() === brand.toUpperCase() && (r[s4PicCol]||"").trim() === picName.trim());
+                            
+                            // 找不到的話，找 BaseName 符合的 (例如 Sheet4 只寫 "Mia")
+                            if (!s4Row) {
+                                s4Row = dataS4.find(r => (r[s4BrandCol]||"").trim().toUpperCase() === brand.toUpperCase() && getBaseName(r[s4PicCol]||"") === baseName);
+                            }
+
+                            if (s4Row && pStartTs && pEndLimitTs) {
+                                validS4Cols.forEach(col => {
+                                    // 計算使用者選擇的日期區間與 Sheet 4 此欄位區間的重疊狀況
+                                    const overlapStart = Math.max(pStartTs, col.start);
+                                    const overlapEnd = Math.min(pEndLimitTs, col.end);
+                                    if (overlapStart <= overlapEnd) {
+                                        const overlapDays = Math.round((overlapEnd - overlapStart) / 86400000);
+                                        const rawVal = parseFloat(s4Row[col.colName]) || 0;
+                                        if (rawVal > 0) {
+                                            // 依據重疊天數佔該欄位總天數的比例加總
+                                            commitmentTotal += rawVal * (overlapDays / col.totalDays);
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                        
+                        // 轉換為顯示字串，自動四捨五入到整數
+                        let commitmentDisplay = commitmentTotal > 0 ? Math.round(commitmentTotal).toString() : "0";
+
+                        // 將資料暫存至陣列中，以便後續判斷合併
+                        perfRows.push({ brand, picName, baseName, commitmentDisplay, leads, njOffers, rjOffers });
+                    }
+                });
+
+                // 處理 Commitment 合併儲存格並輸出至 HTML
+                if (pStart && pEndEl.value && perfRows.length > 0) {
+                    let i = 0;
+                    while (i < perfRows.length) {
+                        let rowspan = 1;
+                        let currentBase = perfRows[i].baseName;
+                        let j = i + 1;
+                        // 尋找連續且 BaseName 相同的行
+                        while (j < perfRows.length && perfRows[j].baseName === currentBase) {
+                            rowspan++;
+                            perfRows[j].skipCommitment = true; // 標記為不渲染 TD
+                            j++;
+                        }
+                        perfRows[i].rowspan = rowspan;
+                        i = j;
+                    }
+
+                    perfRows.forEach(r => {
+                        let commitmentTd = '';
+                        if (!r.skipCommitment) {
+                            let rsAttr = r.rowspan > 1 ? `rowspan="${r.rowspan}"` : '';
+                            // 加上 align-middle 與 bg-white/40 讓合併儲存格凸顯且置中
+                            commitmentTd = `<td ${rsAttr} class="border-r border-indigo-100 text-amber-600 text-xl font-black px-4 align-middle bg-white/40">${r.commitmentDisplay}</td>`;
+                        }
+
+                        // 新增 cursor-pointer 與 onclick 事件，並為數字加上底線提示
+                        perfBody.innerHTML += `
+                            <tr class="hover:bg-indigo-100 transition font-bold text-center cursor-pointer" onclick="togglePicList('${r.brand}', '${r.picName}')" title="點擊查看明細">
+                                <td class="text-left border-r border-indigo-100 px-6">${r.brand}</td>
+                                <td class="text-left border-r border-indigo-100 px-6">${r.picName}</td>
+                                ${commitmentTd}
+                                <td class="border-r border-indigo-100 text-indigo-700 text-xl px-4 underline decoration-indigo-300 decoration-2 underline-offset-4">${r.leads}</td>
+                                <td class="border-r border-indigo-100 text-emerald-700 text-xl px-4 underline decoration-emerald-300 decoration-2 underline-offset-4">${r.njOffers}</td>
+                                <td class="text-emerald-700 text-xl px-4 underline decoration-emerald-300 decoration-2 underline-offset-4">${r.rjOffers}</td>
+                            </tr>`;
+                    });
+                }
+            });
+            sumBody.innerHTML += `
+                <tr class="bg-slate-100 font-black border-t-2 border-slate-300 text-center">
+                    <td class="text-left px-10 text-indigo-900">GRAND TOTAL</td>
+                    <td>${gt.o.toLocaleString()}</td>
+                    <td>${gt.s.toLocaleString()}</td>
+                    <td class="text-emerald-900 text-2xl">${gt.ob.toLocaleString()}</td>
+                    <td class="${gt.g<0?'text-rose-800':''}">${gt.g.toLocaleString()}</td>
+                    <td>${gt.njo.toLocaleString()}</td>
+                </tr>`;
+        }
+
+        // 多選 Position 的更新標籤函式
+        function updatePosSelection() {
+            const checkboxes = document.querySelectorAll('.pos-checkbox');
+            selectedPositions = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
+            
+            const label = document.getElementById('posDropdownLabel');
+            if (label) {
+                if (selectedPositions.length === 0) {
+                    label.innerText = "未選擇";
+                } else if (selectedPositions.length <= 2) {
+                    label.innerText = selectedPositions.join(', ');
+                } else {
+                    label.innerText = `已選 ${selectedPositions.length} 項`;
+                }
+            }
+            calculateHrPerformance();
+        }
+
+        function extractStaffIds(value) {
+            const s = (value ?? "").toString();
+            const ids = s.match(/\d{3,}/g) || [];
+            return ids.map(v => v.trim());
+        }
+        function isMonthLabel(value) {
+            const s = ((value ?? "") + "").trim().toLowerCase();
+            return ["jan","january","feb","february","mar","march","apr","april","may","jun","june","jul","july","aug","august","sep","sept","september","oct","october","nov","november","dec","december"].includes(s);
+        }
+        function isValidCoreTeamName(value) {
+            const s = ((value ?? "") + "").trim();
+            if (!s) return false;
+            if (isMonthLabel(s)) return false;
+            const up = s.toUpperCase();
+            if (up.includes("CORE TEAM") || up.includes("NAME LIST")) return false;
+            if (/^\d+$/.test(s)) return false;
+            return true;
+        }
+        function findCoreTeamFieldName() {
+            const fields = headersCoreTeam || [];
+            return fields.find(h => ((h || "").toString().toLowerCase().replace(/\s+/g, '')).includes('coreteam')) || fields[2] || null;
+        }
+        function findCoreTeamStaffIdFieldName() {
+            const fields = headersCoreTeam || [];
+            return fields.find(h => ((h || "").toString().toLowerCase().replace(/\s+/g, '')).includes('staffid')) || fields[7] || null;
+        }
+        function findCoreTeamBrandFieldName() {
+            const fields = headersCoreTeam || [];
+            return fields.find(h => ((h || "").toString().toLowerCase().trim()) === 'brand') || fields[0] || null;
+        }
+        function findS1ReferrerStaffIdFieldName() {
+            const fields = headersS1 || [];
+            const normalized = (v) => ((v || "").toString().toLowerCase().replace(/\s+/g, ''));
+            return fields.find(h => normalized(h).includes('referralbonuscount')) || fields[S1_IDX.STAFF_ID] || fields[7] || null;
+        }
+        function getS1ReferrerStaffId(row) {
+            const field = findS1ReferrerStaffIdFieldName();
+            if (!field) return "";
+            return ((row?.[field] ?? "") + "").trim();
+        }
+        function getCoreTeamMap() {
+            const map = new Map();
+            let currentName = "";
+            let currentBrand = "";
+            const nameField = findCoreTeamFieldName();
+            const staffIdField = findCoreTeamStaffIdFieldName();
+            const brandField = findCoreTeamBrandFieldName();
+            dataCoreTeam.forEach((row) => {
+                const brand = ((brandField ? row?.[brandField] : "") ?? "").toString().trim();
+                const name = ((nameField ? row?.[nameField] : "") ?? "").toString().trim();
+                const idsFromH = extractStaffIds(staffIdField ? row?.[staffIdField] : "");
+
+                if (brand) currentBrand = brand;
+                if (isValidCoreTeamName(name)) currentName = name;
+                const key = isValidCoreTeamName(name) ? name : currentName;
+                if (!key) return;
+
+                if (!map.has(key)) map.set(key, { brand: currentBrand || '-', ids: new Set() });
+                const item = map.get(key);
+                if (currentBrand) item.brand = currentBrand;
+                idsFromH.forEach(id => item.ids.add(id));
+            });
+            return map;
+        }
+        function populateCoreTeamFilter() {
+            const sel = document.getElementById('coreTeamFilter');
+            if (!sel) return;
+            const teamMap = getCoreTeamMap();
+            const names = Array.from(teamMap.keys()).sort((a, b) => a.localeCompare(b, 'zh-HK'));
+            sel.innerHTML = '<option value="ALL">ALL</option>' + names.map(n => `<option value="${n}">${n}</option>`).join('');
+        }
+        function setHrDateFilterType(type) {
+            const input = document.getElementById('hrDateFilterType');
+            if (!input) return;
+            input.value = type === 'OFFER' ? 'OFFER' : 'LEAD';
+
+            const btnLead = document.getElementById('btnHrFilterLead');
+            const btnOffer = document.getElementById('btnHrFilterOffer');
+            if (btnLead && btnOffer) {
+                if (input.value === 'LEAD') {
+                    btnLead.className = "px-3 py-1.5 rounded-lg text-xs font-black border-2 border-indigo-200 bg-indigo-600 text-white";
+                    btnOffer.className = "px-3 py-1.5 rounded-lg text-xs font-black border-2 border-slate-200 bg-white text-slate-600";
+                } else {
+                    btnLead.className = "px-3 py-1.5 rounded-lg text-xs font-black border-2 border-slate-200 bg-white text-slate-600";
+                    btnOffer.className = "px-3 py-1.5 rounded-lg text-xs font-black border-2 border-indigo-200 bg-indigo-600 text-white";
+                }
+            }
+            calculateHrPerformance();
+        }
+        function calculateHrPerformance() {
+            const body = document.getElementById('hrPerformanceBody');
+            if(!body) return;
+            body.innerHTML = '';
+
+            const startEl = document.getElementById('hrPerfStart'), endEl = document.getElementById('hrPerfEnd');
+            if (!startEl?.value || !endEl?.value) return;
+
+            const pStart = getLocalDateFromInput(startEl.value);
+            const pEnd = getLocalDateFromInput(endEl.value);
+            const pStartTs = pStart ? pStart.getTime() : 0;
+            const pEndLimitTs = pEnd ? new Date(pEnd.getTime()).setHours(23,59,59,999) : Infinity;
+            const dateFilterType = document.getElementById('hrDateFilterType')?.value || 'LEAD';
+
+            const useOb = document.getElementById('useHrPerfObFilter')?.checked;
+            const poStart = getLocalDateFromInput(document.getElementById('hrPerfObStart')?.value);
+            const poEnd = getLocalDateFromInput(document.getElementById('hrPerfObEnd')?.value);
+            const poStartTs = poStart ? poStart.getTime() : 0;
+            const poEndLimitTs = poEnd ? new Date(poEnd.getTime()).setHours(23,59,59,999) : Infinity;
+
+            const selectedTeam = document.getElementById('coreTeamFilter')?.value || 'ALL';
+            const teamMap = getCoreTeamMap();
+            const taFlowIdSet = new Set(
+                dataS1
+                    .map(row => getS1ReferrerStaffId(row))
+                    .filter(v => v)
+            );
+            const teams = Array.from(teamMap.entries())
+                .filter(([name, item]) => item.ids.size > 0 && (selectedTeam === 'ALL' || selectedTeam === name))
+                .sort((a, b) => {
+                    const brandA = (a[1]?.brand || '').toString().toUpperCase();
+                    const brandB = (b[1]?.brand || '').toString().toUpperCase();
+                    if (brandA !== brandB) return brandA.localeCompare(brandB);
+                    return a[0].localeCompare(b[0], 'zh-HK');
+                });
+
+            teams.forEach(([teamName, item]) => {
+                const brandName = item.brand || '-';
+                const validIdSet = new Set(Array.from(item.ids).filter(id => taFlowIdSet.has(id)));
+                const relRows = dataS1.filter(row => {
+                    const sid = getS1ReferrerStaffId(row);
+                    return sid && validIdSet.has(sid);
+                });
+
+                let leads = 0, nj = 0, consider = 0, rj = 0;
+                relRows.forEach(row => {
+                    const ld = parseDate(row[headersS1[S1_IDX.LEAD_DATE]]);
+                    const od = parseDate(row[headersS1[S1_IDX.OFFER_DATE]]);
+                    const onbD = parseDate(row[headersS1[S1_IDX.ONBOARD_DATE]]);
+                    const st = (row[headersS1[S1_IDX.STATUS]] || "").toUpperCase();
+                    const rjnj = (row[headersS1[S1_IDX.RJNJ]] || "").trim().toUpperCase();
+
+                    const ldTs = ld ? ld.getTime() : null;
+                    const odTs = od ? od.getTime() : null;
+                    const onbTs = onbD ? onbD.getTime() : null;
+                    const filterTs = dateFilterType === 'OFFER' ? odTs : ldTs;
+                    const noOnboard = !onbTs;
+                    const hasOfferDate = !!odTs;
+                    const statusRaw = (row[headersS1[S1_IDX.STATUS]] || "").toString().trim();
+                    const statusUpper = statusRaw.toUpperCase();
+                    const isBlankStatus = !statusRaw || statusRaw === "-";
+                    const isPendingCcdReply = statusUpper.includes("PENDING CCD REPLY");
+                    const isPendingStatus = statusUpper.includes("PENDING");
+                    const isConsiderOffer = !isPendingCcdReply && !isPendingStatus && (
+                        statusUpper.includes("OFFER") ||
+                        (hasOfferDate && noOnboard && !isBlankStatus)
+                    );
+
+                    if (filterTs && filterTs >= pStartTs && filterTs <= pEndLimitTs) leads++;
+
+                    let validOb = true;
+                    if (useOb && poStart && document.getElementById('hrPerfObEnd')?.value) {
+                        if (!onbTs || onbTs < poStartTs || onbTs > poEndLimitTs) validOb = false;
+                    }
+                    if (!isConsiderOffer && validOb && filterTs && filterTs >= pStartTs && filterTs <= pEndLimitTs && (st.includes("OFFER") || st.includes("ACCEPT"))) {
+                        if (rjnj === "NJ") nj++;
+                        else if (rjnj === "RJ") rj++;
+                    }
+                    if (isConsiderOffer && filterTs && filterTs >= pStartTs && filterTs <= pEndLimitTs) {
+                        consider++;
+                    }
+                });
+
+                body.innerHTML += `
+                    <tr class="hover:bg-teal-100 transition font-bold text-center">
+                        <td class="text-left border-r border-teal-100 px-6">${brandName}</td>
+                        <td class="text-left border-r border-teal-100 px-6">${teamName}</td>
+                        <td class="border-r border-teal-100 text-indigo-700 text-xl px-4 underline decoration-indigo-300 decoration-2 underline-offset-4 cursor-pointer" onclick='showCoreTeamDetail(${JSON.stringify(teamName)}, ${JSON.stringify(brandName)}, "LEAD")'>${leads}</td>
+                        <td class="border-r border-teal-100 text-emerald-700 text-xl px-4 underline decoration-emerald-300 decoration-2 underline-offset-4 cursor-pointer" onclick='showCoreTeamDetail(${JSON.stringify(teamName)}, ${JSON.stringify(brandName)}, "NJ")'>${nj}</td>
+                        <td class="border-r border-teal-100 text-emerald-700 text-xl px-4 underline decoration-emerald-300 decoration-2 underline-offset-4 cursor-pointer" onclick='showCoreTeamDetail(${JSON.stringify(teamName)}, ${JSON.stringify(brandName)}, "RJ")'>${rj}</td>
+                        <td class="text-amber-700 text-xl px-4 underline decoration-amber-300 decoration-2 underline-offset-4 cursor-pointer" onclick='showCoreTeamDetail(${JSON.stringify(teamName)}, ${JSON.stringify(brandName)}, "CO")'>${consider}</td>
+                    </tr>`;
+            });
+        }
+
+        function showCoreTeamDetail(teamName, brandName, metric) {
+            const area = document.getElementById('sharedDetailArea');
+            const title = document.getElementById('sharedDetailTitle');
+            const tbody = document.getElementById('sharedDetailTableBody');
+            if (!area || !title || !tbody) return;
+
+            const startEl = document.getElementById('hrPerfStart');
+            const endEl = document.getElementById('hrPerfEnd');
+            if (!startEl?.value || !endEl?.value) return;
+
+            const pStart = getLocalDateFromInput(startEl.value);
+            const pEnd = getLocalDateFromInput(endEl.value);
+            const pStartTs = pStart ? pStart.getTime() : 0;
+            const pEndLimitTs = pEnd ? new Date(pEnd.getTime()).setHours(23,59,59,999) : Infinity;
+            const dateFilterType = document.getElementById('hrDateFilterType')?.value || 'LEAD';
+
+            const useOb = document.getElementById('useHrPerfObFilter')?.checked;
+            const poStart = getLocalDateFromInput(document.getElementById('hrPerfObStart')?.value);
+            const poEnd = getLocalDateFromInput(document.getElementById('hrPerfObEnd')?.value);
+            const poStartTs = poStart ? poStart.getTime() : 0;
+            const poEndLimitTs = poEnd ? new Date(poEnd.getTime()).setHours(23,59,59,999) : Infinity;
+
+            const teamMap = getCoreTeamMap();
+            const team = teamMap.get(teamName);
+            if (!team) return;
+
+            const taFlowIdSet = new Set(
+                dataS1.map(row => getS1ReferrerStaffId(row)).filter(v => v)
+            );
+            const validIdSet = new Set(Array.from(team.ids).filter(id => taFlowIdSet.has(id)));
+
+            const metricLabel = metric === 'LEAD' ? 'Lead' : (metric === 'NJ' ? 'NJ Offer' : (metric === 'CO' ? 'Consider Offer' : 'RJ Offer'));
+            title.innerHTML = `<span class="w-3 h-3 bg-teal-500 rounded-full mr-3 inline-block"></span> [${brandName}] ${teamName} - ${metricLabel} Details`;
+
+            const rows = dataS1.filter(row => {
+                const sid = getS1ReferrerStaffId(row);
+                if (!sid || !validIdSet.has(sid)) return false;
+
+                const bMatch = ((row[headersS1[S1_IDX.BRAND]] || "").trim().toUpperCase() === (brandName || "").trim().toUpperCase());
+                if (!bMatch) return false;
+
+                const ld = parseDate(row[headersS1[S1_IDX.LEAD_DATE]]);
+                const od = parseDate(row[headersS1[S1_IDX.OFFER_DATE]]);
+                const onbD = parseDate(row[headersS1[S1_IDX.ONBOARD_DATE]]);
+                const st = (row[headersS1[S1_IDX.STATUS]] || "").toUpperCase();
+                const rjnj = (row[headersS1[S1_IDX.RJNJ]] || "").trim().toUpperCase();
+
+                const ldTs = ld ? ld.getTime() : null;
+                const odTs = od ? od.getTime() : null;
+                const onbTs = onbD ? onbD.getTime() : null;
+                const filterTs = dateFilterType === 'OFFER' ? odTs : ldTs;
+                const noOnboard = !onbTs;
+                const hasOfferDate = !!odTs;
+                const statusRaw = (row[headersS1[S1_IDX.STATUS]] || "").toString().trim();
+                const statusUpper = statusRaw.toUpperCase();
+                const isBlankStatus = !statusRaw || statusRaw === "-";
+                const isPendingCcdReply = statusUpper.includes("PENDING CCD REPLY");
+                const isPendingStatus = statusUpper.includes("PENDING");
+                const isConsiderOffer = !isPendingCcdReply && !isPendingStatus && (
+                    statusUpper.includes("OFFER") ||
+                    (hasOfferDate && noOnboard && !isBlankStatus)
+                );
+
+                if (metric === 'LEAD') return filterTs && filterTs >= pStartTs && filterTs <= pEndLimitTs;
+
+                let validOb = true;
+                if (useOb && poStart && document.getElementById('hrPerfObEnd')?.value) {
+                    if (!onbTs || onbTs < poStartTs || onbTs > poEndLimitTs) validOb = false;
+                }
+                if (metric === 'CO') {
+                    return validOb && filterTs && filterTs >= pStartTs && filterTs <= pEndLimitTs && isConsiderOffer;
+                }
+                if (!(validOb && filterTs && filterTs >= pStartTs && filterTs <= pEndLimitTs && (st.includes("OFFER") || st.includes("ACCEPT")))) return false;
+                if (isConsiderOffer) return false;
+                if (metric === 'NJ') return rjnj === 'NJ';
+                if (metric === 'RJ') return rjnj === 'RJ';
+                return false;
+            });
+
+            tbody.innerHTML = rows.map(row => `
+                <tr class="hover:bg-blue-50 transition font-bold text-center">
+                    <td class="text-left border-r border-blue-50 text-indigo-600 font-black text-sm px-6">${row[headersS1[S1_IDX.BRAND]] || '-'}</td>
+                    <td class="border-r border-blue-50 text-slate-800 text-sm px-4">${row[headersS1[S1_IDX.LEAD_DATE]] || "-"}</td>
+                    <td class="border-r border-blue-50 text-slate-800 text-sm px-4">${row[headersS1[S1_IDX.OFFER_DATE]] || "-"}</td>
+                    <td class="border-r border-blue-50 text-slate-800 text-sm px-4">${row[headersS1[S1_IDX.ONBOARD_DATE]] || "-"}</td>
+                    <td class="border-r border-blue-50 text-slate-900 text-sm font-black px-4">${row[headersS1[S1_IDX.STATUS]] || "-"}</td>
+                    <td class="border-r border-blue-50 text-indigo-700 uppercase text-sm px-4">${row[headersS1[S1_IDX.RJNJ]] || '-'}</td>
+                    <td class="text-left border-r border-blue-50 text-slate-900 font-black text-sm px-6">${row[headersS1[S1_IDX.NAME]] || '-'}</td>
+                    <td class="text-left text-slate-600 font-medium text-xs px-6">${((row[headersS1[S1_IDX.STAFF_ID]]||"")+" "+(row[headersS1[S1_IDX.STAFF_NAME]]||"")).trim()}</td>
+                </tr>
+            `).join('');
+
+            area.classList.remove('hidden');
+            area.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // --- 明細表展開邏輯 ---
+        function showSharedDetail(mode, key) {
+            currentDetailMode = mode; currentDetailKey = key;
+            const area = document.getElementById('sharedDetailArea'), tbody = document.getElementById('sharedDetailTableBody');
+            if(!area || !tbody) return;
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            document.querySelectorAll('.batch-card, .weekly-card, .lead-card, .pending-card').forEach(c => c.classList.remove('active'));
+            let list = [];
+            
+            const startL = getLocalDateFromInput(document.getElementById('leadStart')?.value);
+            const endL = getLocalDateFromInput(document.getElementById('leadEnd')?.value);
+            const startO = getLocalDateFromInput(document.getElementById('offerStart')?.value);
+            const endO = getLocalDateFromInput(document.getElementById('offerEnd')?.value);
+            const obS = getLocalDateFromInput(document.getElementById('obOfferStart')?.value);
+            const obE = getLocalDateFromInput(document.getElementById('obOfferEnd')?.value);
+            const useOb = document.getElementById('useObFilter')?.checked;
+            const startP = getLocalDateFromInput(document.getElementById('pendingStart')?.value);
+            const endP = getLocalDateFromInput(document.getElementById('pendingEnd')?.value);
+
+            if (mode === "BATCH") {
+                document.getElementById('sharedDetailTitle').innerHTML = `<span class="w-3 h-3 bg-indigo-500 rounded-full mr-3 inline-block"></span> ${key} 批次名單`;
+                list = dataS1.filter(row => {
+                    const source = (row[headersS1[5]] || "").trim().toUpperCase();
+                    if (!source.includes("OPERATION")) return false;
+                    const d = parseDate(row[headersS1[S1_IDX.ONBOARD_DATE]]);
+                    if(!d) return false;
+                    const normalized = `${d.getDate()} ${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+                    return normalized === key;
+                });
+            } else if (mode === "LEAD") {
+                const card = document.getElementById(`lead-${key}`); if(card) card.classList.add('active');
+                document.getElementById('sharedDetailTitle').innerHTML = `<span class="w-3 h-3 bg-violet-500 rounded-full mr-3 inline-block"></span> ${key} Lead 名單`;
+                list = dataS1.filter(row => {
+                    const source = (row[headersS1[5]] || "").trim().toUpperCase();
+                    if (!source.includes("OPERATION")) return false;
+                    const bMatch = (row[headersS1[S1_IDX.BRAND]]||"").trim().toUpperCase() === key;
+                    const ld = parseDate(row[headersS1[S1_IDX.LEAD_DATE]]);
+                    const dMatch = ld && startL && endL && ld >= startL && ld <= (new Date(endL).setHours(23,59,59));
+                    return bMatch && dMatch;
+                });
+            } else if (mode === "WEEKLY") {
+                const card = document.getElementById(`weekly-${key}`); if(card) card.classList.add('active');
+                document.getElementById('sharedDetailTitle').innerHTML = `<span class="w-3 h-3 bg-blue-500 rounded-full mr-3 inline-block"></span> ${key} Offer 名單`;
+                list = dataS1.filter(row => {
+                    const source = (row[headersS1[5]] || "").trim().toUpperCase();
+                    if (!source.includes("OPERATION")) return false;
+                    const bMatch = (row[headersS1[S1_IDX.BRAND]]||"").trim().toUpperCase() === key;
+                    const od = parseDate(row[headersS1[S1_IDX.OFFER_DATE]]);
+                    const onbD = parseDate(row[headersS1[S1_IDX.ONBOARD_DATE]]);
+                    const st = (row[headersS1[S1_IDX.STATUS]]||"").trim().toUpperCase();
+                    const dMatch = od && startO && endO && od >= startO && od <= (new Date(endO).setHours(23,59,59));
+                    const stMatch = st.includes("OFFER") || st.includes("ACCEPT");
+                    if (!bMatch || !dMatch || !stMatch) return false;
+                    if (useOb && obS && obE) {
+                        if (!onbD || onbD < obS || onbD > (new Date(obE).setHours(23,59,59))) return false;
+                    }
+                    return true;
+                });
+            } else if (mode === "PIC") {
+                // PIC 表格專用的明細邏輯
+                const [brand, picName] = key.split('___');
+                document.getElementById('sharedDetailTitle').innerHTML = `<span class="w-3 h-3 bg-indigo-500 rounded-full mr-3 inline-block"></span> [${brand}] ${picName} 推薦名單`;
+                
+                const pStart = getLocalDateFromInput(document.getElementById('perfStart')?.value);
+                const pEnd = getLocalDateFromInput(document.getElementById('perfEnd')?.value);
+                const usePerfOb = document.getElementById('usePerfObFilter')?.checked;
+                const poStart = getLocalDateFromInput(document.getElementById('perfObStart')?.value);
+                const poEnd = getLocalDateFromInput(document.getElementById('perfObEnd')?.value);
+
+                // 取得該 PIC 負責的所有 Floor
+                const brDataS2 = dataS2.filter(i => (i[headersS2[S2_IDX.BRAND]]||"").trim().toUpperCase() === brand.toUpperCase() && !(i[headersS2[S2_IDX.NAME]]||"").toUpperCase().includes("TOTAL"));
+                const picRowsS2 = brDataS2.filter(i => i[headersS2[S2_IDX.PIC]] === picName);
+                const picFloors = picRowsS2.map(i => (i[headersS2[S2_IDX.FLOOR]]||"").trim().toUpperCase());
+
+                list = dataS1.filter(row => {
+                    const source = (row[headersS1[5]] || "").trim().toUpperCase();
+                    if (!source.includes("OPERATION")) return false;
+
+                    const bMatch = (row[headersS1[S1_IDX.BRAND]]||"").trim().toUpperCase() === brand.toUpperCase();
+                    const rowFloor = (row[headersS1[S1_IDX.FLOOR]]||"").trim().toUpperCase();
+                    const fMatch = picFloors.includes(rowFloor);
+                    if (!bMatch || !fMatch) return false;
+
+                    const ld = parseDate(row[headersS1[S1_IDX.LEAD_DATE]]);
+                    const od = parseDate(row[headersS1[S1_IDX.OFFER_DATE]]);
+                    const onbD = parseDate(row[headersS1[S1_IDX.ONBOARD_DATE]]);
+                    const st = (row[headersS1[S1_IDX.STATUS]]||"").toUpperCase();
+
+                    let isLead = false;
+                    let isOffer = false;
+
+                    if (ld && pStart && pEnd && ld >= pStart && ld <= (new Date(pEnd).setHours(23,59,59))) isLead = true;
+
+                    let validOb = true;
+                    if (usePerfOb && poStart && poEnd) {
+                        if (!onbD || onbD < poStart || onbD > (new Date(poEnd).setHours(23,59,59))) validOb = false;
+                    }
+                    if (validOb && od && pStart && pEnd && od >= pStart && od <= (new Date(pEnd).setHours(23,59,59)) && (st.includes("OFFER") || st.includes("ACCEPT"))) {
+                        isOffer = true;
+                    }
+
+                    return isLead || isOffer;
+                });
+            } else if (mode === "HR") {
+                // HR 表格專用的明細邏輯
+                const [hrName, brand] = key.split('___');
+                document.getElementById('sharedDetailTitle').innerHTML = `<span class="w-3 h-3 bg-teal-500 rounded-full mr-3 inline-block"></span> [${hrName}] ${brand} HR 推薦名單`;
+                
+                const hrS = getLocalDateFromInput(document.getElementById('hrPerfStart')?.value);
+                const hrE = getLocalDateFromInput(document.getElementById('hrPerfEnd')?.value);
+                const hrObS = getLocalDateFromInput(document.getElementById('hrPerfObStart')?.value);
+                const hrObE = getLocalDateFromInput(document.getElementById('hrPerfObEnd')?.value);
+                const useHrOb = document.getElementById('useHrPerfObFilter')?.checked;
+
+                list = dataS1.filter(row => {
+                    const bMatch = (row[headersS1[S1_IDX.BRAND]]||"").trim().toUpperCase() === brand.toUpperCase();
+                    const hrMatch = (row[headersS1[5]]||"").trim() === hrName;
+                    if (!bMatch || !hrMatch) return false;
+
+                    const pos = (row[headersS1[4]]||"").trim().toUpperCase();
+                    if (!selectedPositions.includes(pos)) return false;
+
+                    const ld = parseDate(row[headersS1[S1_IDX.LEAD_DATE]]);
+                    const od = parseDate(row[headersS1[S1_IDX.OFFER_DATE]]);
+                    const onbD = parseDate(row[headersS1[S1_IDX.ONBOARD_DATE]]);
+                    const st = (row[headersS1[S1_IDX.STATUS]]||"").toUpperCase();
+
+                    let isLead = false;
+                    let isOffer = false;
+
+                    if (ld && hrS && hrE && ld >= hrS && ld <= (new Date(hrE).setHours(23,59,59))) isLead = true;
+
+                    let validOb = true;
+                    if (useHrOb && hrObS && hrObE) {
+                        if (!onbD || onbD < hrObS || onbD > (new Date(hrObE).setHours(23,59,59))) validOb = false;
+                    }
+                    if (validOb && od && hrS && hrE && od >= hrS && od <= (new Date(hrE).setHours(23,59,59)) && (st.includes("OFFER") || st.includes("ACCEPT"))) {
+                        isOffer = true;
+                    }
+
+                    return isLead || isOffer;
+                });
+            } else {
+                const card = document.getElementById(`pending-${key}`); if(card) card.classList.add('active');
+                document.getElementById('sharedDetailTitle').innerHTML = `<span class="w-3 h-3 bg-orange-500 rounded-full mr-3 inline-block"></span> ${key} 待定/拒絕 Offer 名單`;
+                list = dataS1.filter(row => {
+                    const source = (row[headersS1[5]] || "").trim().toUpperCase();
+                    if (!source.includes("OPERATION")) return false;
+                    const bMatch = (row[headersS1[S1_IDX.BRAND]]||"").trim().toUpperCase() === key;
+                    const od = parseDate(row[headersS1[S1_IDX.OFFER_DATE]]);
+                    const stMatch = !(row[headersS1[S1_IDX.STATUS]]||"").toUpperCase().includes("ACCEPT");
+                    const dMatch = od && startP && endP && od >= startP && od <= (new Date(endP).setHours(23,59,59));
+                    return bMatch && dMatch && stMatch;
+                });
+            }
+            
+            list.sort((a, b) => { 
+                const brandA = (a[headersS1[S1_IDX.BRAND]] || "").trim().toUpperCase();
+                const brandB = (b[headersS1[S1_IDX.BRAND]] || "").trim().toUpperCase();
+                if (brandA !== brandB) return brandA.localeCompare(brandB);
+                const refA = ((a[headersS1[S1_IDX.STAFF_ID]] || "") + " " + (a[headersS1[S1_IDX.STAFF_NAME]] || "")).toUpperCase();
+                const refB = ((b[headersS1[S1_IDX.STAFF_ID]] || "") + " " + (b[headersS1[S1_IDX.STAFF_NAME]] || "")).toUpperCase();
+                return refA.localeCompare(refB);
+            });
+            
+            tbody.innerHTML = list.map(row => `
+                <tr class="hover:bg-blue-50 transition font-bold text-center">
+                    <td class="text-left border-r border-blue-50 text-indigo-600 font-black text-sm px-6">${row[headersS1[S1_IDX.BRAND]]}</td>
+                    <td class="border-r border-blue-50 text-slate-800 text-sm px-4">${row[headersS1[S1_IDX.LEAD_DATE]] || "-"}</td>
+                    <td class="border-r border-blue-50 text-slate-800 text-sm px-4">${row[headersS1[S1_IDX.OFFER_DATE]] || "-"}</td>
+                    <td class="border-r border-blue-50 text-slate-800 text-sm px-4">${row[headersS1[S1_IDX.ONBOARD_DATE]] || "-"}</td>
+                    <td class="border-r border-blue-50 text-slate-900 text-sm font-black px-4">${row[headersS1[S1_IDX.STATUS]] || "-"}</td>
+                    <td class="border-r border-blue-50 text-indigo-700 uppercase text-sm px-4">${row[headersS1[S1_IDX.RJNJ]]}</td>
+                    <td class="text-left border-r border-blue-50 text-slate-900 font-black text-sm px-6">${row[headersS1[S1_IDX.NAME]]}</td>
+                    <td class="text-left text-slate-600 font-medium text-xs px-6">${((row[headersS1[S1_IDX.STAFF_ID]]||"")+" "+(row[headersS1[S1_IDX.STAFF_NAME]]||"")).trim()}</td>
+                </tr>`).join('');
+            area.classList.remove('hidden'); area.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // --- 啟動與資料處理 ---
+        function populateFilters() {
+            const bSel = document.getElementById('filterBrand'); if(!bSel) return;
+            bSel.innerHTML = '<option value="">請選擇品牌</option>';
+            [...new Set(dataS2.map(i => i[headersS2[S2_IDX.BRAND]]).filter(v => v && !v.toUpperCase().includes("TOTAL")))].sort().forEach(b => bSel.innerHTML += `<option value="${b}">${b}</option>`);
+
+            const pMenu = document.getElementById('posDropdownMenu');
+            if (pMenu && headersS1.length > 4) {
+                // 從 Sheet 1 (Column E) 抓取所有不重複的 Position
+                const uniquePos = [...new Set(dataS1.map(i => (i[headersS1[4]]||"").trim().toUpperCase()).filter(v => v))].sort();
+                
+                pMenu.innerHTML = '';
+                uniquePos.forEach(p => {
+                    const isChecked = selectedPositions.includes(p) ? 'checked' : '';
+                    pMenu.innerHTML += `
+                        <label class="flex items-center px-4 py-2 hover:bg-teal-50 cursor-pointer">
+                            <input type="checkbox" value="${p}" class="pos-checkbox cursor-pointer w-4 h-4 accent-teal-600 mr-3" onchange="updatePosSelection()" ${isChecked}>
+                            <span class="text-sm font-bold text-slate-700">${p}</span>
+                        </label>
+                    `;
+                });
+            }
+        }
+
+        async function init() {
+            // 動態產生當月及後續 4 個月的按鈕 (共 5 個)
+            const today = new Date();
+            const curM = today.getMonth() + 1; // 1-12
+            
+            availableMonths = [];
+            // 預設若是3月，則從4月開始；否則從當月開始
+            let startMonth = (curM === 3) ? 4 : curM;
+
+            // 補回：產生 5 個月份的按鈕邏輯
+            for(let i = 0; i < 5; i++) {
+                let m = startMonth + i;
+                if(m > 12) m -= 12;
+                availableMonths.push(m);
+            }
+            
+            selectedBatchMonths = [startMonth];
+
+            const selector = document.getElementById('monthSelector');
+            if(selector) {
+                selector.innerHTML = '';
+                availableMonths.forEach(m => {
+                    selector.innerHTML += `<button onclick="toggleMonth(${m})" class="month-btn inactive" id="btn-month-${m}">${m}月</button>`;
+                });
+            }
+            
+            let s1L = false, s2L = false, s3L = false, s4L = false, s5L = false;
+            
+            // 安全檢查：等待所有 Sheet 都讀取完畢後，再進行所有統計，避免時間差報錯
+            const checkDone = () => { 
+                if(s1L && s2L && s3L && s4L && s5L) {
+                    populateFilters(); 
+                    calculateBatchCounts(); 
+                    calculateWeeklyOffers(); 
+                    calculateWeeklyLeads(); 
+                    calculatePendingOffers(); 
+                    calculateSummaries();
+                    populateCoreTeamFilter();
+                    setHrDateFilterType('LEAD');
+                    calculateHrPerformance();
+                    
+                    document.getElementById('loadingStatus')?.classList.add('hidden');
+                    document.getElementById('hrPerformanceArea')?.classList.remove('hidden');
+                }
+            }; // <--- 修復了這裡缺失的括號
+
+            updateMonthButtons();
+
+            const monday = getThisMonday();
+            const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
+            const isoMon = formatDateToISO(monday);
+            const isoSun = formatDateToISO(sunday);
+            
+            ['leadStart', 'leadEnd', 'offerStart', 'offerEnd', 'pendingStart', 'pendingEnd', 'perfStart', 'perfEnd', 'perfObStart', 'perfObEnd', 'hrPerfStart', 'hrPerfEnd', 'hrPerfObStart', 'hrPerfObEnd'].forEach(id => { 
+                const el = document.getElementById(id); 
+                if(el) el.value = id.includes('End') ? isoSun : isoMon; 
+            });
+            ['useObFilter', 'usePerfObFilter', 'useHrPerfObFilter'].forEach(id => { const el = document.getElementById(id); if(el) el.checked = false; });
+
+            try {
+                let t1, t2, t3, t4, t5;
+                try {
+                    // 優先使用 fetch（在 http/https 站點通常可用）
+                    const [r1, r2, r3, r4, r5] = await Promise.all([
+                        fetch(SHEET1_BASE_URL + `&t=${Date.now()}`),
+                        fetch(SHEET2_BASE_URL + `&t=${Date.now()}`),
+                        fetch(SHEET3_BASE_URL + `&t=${Date.now()}`),
+                        fetch(SHEET4_BASE_URL + `&t=${Date.now()}`),
+                        fetch(CORE_TEAM_BASE_URL + `&t=${Date.now()}`)
+                    ]);
+                    const bad = [r1, r2, r3, r4, r5].find(r => !r.ok);
+                    if (bad) throw new Error(`HTTP ${bad.status}`);
+                    [t1, t2, t3, t4, t5] = await Promise.all([r1.text(), r2.text(), r3.text(), r4.text(), r5.text()]);
+                } catch (fetchErr) {
+                    // file:// 本地檔常遇到 CORS，改用 JSONP 後備讀取
+                    console.warn('Fetch failed, fallback to JSONP:', fetchErr);
+                    [t1, t2, t3, t4, t5] = await Promise.all([
+                        loadGvizCsvByJsonp(SHEET1_GID),
+                        loadGvizCsvByJsonp(SHEET2_GID),
+                        loadGvizCsvByJsonp(SHEET3_GID),
+                        loadGvizCsvByJsonp(SHEET4_GID),
+                        loadGvizCsvByJsonp(CORE_TEAM_GID)
+                    ]);
+                }
+
+                Papa.parse(t1, { header: true, skipEmptyLines: true, complete: res => { 
+                    headersS1 = res.meta.fields;
+                    dataS1 = res.data.filter(row => !excludedNames.includes((row[headersS1[S1_IDX.STAFF_NAME]]||"").trim().toLowerCase()));
+                    dataS1.forEach(hydrateS1DateFields);
+                    const ah1Time = headersS1[33] || "未知"; const updateEl = document.getElementById('lastUpdateDisplay'); if(updateEl) updateEl.innerText = `同步：${ah1Time}`;
+                    s1L = true; checkDone();
+                } });
+
+                Papa.parse(t2, { header: true, skipEmptyLines: true, complete: res => { 
+                    headersS2 = res.meta.fields; 
+                    dataS2 = res.data.filter(row => (row[res.meta.fields[S2_IDX.POS]]||"").trim().toUpperCase() !== 'HIPO E1' && !excludedNames.includes((row[res.meta.fields[S2_IDX.NAME]]||"").trim().toLowerCase()));
+                    s2L = true; checkDone();
+                } });
+
+                Papa.parse(t3, { header: true, skipEmptyLines: true, complete: res => { 
+                    headersS3 = res.meta.fields; 
+                    dataS3 = res.data;
+                    s3L = true; checkDone();
+                } });
+
+                Papa.parse(t4, { 
+                    header: false, // 改用 false，讓系統自行判斷真正的標題列 (無視上方空白列)
+                    skipEmptyLines: true, 
+                    complete: res => { 
+                        const rawData = res.data;
+                        let headerRowIdx = -1;
+
+                        // 往下掃描尋找包含 BRAND 和 PIC 的那一列，作為真正的 Header
+                        for (let i = 0; i < rawData.length; i++) {
+                            const rowStr = rawData[i].join('').toUpperCase();
+                            if (rowStr.includes('BRAND') && rowStr.includes('PIC')) {
+                                headerRowIdx = i;
+                                break;
+                            }
+                        }
+
+                        if (headerRowIdx !== -1) {
+                            headersS4 = rawData[headerRowIdx].map(h => h ? h.trim() : "");
+                            dataS4 = [];
+                            // 將標題以下的資料轉為物件陣列
+                            for (let i = headerRowIdx + 1; i < rawData.length; i++) {
+                                let obj = {};
+                                headersS4.forEach((h, colIdx) => {
+                                    if (h) obj[h] = rawData[i][colIdx] || "";
+                                });
+                                dataS4.push(obj);
+                            }
+                        } else {
+                            headersS4 = []; dataS4 = [];
+                        }
+                        
+                        // 智慧處理 CSV 中合併儲存格產生的空白資料 (以名字作關聯判斷向下填補)
+                        const getBaseName = (pic) => pic.includes('-') ? pic.split('-')[1].trim() : pic.trim();
+                        const picCol = headersS4.find(h => h.trim().toUpperCase() === 'PIC');
+                        
+                        if (picCol) {
+                            for (let col of headersS4) {
+                                if (col.toUpperCase() === 'BRAND' || col.toUpperCase() === 'PIC') continue;
+                                let lastVal = "";
+                                let lastBaseName = "";
+                                for (let i = 0; i < dataS4.length; i++) {
+                                    const currentPic = dataS4[i][picCol] || "";
+                                    const currentBaseName = getBaseName(currentPic);
+                                    
+                                    // 若基礎名字相同且當前儲存格為空，則向下填補 (例如：33/F - Mia 填補到 35/F - Mia)
+                                    if (i > 0 && currentBaseName === lastBaseName && (!dataS4[i][col] || dataS4[i][col].trim() === "")) {
+                                        dataS4[i][col] = lastVal;
+                                    } else {
+                                        lastVal = dataS4[i][col] || "";
+                                        lastBaseName = currentBaseName;
+                                    }
+                                }
+                            }
+                        }
+                        
+                        s4L = true; checkDone();
+                } });
+
+                Papa.parse(t5, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: res => {
+                        headersCoreTeam = res.meta.fields || [];
+                        dataCoreTeam = res.data || [];
+                        s5L = true; checkDone();
+                    }
+                });
+
+            } catch (e) { console.error(e); document.getElementById('loadingStatus')?.classList.add('hidden'); }
+        }
+
+        // --- 搜尋與介面互動 ---
+        function renderS1(list) {
+            const rbRJ = document.getElementById('resultTableBodyRJ'), rbNJ = document.getElementById('resultTableBodyNJ'); 
+            if(!rbRJ || !rbNJ) return;
+            rbRJ.innerHTML = ''; rbNJ.innerHTML = ''; let c = { t: 0, j: 0, d: 0, w: 0 };
+            list.sort((a, b) => (a[headersS1[S1_IDX.BRAND]]||"").trim().localeCompare((b[headersS1[S1_IDX.BRAND]]||"").trim())).forEach(i => {
+                c.t++; const n = i[headersS1[S1_IDX.NAME]], rjnj = (i[headersS1[S1_IDX.RJNJ]]||"").toUpperCase(), dV = (i[headersS1[S1_IDX.LEAD_DATE]]||"").trim(), obV = (i[headersS1[S1_IDX.ONBOARD_DATE]]||"").trim();
+                const st = (i[headersS1[22]]||"-"), z = (i[headersS1[25]]||"PENDING");
+                if (z.toUpperCase().includes('ONBOARD')) c.j++; else if (z.toUpperCase().includes('WITHDRAW') || st.toUpperCase().includes('WITHDRAW')) c.d++; else c.w++;
+                const tr = `
+                    <tr>
+                        <td class="text-left font-black text-base md:text-xl text-slate-900 px-6">${n}</td>
+                        <td class="border-r border-blue-50 text-slate-800 text-sm px-4">${dV}</td>
+                        <td class="border-r border-blue-50 text-slate-800 text-sm px-4">${st}</td>
+                        <td class="border-r border-blue-50 text-slate-900 text-sm font-black px-4">${obV}</td>
+                        <td class="text-center">
+                            <span class="px-3 md:px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-sm ${getZColumnClass(z)}">${z}</span>
+                        </td>
+                    </tr>`;
+                rjnj.includes('RJ') ? rbRJ.innerHTML += tr : rbNJ.innerHTML += tr;
+            });
+            const tc = document.getElementById('totalCount'), jc = document.getElementById('joinedCount'), wc = document.getElementById('withdrawCount'), pc = document.getElementById('pendingCount');
+            if(tc) tc.innerText = c.t; if(jc) jc.innerText = c.j; if(wc) wc.innerText = c.d; if(pc) pc.innerText = c.w;
+            document.getElementById('resultArea').classList.remove('hidden');
+        }
+
+        function renderS2(list, isLv) {
+            const rb = document.getElementById('sheet2TableBody'); if(!rb) return; rb.innerHTML = '';
+            list.sort((a, b) => (a[headersS2[S2_IDX.BRAND]]||"").trim().localeCompare((b[headersS2[S2_IDX.BRAND]]||"").trim())).forEach(i => {
+                let o = parseFloat((i[headersS2[S2_IDX.OFFER]]||"0").replace(/,/g,'')), g = parseFloat((i[headersS2[S2_IDX.GAP]]||"0").replace(/,/g,'')), njo = parseFloat((i[headersS2[S2_IDX.NJ_OFFER]]||"0").replace(/,/g,''));
+                rb.innerHTML += `
+                    <tr class="hover:bg-sky-50 transition font-bold text-center">
+                        <td class="text-left border-r border-sky-50 px-6">${i[headersS2[S2_IDX.NAME]]}</td>
+                        <td class="border-r border-sky-50 px-4">${(parseFloat(i[headersS2[9]])||0) + (parseFloat(i[headersS2[10]])||0)}</td>
+                        <td class="border-r border-sky-50 px-4">${o}</td>
+                        <td class="border-r border-sky-50 px-4">${i[headersS2[S2_IDX.SHOULD]]}</td>
+                        <td class="border-r border-sky-50 px-4">${i[headersS2[S2_IDX.ONBOARD]]}</td>
+                        <td class="border-r border-blue-50 font-black ${g<0?'bg-rose-100 text-rose-900':''} text-2xl px-4">${g}</td>
+                        <td class="px-4">${njo}</td>
+                    </tr>`;
+            });
+            const s2Area = document.getElementById('resultAreaSheet2'); if(s2Area) s2Area.classList.toggle('hidden', list.length === 0);
+        }
+
+        function renderTrackingInfo(sId, p2) {
+            const now = new Date(); let lD = null;
+            dataS1.filter(i => (i[headersS1[S1_IDX.STAFF_ID]]||"").trim() === sId).forEach(i => { const d = parseDate(i[headersS1[S1_IDX.OFFER_DATE]]); if (d && (!lD || d > lD)) lD = d; });
+            const name = p2 ? p2[headersS2[S2_IDX.NAME]] : "同事";
+            const trackingEl = document.getElementById('trackingText');
+            if(trackingEl) {
+                trackingEl.innerHTML = lD ? `${name} 最後介紹同事 (<span class="text-rose-600 font-black">${Math.floor((now-lD)/(1000*60*60*24))} 天前</span>) (${lD.toLocaleDateString('zh-HK')})!` : `${name} 最後介紹同事 (從無記錄)!`;
+                document.getElementById('referralTrackingInfo').classList.remove('hidden');
+            }
+        }
+
+        function manualSearch() { const id = document.getElementById('staffId').value.trim(); if (id) executeSearch(id); }
+        function searchByFilter() { const n = document.getElementById('filterName').value, b = document.getElementById('filterBrand').value, s = dataS2.find(i => (i[headersS2[S2_IDX.NAME]]||"").trim() === n.trim() && (i[headersS2[S2_IDX.BRAND]]||"").toUpperCase() === b.toUpperCase()); if (s) { document.getElementById('staffId').value = s[headersS2[S2_IDX.STAFF_ID]]; executeSearch(s[headersS2[S2_IDX.STAFF_ID]]); } }
+        function executeSearch(sId) {
+            document.getElementById('initialPrompt')?.classList.add('hidden'); const p2 = dataS2.filter(i => (i[headersS2[S2_IDX.STAFF_ID]]||"").trim() === sId), f1 = dataS1.filter(i => (i[headersS1[S1_IDX.STAFF_ID]]||"").trim() === sId);
+            renderS2(p2, false); renderS1(f1); renderTrackingInfo(sId, p2[0]); const sa = document.getElementById('statsArea'); if(sa && (p2.length || f1.length)) sa.classList.remove('hidden');
+        }
+        function updateFloorFilter() { const b = document.getElementById('filterBrand').value, fSel = document.getElementById('filterFloor'); if(!fSel) return; fSel.innerHTML = '<option value="">請選擇 Floor</option>'; if (!b) return resetFilters(); const br = dataS2.filter(i => (i[headersS2[S2_IDX.BRAND]]||"").toUpperCase() === b.toUpperCase()); renderS2(br, true); [...new Set(br.map(i => i[headersS2[S2_IDX.FLOOR]]).filter(v => v))].sort().forEach(f => fSel.innerHTML += `<option value="${f}">${f}</option>`); fSel.disabled = false; }
+        function updateNameFilter() { const b = document.getElementById('filterBrand').value, f = document.getElementById('filterFloor').value, nSel = document.getElementById('filterName'); if(!nSel) return; nSel.innerHTML = '<option value="">請選擇姓名</option>'; if (!f) return; const fr = dataS2.filter(i => (i[headersS2[S2_IDX.BRAND]]||"").toUpperCase() === b.toUpperCase() && (i[headersS2[S2_IDX.FLOOR]]||"").toString() === f.toString()); fr.forEach(i => nSel.innerHTML += `<option value="${i[headersS2[S2_IDX.NAME]]}">${i[headersS2[S2_IDX.NAME]]}</option>`); nSel.disabled = false; }
+        
+        function checkInactiveByDays(days) {
+            showNone(); const now = new Date(), cut = new Date(now.getFullYear(), now.getMonth(), now.getDate() - days), lMap = new Map();
+            dataS1.forEach(i => { 
+                const source = (i[headersS1[5]] || "").trim().toUpperCase();
+                if (!source.includes("OPERATION")) return;
+                const sId = (i[headersS1[S1_IDX.STAFF_ID]]||"").trim(), d = parseDate(i[headersS1[S1_IDX.OFFER_DATE]]); 
+                if (sId && d && (!lMap.has(sId) || d > lMap.get(sId))) lMap.set(sId, d); 
+            });
+            const container = document.getElementById('inactiveBrandContainer'); if(!container) return; container.innerHTML = '';
+            ['DERMES', 'ELYZE', 'REENEX'].forEach(bName => {
+                const inact = dataS2.filter(i => (i[headersS2[S2_IDX.BRAND]]||"").toUpperCase() === bName && !i[headersS2[S2_IDX.NAME]].toUpperCase().includes("TOTAL") && !['HIPO E1','CM','DM'].includes((i[headersS2[S2_IDX.POS]]||"").toUpperCase())).filter(i => { const d = lMap.get((i[headersS2[S2_IDX.STAFF_ID]]||"").trim()); return !d || d < cut; });
+                if (inact.length > 0) container.innerHTML += `
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-black text-slate-800 flex items-center bg-white/40 px-4 py-2 rounded-xl w-fit border border-white text-left">
+                            <span class="w-3 h-3 bg-rose-500 rounded-full mr-3"></span>${bName} <span class="ml-3 text-rose-600 font-cyber text-sm">Total: ${inact.length}</span>
+                        </h3>
+                        <div class="cyber-card overflow-hidden">
+                            <div class="overflow-x-auto custom-scrollbar">
+                                <table class="w-full border-collapse text-center">
+                                    <thead class="bg-rose-50/50 border-b-2 border-rose-100 text-rose-950 font-black text-sm">
+                                        <tr><th class="text-left px-6">PIC</th><th class="text-left px-6">姓名 (Name)</th><th class="text-left px-6">職位</th><th class="px-4">最後日期</th><th class="px-4">距離</th></tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100 font-bold text-lg">
+                                        ${inact.map(i => { const d = lMap.get((i[headersS2[S2_IDX.STAFF_ID]]||"").trim()); return `<tr><td class="text-slate-600 text-left border-r border-rose-50 px-6">${i[headersS2[S2_IDX.PIC]]||"-"}</td><td class="text-slate-900 font-black text-left border-r border-rose-50 px-6">${i[headersS2[S2_IDX.NAME]]||"-"}</td><td class="text-slate-600 text-left border-r border-rose-50 italic text-sm px-6">${i[headersS2[S2_IDX.POS]]||"-"}</td><td class="border-r border-rose-50 px-4">${d ? d.toLocaleDateString('zh-HK') : "-"}</td><td class="text-rose-700 font-black px-4">${d ? Math.floor((new Date()-d)/(1000*60*60*24))+" 天前" : "從無記錄"}</td></tr>`; }).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>`;
+            });
+            const it = document.getElementById('inactiveTitleSpan'); if(it) it.innerText = days === 14 ? "最近 2 星期無推薦" : "最近 1 個月無推薦"; document.getElementById('inactiveResultArea')?.classList.remove('hidden');
+        }
+        function toggleBatchList(d) { currentDetailMode==="BATCH"&&currentDetailKey===d ? hideSharedDetail() : showSharedDetail("BATCH", d); }
+        function toggleWeeklyList(b) { currentDetailMode==="WEEKLY"&&currentDetailKey===b ? hideSharedDetail() : showSharedDetail("WEEKLY", b); }
+        function toggleLeadList(b) { currentDetailMode==="LEAD"&&currentDetailKey===b ? hideSharedDetail() : showSharedDetail("LEAD", b); }
+        function togglePendingList(b) { currentDetailMode==="PENDING"&&currentDetailKey===b ? hideSharedDetail() : showSharedDetail("PENDING", b); }
+        function togglePicList(brand, picName) { const key = brand+"___"+picName; currentDetailMode==="PIC"&&currentDetailKey===key ? hideSharedDetail() : showSharedDetail("PIC", key); }
+        function toggleHrList(hr, brand) { const key = hr+"___"+brand; currentDetailMode==="HR"&&currentDetailKey===key ? hideSharedDetail() : showSharedDetail("HR", key); }
+        function hideSharedDetail() { const el = document.getElementById('sharedDetailArea'); if(el) el.classList.add('hidden'); document.querySelectorAll('.batch-card, .weekly-card, .lead-card, .pending-card').forEach(c => c.classList.remove('active')); currentDetailMode = ""; currentDetailKey = ""; }
+        function resetFilters() { document.getElementById('filterBrand').value = ''; document.getElementById('filterFloor').disabled = true; document.getElementById('filterName').disabled = true; document.getElementById('staffId').value = ''; showNone(); const ip = document.getElementById('initialPrompt'); if(ip) ip.classList.remove('hidden'); }
+        function showNone() { ['statsArea','resultAreaSheet2','inactiveResultArea','resultArea','referralTrackingInfo'].forEach(id => { const el = document.getElementById(id); if(el) el.classList.add('hidden'); }); hideSharedDetail(); }
+        window.onload = init;
+    </script>
+</body>
+</html>
+
