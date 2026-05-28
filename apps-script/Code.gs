@@ -294,14 +294,30 @@ function extractNoteInputs_(input) {
 
   while ((match = pattern.exec(text)) !== null) {
     const raw = match[0].trim();
-    const noteId = extractNoteId_(raw);
+    const resolved = resolveShortLink_(raw);
+    const noteId = extractNoteId_(resolved);
     if (noteId && !seen[noteId]) {
-      matches.push({ noteId, raw });
+      matches.push({ noteId, raw: resolved });
       seen[noteId] = true;
     }
   }
 
   return matches;
+}
+
+function resolveShortLink_(raw) {
+  if (!/^https?:\/\/(?:www\.)?xhslink\.com\//i.test(raw)) return raw;
+
+  try {
+    const response = UrlFetchApp.fetch(raw, {
+      followRedirects: false,
+      muteHttpExceptions: true
+    });
+    const headers = response.getAllHeaders();
+    return headers.Location || headers.location || raw;
+  } catch (error) {
+    return raw;
+  }
 }
 
 function ensureSheet_(ss, name, headers) {
