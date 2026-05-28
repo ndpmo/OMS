@@ -31,21 +31,25 @@
 
       .shell {
         display: grid;
-        grid-template-columns: minmax(300px, 0.78fr) minmax(620px, 1.45fr);
+        grid-template-columns: 1fr;
         gap: 28px;
         min-height: 100vh;
         padding: 34px;
       }
 
-      .entry,
+      .top-panel,
       .results {
         background: rgba(255, 250, 241, 0.92);
         border: 1px solid rgba(221, 207, 187, 0.95);
         box-shadow: 0 24px 70px rgba(45, 35, 24, 0.14);
       }
 
-      .entry {
-        padding: 42px;
+      .top-panel {
+        display: grid;
+        grid-template-columns: minmax(240px, 0.75fr) minmax(460px, 1.25fr);
+        gap: 24px;
+        align-items: end;
+        padding: 24px;
       }
 
       .results {
@@ -68,7 +72,7 @@
       }
 
       h1 {
-        font-size: 50px;
+        font-size: 38px;
         line-height: 1;
       }
 
@@ -79,6 +83,11 @@
       .lede {
         color: var(--muted);
         line-height: 1.55;
+      }
+
+      .controls {
+        display: grid;
+        gap: 14px;
       }
 
       label {
@@ -103,7 +112,7 @@
         display: inline-flex;
         justify-content: center;
         min-height: 44px;
-        margin-top: 12px;
+        margin-top: 0;
         border: 0;
         border-radius: 6px;
         padding: 0 18px;
@@ -122,6 +131,32 @@
 
       .full {
         width: 100%;
+      }
+
+      .submit-box {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+      }
+
+      .submit-box label,
+      .submit-box .message {
+        grid-column: 1 / -1;
+      }
+
+      .submit-box button {
+        white-space: nowrap;
+      }
+
+      .token-panel {
+        padding: 16px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(255, 253, 248, 0.72);
+      }
+
+      .token-panel button {
+        margin-top: 10px;
       }
 
       .message,
@@ -180,56 +215,68 @@
 
       @media (max-width: 980px) {
         .shell {
-          grid-template-columns: 1fr;
           padding: 18px;
         }
 
+        .top-panel,
+        .submit-box {
+          grid-template-columns: 1fr;
+        }
+
         h1 {
-          font-size: 38px;
+          font-size: 34px;
         }
       }
     </style>
   </head>
   <body>
     <main class="shell">
-      <section class="entry">
-        <p class="eyebrow">Xiaohongshu tracker</p>
-        <h1>Sheet-native hourly tracking.</h1>
-        <p class="lede">This web app runs inside Google Apps Script, writes directly into your Sheet, and refreshes tracked posts every hour.</p>
+      <section class="top-panel">
+        <div class="intro">
+          <p class="eyebrow">小紅書數據追蹤</p>
+          <h1>每小時自動更新表</h1>
+          <p class="lede">資料寫入 Google Sheet；頁面每小時自動刷新一次。</p>
+        </div>
 
-        <label for="token">Apify token</label>
-        <input id="token" type="password" placeholder="apify_api_..." />
-        <button class="full" onclick="saveToken()">Save token</button>
+        <div class="controls">
+          <div class="token-panel">
+            <label for="token">Apify Token</label>
+            <input id="token" type="password" placeholder="apify_api_..." />
+            <button class="full" onclick="saveToken()">儲存 Token</button>
+          </div>
 
-        <label for="url">Post URL or note ID</label>
-        <textarea id="url" rows="5" placeholder="https://www.xiaohongshu.com/explore/640dd4e2000000001203d865"></textarea>
-        <button class="full" onclick="addTrack()">Start tracking</button>
-        <p id="message" class="message"></p>
+          <div class="submit-box">
+            <label for="url">貼上筆記連結或 Note ID</label>
+            <input id="url" placeholder="https://www.xiaohongshu.com/explore/640dd4e2000000001203d865" />
+            <button onclick="addTrack()">開始追蹤</button>
+            <p id="message" class="message"></p>
+          </div>
+        </div>
       </section>
 
       <section class="results">
         <div class="table-head">
           <div>
-            <p class="eyebrow">Live results</p>
-            <h2>Hourly performance table</h2>
+            <p class="eyebrow">即時結果</p>
+            <h2>追蹤儀表板</h2>
           </div>
-          <button class="ghost" onclick="refreshAll()">Refresh now</button>
+          <button class="ghost" onclick="refreshAll()">立即刷新</button>
         </div>
-        <p id="status" class="status">Loading...</p>
+        <p id="status" class="status">載入中...</p>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Post</th>
+                <th>筆記</th>
                 <th>KOL</th>
-                <th>Likes</th>
-                <th>Comments</th>
-                <th>Saves</th>
-                <th>Shares</th>
-                <th>Hourly</th>
-                <th>Daily</th>
-                <th>Last check</th>
-                <th>Status</th>
+                <th>讚</th>
+                <th>留言</th>
+                <th>收藏</th>
+                <th>分享</th>
+                <th>每小時變化</th>
+                <th>每日變化</th>
+                <th>上次更新</th>
+                <th>狀態</th>
               </tr>
             </thead>
             <tbody id="rows"></tbody>
@@ -245,38 +292,38 @@
 
       function saveToken() {
         const token = document.querySelector('#token').value;
-        setMessage('Saving token...');
+        setMessage('正在儲存 Token...');
         google.script.run.withSuccessHandler(() => {
           document.querySelector('#token').value = '';
-          setMessage('Token saved.');
+          setMessage('Token 已儲存。');
           boot();
         }).withFailureHandler(showError).saveApifyToken(token);
       }
 
       function addTrack() {
         const url = document.querySelector('#url').value;
-        setMessage('Checking post...');
+        setMessage('正在讀取筆記數據...');
         google.script.run.withSuccessHandler((data) => {
           document.querySelector('#url').value = '';
-          setMessage('Tracking started.');
+          setMessage('已開始追蹤。');
           render(data);
         }).withFailureHandler(showError).addTrack(url);
       }
 
       function refreshAll() {
-        setMessage('Refreshing tracked posts...');
+        setMessage('正在刷新全部筆記...');
         google.script.run.withSuccessHandler(() => boot()).withFailureHandler(showError).refreshAllTrackedPosts();
       }
 
       function render(data) {
         document.querySelector('#status').textContent = data.hasToken
-          ? 'Apify token saved. Hourly trigger is active.'
-          : 'Save your Apify token before adding posts.';
+          ? 'Apify Token 已儲存；每小時觸發器已啟用。頁面會每小時自動刷新。'
+          : '新增筆記前，請先儲存 Apify Token。';
 
         const rows = data.tracks || [];
         document.querySelector('#rows').innerHTML = rows.length
           ? rows.map(renderTrack).join('')
-          : '<tr><td colspan="10">No posts tracked yet.</td></tr>';
+          : '<tr><td colspan="10">目前沒有追蹤中的筆記。</td></tr>';
       }
 
       function renderTrack(track) {
@@ -289,7 +336,7 @@
             </td>
             <td>
               <strong>${escapeHtml(latest.kol_name || '-')}</strong>
-              <span class="sub">Red ID ${escapeHtml(latest.red_id || '-')}</span>
+              <span class="sub">小紅書號 ${escapeHtml(latest.red_id || '-')}</span>
             </td>
             <td class="metric">${num(latest.likes)}</td>
             <td class="metric">${num(latest.comments)}</td>
@@ -305,12 +352,12 @@
 
       function change(row, prefix) {
         const likes = row[`${prefix}_likes`];
-        if (likes === '' || likes === undefined) return '<span class="sub">Baseline pending</span>';
+        if (likes === '' || likes === undefined) return '<span class="sub">等待基準數據</span>';
         return `
-          <span class="change">Likes ${signed(row[`${prefix}_likes`])}</span>
-          <span class="change">Comments ${signed(row[`${prefix}_comments`])}</span>
-          <span class="change">Saves ${signed(row[`${prefix}_saves`])}</span>
-          <span class="change">Shares ${signed(row[`${prefix}_shares`])}</span>
+          <span class="change">讚 ${signed(row[`${prefix}_likes`])}</span>
+          <span class="change">留言 ${signed(row[`${prefix}_comments`])}</span>
+          <span class="change">收藏 ${signed(row[`${prefix}_saves`])}</span>
+          <span class="change">分享 ${signed(row[`${prefix}_shares`])}</span>
         `;
       }
 
@@ -350,6 +397,7 @@
       }
 
       boot();
+      setInterval(boot, 60 * 60 * 1000);
     </script>
   </body>
 </html>

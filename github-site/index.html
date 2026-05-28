@@ -1,33 +1,34 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-Hant">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Redbook Hourly Tracker</title>
+    <title>小紅書每小時追蹤表</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <main class="shell">
-      <section class="entry">
-        <p class="eyebrow">Xiaohongshu tracker</p>
-        <h1>Public tracker, Sheet-backed data.</h1>
-        <p class="lede">This page can live on GitHub Pages. Apps Script handles Apify calls, hourly refreshes, and Google Sheet writes.</p>
+      <section class="top-panel">
+        <div class="intro">
+          <p class="eyebrow">小紅書數據追蹤</p>
+          <h1>每小時自動更新表</h1>
+          <p class="lede">資料寫入 Google Sheet；頁面每小時自動刷新一次。</p>
+        </div>
 
         <div id="token-panel" class="token-panel" hidden>
-          <label for="token-input">Apify token</label>
+          <label for="token-input">Apify Token</label>
           <input id="token-input" type="password" placeholder="apify_api_..." autocomplete="off" />
-          <button id="save-token" type="button">Save token</button>
+          <button id="save-token" type="button">儲存 Token</button>
         </div>
 
         <form id="track-form" class="submit-box">
-          <label for="url-input">Post URL or note ID</label>
-          <textarea
+          <label for="url-input">貼上筆記連結或 Note ID</label>
+          <input
             id="url-input"
             placeholder="https://www.xiaohongshu.com/explore/640dd4e2000000001203d865"
-            rows="5"
             required
-          ></textarea>
-          <button type="submit">Start tracking</button>
+          />
+          <button type="submit">開始追蹤</button>
           <p id="form-message" class="message"></p>
         </form>
       </section>
@@ -35,31 +36,31 @@
       <section class="results">
         <div class="table-head">
           <div>
-            <p class="eyebrow">Live results</p>
-            <h2>Hourly performance table</h2>
+            <p class="eyebrow">即時結果</p>
+            <h2>追蹤儀表板</h2>
           </div>
-          <button id="refresh-all" class="ghost" type="button">Refresh now</button>
+          <button id="refresh-all" class="ghost" type="button">立即刷新</button>
         </div>
-        <p id="storage-status" class="storage-status">Loading...</p>
+        <p id="storage-status" class="storage-status">載入中...</p>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Post</th>
+                <th>筆記</th>
                 <th>KOL</th>
-                <th>Likes</th>
-                <th>Comments</th>
-                <th>Saves</th>
-                <th>Shares</th>
-                <th>Hourly change</th>
-                <th>Daily change</th>
-                <th>Last check</th>
-                <th>Status</th>
+                <th>讚</th>
+                <th>留言</th>
+                <th>收藏</th>
+                <th>分享</th>
+                <th>每小時變化</th>
+                <th>每日變化</th>
+                <th>上次更新</th>
+                <th>狀態</th>
               </tr>
             </thead>
             <tbody id="tracks-body">
               <tr class="empty-row">
-                <td colspan="10">Connect Apps Script, then submit a post URL.</td>
+                <td colspan="10">連接 Apps Script 後，貼上筆記連結開始追蹤。</td>
               </tr>
             </tbody>
           </table>

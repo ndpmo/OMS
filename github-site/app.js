@@ -12,11 +12,11 @@ const apiUrl = window.TRACKER_API_URL || '';
 
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
-  setMessage('Checking post...');
+  setMessage('正在讀取筆記數據...');
   try {
     await callApi('addTrack', { url: input.value });
     input.value = '';
-    setMessage('Tracking started.');
+    setMessage('已開始追蹤。');
     await loadDashboard();
   } catch (error) {
     setMessage(error.message, true);
@@ -24,22 +24,22 @@ form.addEventListener('submit', async (event) => {
 });
 
 refreshAll.addEventListener('click', async () => {
-  setMessage('Refreshing tracked posts...');
+  setMessage('正在刷新全部筆記...');
   try {
     await callApi('refreshAll');
     await loadDashboard();
-    setMessage('Refresh complete.');
+    setMessage('刷新完成。');
   } catch (error) {
     setMessage(error.message, true);
   }
 });
 
 saveToken.addEventListener('click', async () => {
-  setMessage('Saving token...');
+  setMessage('正在儲存 Token...');
   try {
     await callApi('saveToken', { token: tokenInput.value });
     tokenInput.value = '';
-    setMessage('Token saved. You can start tracking now.');
+    setMessage('Token 已儲存，可以開始追蹤。');
     await loadDashboard();
   } catch (error) {
     setMessage(error.message, true);
@@ -48,7 +48,7 @@ saveToken.addEventListener('click', async () => {
 
 async function loadDashboard() {
   if (!apiUrl || apiUrl.includes('PASTE_YOUR')) {
-    storageStatus.textContent = 'Set TRACKER_API_URL in config.js after deploying Apps Script.';
+    storageStatus.textContent = '請先在 config.js 設定 Apps Script Web App URL。';
     return;
   }
 
@@ -58,14 +58,14 @@ async function loadDashboard() {
 
 function render(data) {
   storageStatus.textContent = data.hasToken
-    ? 'Apps Script is connected. Google Sheet is the source of truth.'
-    : 'Apps Script is connected, but the Apify token still needs to be saved in Script Properties.';
+    ? 'Apps Script 已連接；Google Sheet 是主要資料庫。頁面會每小時自動刷新。'
+    : 'Apps Script 已連接，但仍需要先儲存 Apify Token。';
   tokenPanel.hidden = Boolean(data.hasToken);
 
   const rows = data.tracks || [];
   body.innerHTML = rows.length
     ? rows.map(renderTrack).join('')
-    : '<tr class="empty-row"><td colspan="10">No posts tracked yet.</td></tr>';
+    : '<tr class="empty-row"><td colspan="10">目前沒有追蹤中的筆記。</td></tr>';
 }
 
 function renderTrack(track) {
@@ -78,7 +78,7 @@ function renderTrack(track) {
       </td>
       <td>
         <strong>${escapeHtml(latest.kol_name || '-')}</strong>
-        <span class="sub">Red ID ${escapeHtml(latest.red_id || '-')}</span>
+        <span class="sub">小紅書號 ${escapeHtml(latest.red_id || '-')}</span>
       </td>
       <td class="metric">${num(latest.likes)}</td>
       <td class="metric">${num(latest.comments)}</td>
@@ -123,12 +123,12 @@ function callApi(action, params = {}) {
 
 function change(row, prefix) {
   const likes = row[`${prefix}_likes`];
-  if (likes === '' || likes === undefined) return '<span class="sub">Baseline pending</span>';
+  if (likes === '' || likes === undefined) return '<span class="sub">等待基準數據</span>';
   return `
-    <span class="mini-change">Likes ${signed(likes)}</span>
-    <span class="mini-change">Comments ${signed(row[`${prefix}_comments`])}</span>
-    <span class="mini-change">Saves ${signed(row[`${prefix}_saves`])}</span>
-    <span class="mini-change">Shares ${signed(row[`${prefix}_shares`])}</span>
+    <span class="mini-change">讚 ${signed(likes)}</span>
+    <span class="mini-change">留言 ${signed(row[`${prefix}_comments`])}</span>
+    <span class="mini-change">收藏 ${signed(row[`${prefix}_saves`])}</span>
+    <span class="mini-change">分享 ${signed(row[`${prefix}_shares`])}</span>
   `;
 }
 
@@ -165,4 +165,4 @@ function escapeHtml(value) {
 }
 
 loadDashboard();
-setInterval(loadDashboard, 30000);
+setInterval(loadDashboard, 60 * 60 * 1000);
