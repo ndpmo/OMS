@@ -4,6 +4,9 @@ const message = document.querySelector('#form-message');
 const body = document.querySelector('#tracks-body');
 const storageStatus = document.querySelector('#storage-status');
 const refreshAll = document.querySelector('#refresh-all');
+const tokenPanel = document.querySelector('#token-panel');
+const tokenInput = document.querySelector('#token-input');
+const saveToken = document.querySelector('#save-token');
 
 const apiUrl = window.TRACKER_API_URL || '';
 
@@ -31,6 +34,18 @@ refreshAll.addEventListener('click', async () => {
   }
 });
 
+saveToken.addEventListener('click', async () => {
+  setMessage('Saving token...');
+  try {
+    await callApi('saveToken', { token: tokenInput.value });
+    tokenInput.value = '';
+    setMessage('Token saved. You can start tracking now.');
+    await loadDashboard();
+  } catch (error) {
+    setMessage(error.message, true);
+  }
+});
+
 async function loadDashboard() {
   if (!apiUrl || apiUrl.includes('PASTE_YOUR')) {
     storageStatus.textContent = 'Set TRACKER_API_URL in config.js after deploying Apps Script.';
@@ -45,6 +60,7 @@ function render(data) {
   storageStatus.textContent = data.hasToken
     ? 'Apps Script is connected. Google Sheet is the source of truth.'
     : 'Apps Script is connected, but the Apify token still needs to be saved in Script Properties.';
+  tokenPanel.hidden = Boolean(data.hasToken);
 
   const rows = data.tracks || [];
   body.innerHTML = rows.length

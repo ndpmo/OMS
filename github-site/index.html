@@ -13,6 +13,12 @@
         <h1>Public tracker, Sheet-backed data.</h1>
         <p class="lede">This page can live on GitHub Pages. Apps Script handles Apify calls, hourly refreshes, and Google Sheet writes.</p>
 
+        <div id="token-panel" class="token-panel" hidden>
+          <label for="token-input">Apify token</label>
+          <input id="token-input" type="password" placeholder="apify_api_..." autocomplete="off" />
+          <button id="save-token" type="button">Save token</button>
+        </div>
+
         <form id="track-form" class="submit-box">
           <label for="url-input">Post URL or note ID</label>
           <textarea

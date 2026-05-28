@@ -97,6 +97,16 @@ textarea {
   font: inherit;
 }
 
+input {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 14px;
+  color: var(--ink);
+  background: #fffdf8;
+  font: inherit;
+}
+
 button {
   min-height: 44px;
   margin-top: 12px;
@@ -111,6 +121,18 @@ button {
 }
 
 .submit-box button {
+  width: 100%;
+}
+
+.token-panel {
+  margin-top: 24px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 253, 248, 0.72);
+}
+
+.token-panel button {
   width: 100%;
 }
 

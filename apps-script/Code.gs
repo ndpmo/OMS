@@ -165,6 +165,8 @@ function handleApiGet_(params) {
     } else if (action === 'refreshAll') {
       refreshAllTrackedPosts();
       data = getDashboardData();
+    } else if (action === 'saveToken') {
+      data = saveApifyToken(params.token || '');
     } else {
       throw new Error(`Unknown action: ${action}`);
     }
