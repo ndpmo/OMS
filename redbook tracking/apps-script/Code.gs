@@ -1,7 +1,7 @@
 const SPREADSHEET_ID = '1W6r0sQaQ96t1x2pF6ZodgVFqt6-odVWu-l1RWJXr7sw';
 const SHEET_NAME = 'Hourly Results';
 const TRACKS_SHEET_NAME = 'Tracked Posts';
-const APIFY_ACTOR_URL = 'https://api.apify.com/v2/acts/dltik~rednote-xiaohongshu-scraper/run-sync-get-dataset-items';
+const APIFY_ACTOR_URL = 'https://api.apify.com/v2/acts/sian.agency~xiaohongshu-rednote-scraper/run-sync-get-dataset-items';
 const ONE_HOUR_MS = 60 * 60 * 1000;
 const ONE_DAY_MS = 24 * ONE_HOUR_MS;
 
@@ -234,9 +234,8 @@ function fetchMetrics_(noteId, submittedUrl) {
 
   const noteUrl = buildNoteUrl_(noteId, submittedUrl);
   const payload = {
-    mode: 'post',
-    noteUrls: [noteUrl],
-    maxResultsPerInput: 1
+    operation: 'noteDetail',
+    noteId
   };
   const cookiesString = PropertiesService.getScriptProperties().getProperty('XHS_COOKIES');
   if (cookiesString) payload.cookiesString = cookiesString;

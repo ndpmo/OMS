@@ -16,10 +16,10 @@ Small standalone website for tracking Xiaohongshu / Little Redbook post metrics 
 Current Apify actor:
 
 ```text
-dltik/rednote-xiaohongshu-scraper
+sian.agency/xiaohongshu-rednote-scraper
 ```
 
-This actor is configured in `apps-script/Code.gs` because it is priced at `$5 / 1,000 result fetcheds` on Apify at the time this tracker was updated.
+This actor is configured in `apps-script/Code.gs`. It is more reliable for note detail data, so keep the manual refresh and one-hour cooldown enabled to control Apify cost.
 
 ## Run Locally
 
