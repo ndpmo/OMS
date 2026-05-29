@@ -554,14 +554,13 @@ async function postToAppsScript(payload) {
   if (!url) throw new Error("Missing Apps Script URL.");
   const response = await fetch(url, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    mode: "no-cors",
+    headers: { "content-type": "text/plain;charset=utf-8" },
     body: JSON.stringify(payload)
   });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok || data.ok === false) {
-    throw new Error(data.error || "Apps Script request failed.");
-  }
-  return data;
+  // In no-cors mode the browser returns an opaque response; we cannot read body/status.
+  // If fetch resolves, we treat it as sent.
+  return { ok: true, opaque: response.type === "opaque" };
 }
 
 async function testSheetConnection(baseUrl) {
