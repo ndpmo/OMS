@@ -8,6 +8,7 @@ const refreshAll = document.querySelector('#refresh-all');
 const tokenPanel = document.querySelector('#token-panel');
 const tokenInput = document.querySelector('#token-input');
 const saveToken = document.querySelector('#save-token');
+const tokenStatus = document.querySelector('#token-status');
 
 const apiUrl = window.TRACKER_API_URL || '';
 
@@ -66,10 +67,12 @@ function render(data) {
   storageStatus.textContent = data.hasToken
     ? 'Apps Script 已連接；按「立即刷新」才會更新，每篇筆記最多每小時一次。'
     : 'Apps Script 已連接，但仍需要先儲存 Apify Token。';
+  tokenStatus.textContent = data.hasToken
+    ? 'Token 已儲存。如要更換，貼上新 Token 再按儲存。'
+    : '尚未儲存 Token。請貼上 Apify Token。';
   if (!data.hasToken) {
     runStatus.textContent = '狀態：缺少 Apify Token，請先儲存 Token。';
   }
-  tokenPanel.hidden = Boolean(data.hasToken);
 
   const rows = data.tracks || [];
   body.innerHTML = rows.length

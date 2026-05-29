@@ -79,9 +79,15 @@ h2 {
 .lede,
 .storage-status,
 .run-status,
+.token-status,
 .message {
   color: var(--muted);
   line-height: 1.55;
+}
+
+.token-status {
+  margin: 8px 0 0;
+  font-size: 12px;
 }
 
 .controls {

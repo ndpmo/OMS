@@ -15,10 +15,11 @@
           <p class="lede">資料寫入 Google Sheet；只在按下刷新時更新，每篇筆記最多每小時更新一次。</p>
         </div>
 
-        <div id="token-panel" class="token-panel" hidden>
+        <div id="token-panel" class="token-panel">
           <label for="token-input">Apify Token</label>
           <input id="token-input" type="password" placeholder="apify_api_..." autocomplete="off" />
-          <button id="save-token" type="button">儲存 Token</button>
+          <button id="save-token" type="button">儲存 / 更換 Token</button>
+          <p id="token-status" class="token-status">Token 狀態載入中...</p>
         </div>
 
         <form id="track-form" class="submit-box">
