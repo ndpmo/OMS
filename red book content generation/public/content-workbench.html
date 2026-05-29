@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Redbook Content Workbench</title>
+    <link rel="stylesheet" href="./content-workbench.css" />
+  </head>
+  <body>
+    <main class="page">
+      <header>
+        <p class="eyebrow">Manager Studio</p>
+        <h1>Generate, review, approve, and assign 200+ versions</h1>
+        <p>Use this workspace to generate content drafts from your prompt framework, then approve and assign them to each therapist by staff number.</p>
+      </header>
+
+      <section class="panel">
+        <h2>Content Input</h2>
+        <form id="generator-form">
+          <label>Apps Script Web App URL<input id="appsScriptUrl" placeholder="https://script.google.com/macros/s/.../exec" /></label>
+          <button id="testConnectionBtn" type="button" class="ghost">Test Sheet Connection</button>
+          <label>Gemini API Key (session only)<input id="apiKey" type="password" placeholder="Paste key here, not saved" /></label>
+          <label>Gemini Model
+            <select id="model">
+              <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+              <option value="gemini-2.5-pro">gemini-2.5-pro</option>
+            </select>
+          </label>
+          <label>文章主題<input id="topic" value="要點： 韓國趨勢熱潮 風潮起源&#10;傳統水光針 VS 居家無針水光風潮" required /></label>
+          <label>文章字數<input id="wordCount" value="300 - 500" placeholder="e.g. 250" required /></label>
+          <label>文章hashtag<textarea id="hashtags" rows="7" required>brand hashtag 
+# ⁠水光自生
+# 無創水光 (tbc)
+# PN自生水光
+# 零痛水光
+
+popular hashtag
+# 水光肌
+# 水光</textarea></label>
+          <label>Prompt direction<textarea id="direction" rows="18" required>【AI寫文PROMPT - 請複製以下內容給AI】
+你是一個擅長撰寫「小紅書醫美保養類筆記」的文案專家，風格要像閨蜜真心分享、帶點驚嘆與比較感，用詞淺顯易懂、帶emoji，標題要吸睛。
+請根據以下產品資訊，寫一篇「推廣無針導入PN水光」的筆記，目標是讓讀者看完想嘗試無針水光，並感覺傳統水光針較麻煩、有痛感、修復期長。
+
+寫作角度：
+開頭先帶起「韓國水光醫美熱潮」，提到名醫、明星、KOL都在做水光針，接著帶出「近期韓國很紅的無針居家水光風潮」。
+
+內容比較重點：
+
+傳統水光針：痛感強、流血、腫痛、有創傷、不能太常做、修復期長
+
+居家無針PN：無痛、無創、零修復期、有水光感、長期做肌底越來越健康
+
+產品對比資訊：
+
+【傳統Rejuran水光針】
+
+核心成分：PN（多核苷酸）
+
+PN含量：2%
+
+總容量：2ml
+
+見效時間：2-4週有感，6-8週效果最好
+
+修復期：3-7天
+
+建議療程：每月1次，需3-4次
+
+【近期韓國居家無針PN】
+
+核心成分：PN
+
+PN含量：2.5%（比傳統水光針高25%）
+
+總容量：2.5ml（比傳統水光針25%）
+
+見效時間：1次就有感，效果可長達3天水光感
+
+修復期：0天
+
+建議產品使用：每月1次，經常可以做
+
+要求：
+
+標題要吸引人，含「😱、✨、🇰🇷」等表情符號
+
+結尾要有鼓勵行動的句子（例如：真的可以試試看！）
+
+適度分段、易讀、有小標或符號重點整理
+
+字數約300–500字，符合小紅書風格
+
+不要過度醫學用語，但要讓人有專業信任感</textarea></label>
+          <label>How many versions?<input id="count" type="number" min="1" max="500" value="200" required /></label>
+          <button type="submit">Generate Versions</button>
+          <p id="status" class="status"></p>
+        </form>
+      </section>
+
+      <section class="panel">
+        <h2>Topic Progress</h2>
+        <div id="topicSummary"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Review Queue</h2>
+        <div id="queue" class="grid"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Approved Pool</h2>
+        <div class="assign-row">
+          <input id="staffNumber" placeholder="Staff number" />
+          <input id="assignDate" type="date" />
+          <input id="assignCount" type="number" min="1" value="1" />
+          <button id="assignBtn" type="button">Assign Approved Content</button>
+        </div>
+        <div id="approved" class="grid"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Export Log</h2>
+        <div class="row">
+          <button id="downloadLogBtn" type="button">Download Approval + Assignment Log (CSV)</button>
+          <button id="syncApprovedBtn" type="button" class="ghost">Sync Approved to Sheet</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <a href="./therapist-portal.html">Open Therapist Portal</a>
+      </section>
+    </main>
+    <script src="./content-workbench.js"></script>
+  </body>
+</html>
