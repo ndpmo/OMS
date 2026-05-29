@@ -7,6 +7,8 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 3000);
 const APIFY_TOKEN = process.env.APIFY_TOKEN;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 const GOOGLE_SHEET_ID = process.env.GOOGLE_SHEET_ID;
 const GOOGLE_SERVICE_ACCOUNT_JSON = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
 const ACTOR_URL =
@@ -358,6 +360,67 @@ async function readBody(req) {
   return JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}");
 }
 
+async function generateContentWithGemini({
+  topic,
+  wordCount,
+  hashtags,
+  direction,
+  count
+}) {
+  if (!GEMINI_API_KEY) {
+    throw new Error("GEMINI_API_KEY is missing on the server.");
+  }
+
+  const prompt = [
+    `Generate ${count} unique Xiaohongshu (Little Redbook) content versions.`,
+    `Topic: ${topic}`,
+    `Target word count per version: about ${wordCount} words`,
+    `Hashtags to include or adapt: ${hashtags}`,
+    `Direction: ${direction}`,
+    "Return ONLY valid JSON as an array.",
+    "Each item must contain: title, content, hashtags.",
+    "hashtags can be a string with space-separated tags."
+  ].join("\n");
+
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`;
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: {
+        responseMimeType: "application/json"
+      }
+    })
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Gemini API error (${response.status}): ${errText.slice(0, 260)}`);
+  }
+
+  const data = await response.json();
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error("Gemini returned empty content.");
+
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    throw new Error("Gemini response was not valid JSON.");
+  }
+
+  if (!Array.isArray(parsed)) {
+    throw new Error("Gemini JSON must be an array.");
+  }
+
+  return parsed.map((item, i) => ({
+    title: item?.title || `${topic} - Version ${i + 1}`,
+    content: item?.content || "",
+    hashtags: item?.hashtags || hashtags
+  }));
+}
+
 async function serveStatic(res, pathname) {
   const file = pathname === "/" ? "index.html" : pathname.slice(1);
   const filePath = path.join(__dirname, "public", file);
@@ -446,6 +509,38 @@ const server = http.createServer(async (req, res) => {
     }
     refreshTrack(track);
     json(res, 202, { track });
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/generate-content") {
+    try {
+      const body = await readBody(req);
+      const topic = String(body.topic || "").trim();
+      const wordCount = String(body.wordCount || "").trim();
+      const hashtags = String(body.hashtags || "").trim();
+      const direction = String(body.direction || "").trim();
+      const count = Number(body.count || 0);
+
+      if (!topic || !wordCount || !hashtags || !direction || !count) {
+        json(res, 400, { error: "Missing required fields." });
+        return;
+      }
+      if (count < 1 || count > 40) {
+        json(res, 400, { error: "count must be between 1 and 40 per request." });
+        return;
+      }
+
+      const items = await generateContentWithGemini({
+        topic,
+        wordCount,
+        hashtags,
+        direction,
+        count
+      });
+      json(res, 200, { items });
+    } catch (error) {
+      json(res, 500, { error: error.message });
+    }
     return;
   }
 

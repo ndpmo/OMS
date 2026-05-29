@@ -4,18 +4,26 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Redbook Content Workbench</title>
-    <link rel="stylesheet" href="/content-workbench.css" />
+    <link rel="stylesheet" href="./content-workbench.css" />
   </head>
   <body>
     <main class="page">
       <header>
         <p class="eyebrow">Manager Studio</p>
         <h1>Generate, review, approve, and assign 200+ versions</h1>
-        <p>Fill your inputs, generate versions, approve individually, and assign to therapist staff numbers.</p>
+        <p>Use this workspace to generate content drafts from your prompt framework, then approve and assign them to each therapist by staff number.</p>
       </header>
 
       <section class="panel">
+        <h2>Content Input</h2>
         <form id="generator-form">
+          <label>Gemini API Key (session only)<input id="apiKey" type="password" placeholder="Paste key here, not saved" /></label>
+          <label>Gemini Model
+            <select id="model">
+              <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+              <option value="gemini-2.5-pro">gemini-2.5-pro</option>
+            </select>
+          </label>
           <label>文章主題<input id="topic" required /></label>
           <label>文章字數<input id="wordCount" placeholder="e.g. 250" required /></label>
           <label>文章hashtag<textarea id="hashtags" rows="2" placeholder="#a #b #c" required></textarea></label>
@@ -42,9 +50,9 @@
       </section>
 
       <section class="panel">
-        <a href="/therapist-portal.html">Open Therapist Portal</a>
+        <a href="./therapist-portal.html">Open Therapist Portal</a>
       </section>
     </main>
-    <script src="/content-workbench.js"></script>
+    <script src="./content-workbench.js"></script>
   </body>
 </html>
