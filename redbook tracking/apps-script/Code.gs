@@ -232,15 +232,20 @@ function fetchMetrics_(noteId, submittedUrl) {
   }
 
   const noteUrl = buildNoteUrl_(noteId, submittedUrl);
+  const payload = {
+    mode: 'post',
+    noteUrls: [noteUrl],
+    maxResultsPerInput: 1
+  };
+  const cookiesString = PropertiesService.getScriptProperties().getProperty('XHS_COOKIES');
+  if (cookiesString) {
+    payload.cookiesString = cookiesString;
+  }
 
   const response = UrlFetchApp.fetch(`${APIFY_ACTOR_URL}?token=${encodeURIComponent(token)}`, {
     method: 'post',
     contentType: 'application/json',
-    payload: JSON.stringify({
-      mode: 'post',
-      noteUrls: [noteUrl],
-      maxResultsPerInput: 1
-    }),
+    payload: JSON.stringify(payload),
     muteHttpExceptions: true
   });
 
@@ -273,7 +278,7 @@ function fetchMetrics_(noteId, submittedUrl) {
   };
 
   if (!sample.title && !sample.author && sample.likes === 0 && sample.comments === 0 && sample.saves === 0 && sample.shares === 0) {
-    throw new Error('Apify returned a row, but no usable title or metrics. The actor may require a full note URL, valid public post, or a different response mapping.');
+    throw new Error(`Apify returned a row, but no usable title or metrics. Returned fields: ${describeReturnedFields_(item)}. Try adding XHS_COOKIES in Apps Script Properties, or this actor may not support this note without login cookies.`);
   }
 
   return sample;
@@ -424,6 +429,14 @@ function firstValue_() {
     if (arguments[i] !== undefined && arguments[i] !== null && arguments[i] !== '') return arguments[i];
   }
   return '';
+}
+
+function describeReturnedFields_(item) {
+  const topLevel = Object.keys(item || {}).slice(0, 30);
+  const nested = ['author', 'user', 'userInfo', 'interactInfo', 'interaction', 'stats']
+    .filter((key) => item && item[key] && typeof item[key] === 'object')
+    .map((key) => `${key}: ${Object.keys(item[key]).slice(0, 20).join(', ')}`);
+  return [topLevel.join(', '), ...nested].filter(Boolean).join(' | ');
 }
 
 function updateTrackStatus_(sheet, zeroBasedDataIndex, status, error, checkedAt) {
