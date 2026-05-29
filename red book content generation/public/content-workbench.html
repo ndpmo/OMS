@@ -22,6 +22,10 @@
             <button id="testConnectionBtn" type="button" class="ghost">Test Sheet Connection</button>
             <span id="connectionStatus" class="status"></span>
           </div>
+          <details>
+            <summary>Advanced Backup</summary>
+            <label>Fallback Staff Numbers (one per line)<textarea id="fallbackStaffList" rows="4" placeholder="e.g.&#10;1001&#10;1002&#10;1003"></textarea></label>
+          </details>
           <label>Gemini API Key (session only)<input id="apiKey" type="password" placeholder="Paste key here, not saved" /></label>
           <label>Gemini Model
             <select id="model">
@@ -94,7 +98,7 @@ PN含量：2.5%（比傳統水光針高25%）
 字數約300–500字，符合小紅書風格
 
 不要過度醫學用語，但要讓人有專業信任感</textarea></label>
-          <label>How many versions?<input id="count" type="number" min="1" max="500" value="200" required /></label>
+          <label>How many versions?<input id="count" type="number" min="1" max="500" value="1" required /></label>
           <button type="submit">Generate Versions</button>
           <p id="status" class="status"></p>
         </form>
@@ -109,17 +113,6 @@ PN含量：2.5%（比傳統水光針高25%）
       <section class="panel">
         <h2>Review Queue</h2>
         <div id="queue" class="grid"></div>
-      </section>
-
-      <section class="panel">
-        <h2>Approved Pool</h2>
-        <div class="assign-row">
-          <input id="staffNumber" placeholder="Staff number" />
-          <input id="assignDate" type="date" />
-          <input id="assignCount" type="number" min="1" value="1" />
-          <button id="assignBtn" type="button">Assign Approved Content</button>
-        </div>
-        <div id="approved" class="grid"></div>
       </section>
 
       <section class="panel">

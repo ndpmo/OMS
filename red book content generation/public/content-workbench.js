@@ -1,8 +1,6 @@
 const form = document.querySelector("#generator-form");
 const queueEl = document.querySelector("#queue");
-const approvedEl = document.querySelector("#approved");
 const statusEl = document.querySelector("#status");
-const assignBtn = document.querySelector("#assignBtn");
 const topicSummaryEl = document.querySelector("#topicSummary");
 const topicGapSummaryEl = document.querySelector("#topicGapSummary");
 const downloadLogBtn = document.querySelector("#downloadLogBtn");
@@ -10,6 +8,7 @@ const syncApprovedBtn = document.querySelector("#syncApprovedBtn");
 const appsScriptUrlInput = document.querySelector("#appsScriptUrl");
 const testConnectionBtn = document.querySelector("#testConnectionBtn");
 const connectionStatusEl = document.querySelector("#connectionStatus");
+const fallbackStaffListInput = document.querySelector("#fallbackStaffList");
 const DEFAULT_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxm91pim17BsLNvVDlD5vESopFXxgrA3lZlhzhi3Fuc83HGrrL3uROi8qZEq6z_1y6M/exec";
 
 const KEY = "redbook_content_bank_v1";
@@ -26,6 +25,12 @@ appsScriptUrlInput.value = state.appsScriptUrl || "";
 appsScriptUrlInput.addEventListener("change", () => {
   state.appsScriptUrl = appsScriptUrlInput.value.trim();
   persist();
+});
+fallbackStaffListInput.value = (state.fallbackStaffNumbers || []).join("\n");
+fallbackStaffListInput.addEventListener("change", () => {
+  state.fallbackStaffNumbers = parseFallbackStaff(fallbackStaffListInput.value);
+  persist();
+  render();
 });
 
 testConnectionBtn.addEventListener("click", async () => {
@@ -145,6 +150,9 @@ async function generateWithGeminiBatches({ apiKey, model, topic, wordCount, hash
     const items = (Array.isArray(parsed) ? parsed : []).map((item, i) => ({
       id: cryptoRandomId(),
       title: item.title || `${topic} - Version ${cursor + i}`,
+      topic,
+      topicDate: formatDateOnly(new Date()),
+      generatedAt: new Date().toISOString(),
       content: item.content || "",
       hashtags: item.hashtags || hashtags,
       assignedTo: ""
@@ -231,43 +239,6 @@ function uniqueModels(models) {
   return [...new Set(models.filter(Boolean))];
 }
 
-assignBtn.addEventListener("click", async () => {
-  const staff = document.querySelector("#staffNumber").value.trim();
-  const assignDate = document.querySelector("#assignDate").value || formatDateOnly(new Date());
-  const n = Number(document.querySelector("#assignCount").value || 1);
-  if (!staff) return setStatus("Enter staff number.", true);
-  if (n < 1) return setStatus("Assign count must be at least 1.", true);
-
-  const unassigned = state.approved.filter((item) => !item.assignedTo);
-  if (!unassigned.length) return setStatus("No unassigned approved content.", true);
-
-  const toAssign = unassigned.slice(0, n);
-  toAssign.forEach((item) => {
-    item.assignedTo = staff;
-    item.assignedDate = assignDate;
-    item.assignedAt = new Date().toISOString();
-    upsertLog(item);
-  });
-  persist();
-  render();
-  setStatus(`Assigned ${toAssign.length} item(s) to staff ${staff} (${assignDate}).`);
-
-  if (state.appsScriptUrl) {
-    try {
-      await postToAppsScript({
-        action: "approveAndAssign",
-        topic: toAssign[0]?.topic || "",
-        topicDate: toAssign[0]?.topicDate || formatDateOnly(new Date()),
-        assignDate,
-        items: toAssign
-      });
-      setStatus(`Assigned ${toAssign.length} item(s) and synced to sheet.`);
-    } catch (error) {
-      setStatus(`Assigned locally, but sheet sync failed: ${error.message}`, true);
-    }
-  }
-});
-
 function buildVersion({ topic, wordCount, hashtags, direction, index }) {
   const now = new Date();
   const topicDate = formatDateOnly(now);
@@ -285,7 +256,6 @@ function buildVersion({ topic, wordCount, hashtags, direction, index }) {
 
 function render() {
   queueEl.innerHTML = "";
-  approvedEl.innerHTML = "";
   renderTopicSummary();
   renderTopicGapSummary();
 
@@ -310,10 +280,6 @@ function render() {
   }
 
   state.queue.forEach((item) => queueEl.appendChild(cardForQueue(item)));
-  if (!state.approved.length) {
-    approvedEl.innerHTML = "<p>No approved items yet.</p>";
-  }
-  state.approved.forEach((item) => approvedEl.appendChild(cardForApproved(item)));
 }
 
 function cardForQueue(item) {
@@ -325,7 +291,7 @@ function cardForQueue(item) {
 
   const row = document.createElement("div");
   row.className = "row";
-  const approve = button("Approve", () => {
+  const approve = button("Approve", async () => {
     autoAssignApprovedItem(item);
     state.queue = state.queue.filter((x) => x.id !== item.id);
     item.approvedAt = new Date().toISOString();
@@ -333,6 +299,19 @@ function cardForQueue(item) {
     upsertLog(item);
     persist();
     render();
+    if (state.appsScriptUrl && item.assignedTo) {
+      try {
+        await postToAppsScript({
+          action: "approveAndAssign",
+          topic: item.topic || "",
+          topicDate: item.topicDate || formatDateOnly(new Date()),
+          assignDate: item.assignedDate || formatDateOnly(new Date()),
+          items: [item]
+        });
+      } catch (error) {
+        setStatus(`Approved locally, but sheet assignment sync failed: ${error.message}`, true);
+      }
+    }
   });
   const reject = button("Reject", () => {
     state.queue = state.queue.filter((x) => x.id !== item.id);
@@ -345,27 +324,16 @@ function cardForQueue(item) {
 }
 
 function autoAssignApprovedItem(item) {
-  if (!cachedStaff.length) return;
-  const key = `${item.topic || item.title || "Untitled"}|${item.topicDate || formatDateOnly(new Date())}`;
+  const assignPool = cachedStaff.length ? cachedStaff : (state.fallbackStaffNumbers || []).map((x) => ({ staffNo: x }));
+  if (!assignPool.length) return;
+  const key = `${item.topic || item.title || "Untitled"}`;
   state.assignmentCursor = state.assignmentCursor || {};
   const idx = Number(state.assignmentCursor[key] || 0);
-  const staff = cachedStaff[idx % cachedStaff.length];
+  const staff = assignPool[idx % assignPool.length];
   item.assignedTo = staff.staffNo;
   item.assignedDate = item.topicDate || formatDateOnly(new Date());
   item.assignedAt = new Date().toISOString();
   state.assignmentCursor[key] = idx + 1;
-}
-
-function cardForApproved(item) {
-  const card = document.createElement("article");
-  card.className = "card";
-  card.innerHTML = `<h3>${escapeHtml(item.title)}</h3>
-    <p>${escapeHtml(item.content).replaceAll("\n", "<br>")}</p>
-    <p><strong>Hashtags:</strong> ${escapeHtml(item.hashtags)}</p>
-    <p><strong>Generated Date:</strong> ${escapeHtml(item.topicDate || "-")}</p>
-    <p><strong>Assigned:</strong> ${item.assignedTo ? escapeHtml(item.assignedTo) : "Not assigned"}</p>
-    <p><strong>Assigned Date:</strong> ${item.assignedDate ? escapeHtml(item.assignedDate) : "-"}</p>`;
-  return card;
 }
 
 function renderTopicSummary() {
@@ -394,8 +362,7 @@ function groupByTopicDate() {
   const map = {};
   const add = (item, kind) => {
     const topic = item.topic || item.title || "Untitled";
-    const date = item.topicDate || formatDateOnly(new Date(item.generatedAt || Date.now()));
-    const key = `${topic} | ${date}`;
+    const key = topic;
     if (!map[key]) map[key] = { generated: 0, approved: 0, assigned: 0, missing: 0 };
     if (kind === "generated") map[key].generated += 1;
     if (kind === "approved") map[key].approved += 1;
@@ -408,7 +375,8 @@ function groupByTopicDate() {
     if (item.assignedTo) add(item, "assigned");
   });
   Object.keys(map).forEach((key) => {
-    map[key].missing = Math.max(0, cachedStaff.length - map[key].assigned);
+    const staffCount = cachedStaff.length || (state.fallbackStaffNumbers || []).length;
+    map[key].missing = Math.max(0, staffCount - map[key].assigned);
   });
   return map;
 }
@@ -529,10 +497,11 @@ function loadState() {
       queue: parsed.queue || [],
       approved: parsed.approved || [],
       generationLogs: parsed.generationLogs || [],
-      appsScriptUrl: parsed.appsScriptUrl || ""
+      appsScriptUrl: parsed.appsScriptUrl || "",
+      fallbackStaffNumbers: parsed.fallbackStaffNumbers || []
     };
   } catch {
-    return { queue: [], approved: [], generationLogs: [], appsScriptUrl: "" };
+    return { queue: [], approved: [], generationLogs: [], appsScriptUrl: "", fallbackStaffNumbers: [] };
   }
 }
 
@@ -618,7 +587,18 @@ async function loadStaffForAutoAssign() {
     render();
   } catch {
     cachedStaff = [];
+    if (connectionStatusEl) {
+      connectionStatusEl.textContent = "Sheet staff fetch unavailable, using fallback staff list.";
+      connectionStatusEl.style.color = "#b45309";
+    }
   }
+}
+
+function parseFallbackStaff(text) {
+  return String(text || "")
+    .split("\n")
+    .map((x) => x.trim())
+    .filter(Boolean);
 }
 
 async function autoSyncGenerated(items) {
