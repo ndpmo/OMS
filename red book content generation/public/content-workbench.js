@@ -7,6 +7,7 @@ const downloadLogBtn = document.querySelector("#downloadLogBtn");
 const syncApprovedBtn = document.querySelector("#syncApprovedBtn");
 const appsScriptUrlInput = document.querySelector("#appsScriptUrl");
 const testConnectionBtn = document.querySelector("#testConnectionBtn");
+const resetLocalBtn = document.querySelector("#resetLocalBtn");
 const connectionStatusEl = document.querySelector("#connectionStatus");
 const fallbackStaffListInput = document.querySelector("#fallbackStaffList");
 const DEFAULT_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxm91pim17BsLNvVDlD5vESopFXxgrA3lZlhzhi3Fuc83HGrrL3uROi8qZEq6z_1y6M/exec";
@@ -16,6 +17,7 @@ let memoryState = { queue: [], approved: [], generationLogs: [] };
 let isGenerating = false;
 let generatingCount = 0;
 let cachedStaff = [];
+let remoteTopicProgress = null;
 
 let state = loadState();
 if (!state.appsScriptUrl) {
@@ -65,8 +67,29 @@ testConnectionBtn.addEventListener("click", async () => {
     testConnectionBtn.disabled = false;
   }
 });
+
+resetLocalBtn.addEventListener("click", () => {
+  const keepUrl = state.appsScriptUrl || DEFAULT_APPS_SCRIPT_URL;
+  const keepFallback = state.fallbackStaffNumbers || [];
+  state = {
+    queue: [],
+    approved: [],
+    generationLogs: [],
+    appsScriptUrl: keepUrl,
+    fallbackStaffNumbers: keepFallback,
+    assignmentCursor: {}
+  };
+  if (canUseLocalStorage()) {
+    localStorage.removeItem(KEY);
+  }
+  persist();
+  render();
+  setStatus("Local cache reset. Dashboard now starts clean.");
+});
 render();
 loadStaffForAutoAssign();
+syncFromSheet();
+setInterval(syncFromSheet, 20000);
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -338,7 +361,7 @@ function autoAssignApprovedItem(item) {
 
 function renderTopicSummary() {
   topicSummaryEl.innerHTML = "";
-  const grouped = groupByTopicDate();
+  const grouped = remoteTopicProgress || groupByTopicDate();
   const entries = Object.entries(grouped);
   if (!entries.length) {
     topicSummaryEl.innerHTML = "<p>No topic generated yet.</p>";
@@ -383,7 +406,7 @@ function groupByTopicDate() {
 
 function renderTopicGapSummary() {
   if (!topicGapSummaryEl) return;
-  const grouped = groupByTopicDate();
+  const grouped = remoteTopicProgress || groupByTopicDate();
   const entries = Object.entries(grouped);
   if (!entries.length) {
     topicGapSummaryEl.innerHTML = "";
@@ -592,6 +615,28 @@ async function loadStaffForAutoAssign() {
       connectionStatusEl.style.color = "#b45309";
     }
   }
+}
+
+async function syncFromSheet() {
+  const url = String(state.appsScriptUrl || "").trim();
+  if (!url) return;
+  try {
+    const data = await fetchJsonWithAction(url, "topicProgress");
+    if (data?.ok && data.topics && typeof data.topics === "object") {
+      remoteTopicProgress = data.topics;
+      render();
+    }
+  } catch {
+    // Keep local view when remote sync is unavailable.
+  }
+}
+
+async function fetchJsonWithAction(baseUrl, action) {
+  const url = baseUrl.includes("?") ? `${baseUrl}&action=${encodeURIComponent(action)}` : `${baseUrl}?action=${encodeURIComponent(action)}`;
+  const response = await fetch(url, { method: "GET" });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error("Request failed");
+  return data;
 }
 
 function parseFallbackStaff(text) {

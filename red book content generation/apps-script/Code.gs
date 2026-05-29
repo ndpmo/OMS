@@ -37,6 +37,10 @@ function doGet(e) {
     return jsonOut({ ok: true, rows: getAssignmentsByStaff_(staffNo) });
   }
 
+  if (action === "topicProgress") {
+    return jsonOut({ ok: true, topics: getTopicProgress_() });
+  }
+
   return jsonOut({ ok: true, message: "Redbook Apps Script is running." });
 }
 
@@ -353,4 +357,41 @@ function jsonOut(obj) {
   return ContentService
     .createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+function getTopicProgress_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const generatedSheet = ensureGeneratedSheet_(ss);
+  const assignSheet = ensureAssignSheet_(ss);
+  const staffCount = getStaffList_().length;
+
+  const generatedValues = generatedSheet.getDataRange().getValues();
+  const assignValues = assignSheet.getDataRange().getValues();
+  const map = {};
+
+  if (generatedValues.length > 1) {
+    const h = indexMap_(generatedValues[0]);
+    generatedValues.slice(1).forEach(function (r) {
+      const topic = String(r[h.topic] || "").trim();
+      if (!topic) return;
+      if (!map[topic]) map[topic] = { generated: 0, approved: 0, assigned: 0, missing: 0 };
+      map[topic].generated += 1;
+    });
+  }
+
+  if (assignValues.length > 1) {
+    const h = indexMap_(assignValues[0]);
+    assignValues.slice(1).forEach(function (r) {
+      const topic = String(r[h.topic] || "").trim();
+      if (!topic) return;
+      if (!map[topic]) map[topic] = { generated: 0, approved: 0, assigned: 0, missing: 0 };
+      map[topic].approved += 1;
+      if (String(r[h.staffNo] || "").trim()) map[topic].assigned += 1;
+    });
+  }
+
+  Object.keys(map).forEach(function (k) {
+    map[k].missing = Math.max(0, staffCount - map[k].assigned);
+  });
+  return map;
 }
