@@ -2,8 +2,7 @@ const SPREADSHEET_ID = '1W6r0sQaQ96t1x2pF6ZodgVFqt6-odVWu-l1RWJXr7sw';
 const SHEET_NAME = 'Hourly Results';
 const TRACKS_SHEET_NAME = 'Tracked Posts';
 const APIFY_ACTOR_URL = 'https://api.apify.com/v2/acts/sian.agency~xiaohongshu-rednote-scraper/run-sync-get-dataset-items';
-const ONE_HOUR_MS = 60 * 60 * 1000;
-const ONE_DAY_MS = 24 * ONE_HOUR_MS;
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
 const HEADERS = [
   'fetched_at',
@@ -60,7 +59,7 @@ function handleApiGet_(params) {
     } else if (action === 'addTrack') {
       data = addTrack(params.url || params.noteId || '');
     } else if (action === 'refreshAll') {
-      data = refreshAllTrackedPosts({ overridePassword: params.overridePassword || '' });
+      data = refreshAllTrackedPosts();
     } else if (action === 'saveToken') {
       data = saveApifyToken(params.token || '');
     } else {
@@ -130,11 +129,9 @@ function addTrack(rawInput) {
   return data;
 }
 
-function refreshAllTrackedPosts(options) {
-  options = options || {};
+function refreshAllTrackedPosts() {
   setup();
 
-  const force = validateOverridePassword_(options.overridePassword);
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   const tracks = getObjects_(ss.getSheetByName(TRACKS_SHEET_NAME));
   const summary = { refreshed: 0, skipped: 0, errors: 0, details: [] };
@@ -143,7 +140,7 @@ function refreshAllTrackedPosts(options) {
     if (!track.note_id) return;
 
     try {
-      const result = refreshOne_(track.note_id, { force });
+      const result = refreshOne_(track.note_id);
       if (result.skipped) {
         summary.skipped++;
       } else {
@@ -160,8 +157,7 @@ function refreshAllTrackedPosts(options) {
   return summary;
 }
 
-function refreshOne_(noteId, options) {
-  options = options || {};
+function refreshOne_(noteId) {
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   const tracksSheet = ss.getSheetByName(TRACKS_SHEET_NAME);
   const tracks = getObjects_(tracksSheet);
@@ -172,17 +168,6 @@ function refreshOne_(noteId, options) {
   }
 
   const track = tracks[trackIndex];
-  const cooldown = getCooldown_(track.last_checked_at);
-  if (!options.force && cooldown.blocked) {
-    return {
-      ok: true,
-      skipped: true,
-      reason: 'cooldown',
-      noteId,
-      nextAllowedAt: cooldown.nextAllowedAt
-    };
-  }
-
   try {
     updateTrackStatus_(tracksSheet, trackIndex, 'checking', '');
 
@@ -363,16 +348,6 @@ function resolveShortLink_(raw) {
   }
 }
 
-function validateOverridePassword_(password) {
-  if (!password) return false;
-
-  const saved = PropertiesService.getScriptProperties().getProperty('REFRESH_OVERRIDE_PASSWORD');
-  if (!saved) throw new Error('Override password is not configured in Apps Script Properties.');
-  if (String(password) !== String(saved)) throw new Error('Override password is incorrect.');
-
-  return true;
-}
-
 function ensureSheet_(ss, name, headers) {
   const sheet = ss.getSheetByName(name) || ss.insertSheet(name);
   if (sheet.getLastRow() === 0) {
@@ -479,27 +454,12 @@ function describeReturnedFields_(item) {
 
 function updateTrackStatus_(sheet, zeroBasedDataIndex, status, error, checkedAt) {
   const row = zeroBasedDataIndex + 2;
-  const now = new Date();
   sheet.getRange(row, 4, 1, 4).setValues([[
     checkedAt || '',
-    new Date(now.getTime() + ONE_HOUR_MS),
+    '',
     status,
     error || ''
   ]]);
-}
-
-function getCooldown_(lastCheckedAt) {
-  if (!lastCheckedAt) return { blocked: false };
-
-  const last = new Date(lastCheckedAt).getTime();
-  if (!Number.isFinite(last)) return { blocked: false };
-
-  const nextAllowedAt = new Date(last + ONE_HOUR_MS);
-  return {
-    blocked: Date.now() < nextAllowedAt.getTime(),
-    nextAllowedAt,
-    nextAllowedText: Utilities.formatDate(nextAllowedAt, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm')
-  };
 }
 
 function jsonp_(callback, payload) {

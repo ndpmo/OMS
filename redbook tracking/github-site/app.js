@@ -75,7 +75,7 @@ async function loadDashboard() {
 
 function render(data) {
   storageStatus.textContent = data.hasToken
-    ? 'Apps Script 已連接；按「立即刷新」才會更新，每篇筆記最多每小時一次。'
+    ? 'Apps Script 已連接；輸入刷新密碼並按「立即刷新」才會更新。'
     : 'Apps Script 已連接，但仍需要先儲存 Apify Token。';
   tokenStatus.textContent = data.hasToken
     ? 'Token 已儲存。如要更換，貼上新 Token 再按儲存。'
@@ -133,7 +133,7 @@ function statusHint(track, latest) {
   if (status === 'queued') return '<span class="sub">已加入清單，按「立即刷新」才會抓取數據。</span>';
   if (status === 'checking') return '<span class="sub">正在向 Apify 讀取資料。</span>';
   if (status === 'active') return `<span class="sub">上次成功：${date(track.last_checked_at || latest.fetched_at)}</span>`;
-  if (status === 'cooldown') return '<span class="sub">上次已更新；按刷新時若未滿一小時會自動略過。</span>';
+  if (status === 'cooldown') return '<span class="sub">之前因限制略過；現在可輸入刷新密碼後再試。</span>';
   return '<span class="sub">等待下一步操作。</span>';
 }
 
