@@ -115,7 +115,7 @@ function refreshOne(noteId, options) {
 
   try {
     updateTrackStatus_(tracksSheet, trackIndex, 'checking', '');
-    const sample = fetchMetrics_(noteId);
+    const sample = fetchMetrics_(noteId, track.submitted_url);
     const resultsSheet = ss.getSheetByName(SHEET_NAME);
     const previous = getLatestSample_(resultsSheet, noteId);
     const dailyBaseline = getDailyBaseline_(resultsSheet, noteId, new Date(sample.fetchedAt));
@@ -212,18 +212,20 @@ function jsonp_(callback, payload) {
     .setMimeType(ContentService.MimeType.JAVASCRIPT);
 }
 
-function fetchMetrics_(noteId) {
+function fetchMetrics_(noteId, submittedUrl) {
   const token = PropertiesService.getScriptProperties().getProperty('APIFY_TOKEN');
   if (!token) {
     throw new Error('Set your Apify token first.');
   }
+
+  const noteUrl = buildNoteUrl_(noteId, submittedUrl);
 
   const response = UrlFetchApp.fetch(`${APIFY_ACTOR_URL}?token=${encodeURIComponent(token)}`, {
     method: 'post',
     contentType: 'application/json',
     payload: JSON.stringify({
       mode: 'post',
-      noteUrls: [noteId],
+      noteUrls: [noteUrl],
       maxResultsPerInput: 1
     }),
     muteHttpExceptions: true
@@ -241,7 +243,7 @@ function fetchMetrics_(noteId) {
   const item = items[0];
   const author = item.author || item.user || item.userInfo || {};
   const interact = item.interactInfo || item.interaction || item.stats || {};
-  return {
+  const sample = {
     fetchedAt: item.scrapedAt || item._fetchedAt || item.fetchedAt || new Date(),
     noteId: item.noteId || item.id || item.note_id || noteId,
     title: item.title || item.noteTitle || item.displayTitle || item.descTitle || '',
@@ -254,8 +256,14 @@ function fetchMetrics_(noteId) {
     saves: numberOrBlank_(firstValue_(item.collectedCount, item.collectCount, item.collects, item.saves, item.collected_count, interact.collectedCount, interact.collectCount, interact.collects)),
     shares: numberOrBlank_(firstValue_(item.sharedCount, item.shareCount, item.shares, item.shared_count, interact.sharedCount, interact.shareCount, interact.shares)),
     views: numberOrBlank_(firstValue_(item.viewCount, item.views, item.view_count, interact.viewCount, interact.views)),
-    pageUrl: item.notePageUrl || item.url || item.noteUrl || `https://www.xiaohongshu.com/explore/${noteId}`
+    pageUrl: item.notePageUrl || item.url || item.noteUrl || noteUrl
   };
+
+  if (!sample.title && !sample.author && sample.likes === 0 && sample.comments === 0 && sample.saves === 0 && sample.shares === 0) {
+    throw new Error('Apify returned a row, but no usable title or metrics. The actor may require a full note URL, valid public post, or a different response mapping.');
+  }
+
+  return sample;
 }
 
 function makeRow_(sample, hourlyDelta, dailyDelta) {
@@ -390,6 +398,12 @@ function diff_(current, previous) {
 function numberOrBlank_(value) {
   const number = Number(value);
   return Number.isFinite(number) ? number : '';
+}
+
+function buildNoteUrl_(noteId, submittedUrl) {
+  const raw = String(submittedUrl || '').trim();
+  if (/^https?:\/\//i.test(raw)) return raw;
+  return `https://www.xiaohongshu.com/explore/${noteId}`;
 }
 
 function firstValue_() {
