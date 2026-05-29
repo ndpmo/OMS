@@ -2,7 +2,8 @@ const SPREADSHEET_ID = '1W6r0sQaQ96t1x2pF6ZodgVFqt6-odVWu-l1RWJXr7sw';
 const SHEET_NAME = 'Hourly Results';
 const TRACKS_SHEET_NAME = 'Tracked Posts';
 const APIFY_ACTOR_URL = 'https://api.apify.com/v2/acts/dltik~rednote-xiaohongshu-scraper/run-sync-get-dataset-items';
-const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+const ONE_HOUR_MS = 60 * 60 * 1000;
+const ONE_DAY_MS = 24 * ONE_HOUR_MS;
 
 const HEADERS = [
   'fetched_at',
@@ -31,154 +32,20 @@ const HEADERS = [
 const TRACK_HEADERS = ['note_id', 'submitted_url', 'created_at', 'last_checked_at', 'next_check_at', 'status', 'error'];
 
 function doGet(event) {
-  if (event && event.parameter && event.parameter.action) {
-    return handleApiGet_(event.parameter);
-  }
+  const params = (event && event.parameter) || {};
 
-  return HtmlService.createHtmlOutputFromFile('Index')
-    .setTitle('Redbook Hourly Tracker')
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
-}
-
-function setup() {
-  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-  ensureSheet_(ss, SHEET_NAME, HEADERS);
-  ensureSheet_(ss, TRACKS_SHEET_NAME, TRACK_HEADERS);
-  return getDashboardData();
-}
-
-function saveApifyToken(token) {
-  if (!token || !String(token).trim()) {
-    throw new Error('Apify token is required.');
-  }
-  PropertiesService.getScriptProperties().setProperty('APIFY_TOKEN', String(token).trim());
-  return { ok: true };
-}
-
-function addTrack(urlOrId) {
-  setup();
-  const inputs = extractNoteInputs_(urlOrId);
-  if (!inputs.length) {
-    throw new Error('Please submit at least one valid Xiaohongshu URL or 24-character note ID.');
-  }
-
-  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-  const sheet = ss.getSheetByName(TRACKS_SHEET_NAME);
-  const rows = getObjects_(sheet);
-  const existingIds = new Set(rows.map((row) => row.note_id));
-  const now = new Date();
-  let added = 0;
-  let skipped = 0;
-
-  inputs.forEach((input) => {
-    if (existingIds.has(input.noteId)) {
-      skipped++;
-      return;
-    }
-    sheet.appendRow([
-      input.noteId,
-      input.raw,
-      now,
-      '',
-      now,
-      'queued',
-      ''
-    ]);
-    existingIds.add(input.noteId);
-    added++;
-  });
-
-  const data = getDashboardData();
-  data.added = added;
-  data.skipped = skipped;
-  return data;
-}
-
-function refreshOne(noteId, options) {
-  options = options || {};
-  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-  ensureSheet_(ss, SHEET_NAME, HEADERS);
-  ensureSheet_(ss, TRACKS_SHEET_NAME, TRACK_HEADERS);
-  const tracksSheet = ss.getSheetByName(TRACKS_SHEET_NAME);
-  const tracks = getObjects_(tracksSheet);
-  const trackIndex = tracks.findIndex((row) => row.note_id === noteId);
-  if (trackIndex === -1) {
-    throw new Error('Tracked post not found.');
-  }
-
-  const track = tracks[trackIndex];
-  const cooldown = getCooldown_(track.last_checked_at);
-  if (!options.force && cooldown.blocked) {
-    return { ok: true, skipped: true, reason: 'cooldown', noteId, nextAllowedAt: cooldown.nextAllowedAt };
-  }
-
-  try {
-    updateTrackStatus_(tracksSheet, trackIndex, 'checking', '');
-    const sample = fetchMetrics_(noteId, track.submitted_url);
-    const resultsSheet = ss.getSheetByName(SHEET_NAME);
-    const previous = getLatestSample_(resultsSheet, noteId);
-    const dailyBaseline = getDailyBaseline_(resultsSheet, noteId, new Date(sample.fetchedAt));
-    const hourlyDelta = metricDelta_(sample, previous);
-    const dailyDelta = metricDelta_(sample, dailyBaseline);
-
-    resultsSheet.appendRow(makeRow_(sample, hourlyDelta, dailyDelta));
-    updateTrackStatus_(tracksSheet, trackIndex, 'active', '', sample.fetchedAt);
-    return { ok: true, skipped: false, noteId };
-  } catch (error) {
-    updateTrackStatus_(tracksSheet, trackIndex, 'error', error.message);
-    throw error;
-  }
-}
-
-function refreshAllTrackedPosts(options) {
-  options = options || {};
-  setup();
-  const force = validateOverridePassword_(options.overridePassword);
-  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-  const tracks = getObjects_(ss.getSheetByName(TRACKS_SHEET_NAME));
-  const summary = { refreshed: 0, skipped: 0, errors: 0, details: [] };
-  tracks.forEach((track) => {
-    if (track.note_id) {
-      try {
-        const result = refreshOne(track.note_id, { force });
-        if (result && result.skipped) {
-          summary.skipped++;
-          summary.details.push(result);
-        } else {
-          summary.refreshed++;
-          summary.details.push(result || { ok: true, noteId: track.note_id });
-        }
-      } catch (error) {
-        summary.errors++;
-        summary.details.push({ ok: false, noteId: track.note_id, error: error.message });
-        console.error(`${track.note_id}: ${error.message}`);
+  if (!params.action) {
+    return jsonp_(params.callback, {
+      ok: true,
+      data: {
+        service: 'redbook-tracking-api',
+        status: 'ready',
+        message: 'Backend only. Use the GitHub Pages dashboard to operate this tracker.'
       }
-    }
-  });
-  return summary;
-}
+    });
+  }
 
-function getDashboardData() {
-  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-  ensureSheet_(ss, SHEET_NAME, HEADERS);
-  ensureSheet_(ss, TRACKS_SHEET_NAME, TRACK_HEADERS);
-  const results = getObjects_(ss.getSheetByName(SHEET_NAME));
-  const tracks = getObjects_(ss.getSheetByName(TRACKS_SHEET_NAME));
-
-  const latestByPost = {};
-  results.forEach((row) => {
-    if (!row.note_id) return;
-    latestByPost[row.note_id] = row;
-  });
-
-  return {
-    hasToken: Boolean(PropertiesService.getScriptProperties().getProperty('APIFY_TOKEN')),
-    tracks: tracks.map((track) => ({
-      ...track,
-      latest: latestByPost[track.note_id] || null
-    })),
-    recentRows: results.slice(-20).reverse()
-  };
+  return handleApiGet_(params);
 }
 
 function handleApiGet_(params) {
@@ -206,23 +73,157 @@ function handleApiGet_(params) {
   }
 }
 
-function validateOverridePassword_(password) {
-  if (!password) return false;
-  const saved = PropertiesService.getScriptProperties().getProperty('REFRESH_OVERRIDE_PASSWORD');
-  if (!saved) {
-    throw new Error('Override password is not configured in Apps Script Properties.');
-  }
-  if (String(password) !== String(saved)) {
-    throw new Error('Override password is incorrect.');
-  }
-  return true;
+function setup() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  ensureSheet_(ss, SHEET_NAME, HEADERS);
+  ensureSheet_(ss, TRACKS_SHEET_NAME, TRACK_HEADERS);
+  return getDashboardData();
 }
 
-function jsonp_(callback, payload) {
-  const safeCallback = String(callback || 'callback').replace(/[^\w.$]/g, '');
-  return ContentService
-    .createTextOutput(`${safeCallback}(${JSON.stringify(payload)})`)
-    .setMimeType(ContentService.MimeType.JAVASCRIPT);
+function saveApifyToken(token) {
+  if (!token || !String(token).trim()) {
+    throw new Error('Apify token is required.');
+  }
+
+  PropertiesService.getScriptProperties().setProperty('APIFY_TOKEN', String(token).trim());
+  return { saved: true };
+}
+
+function addTrack(rawInput) {
+  setup();
+  const inputs = extractNoteInputs_(rawInput);
+  if (!inputs.length) {
+    throw new Error('Please submit at least one valid Xiaohongshu URL, xhslink short URL, or 24-character note ID.');
+  }
+
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = ss.getSheetByName(TRACKS_SHEET_NAME);
+  const rows = getObjects_(sheet);
+  const existingIds = new Set(rows.map((row) => String(row.note_id)));
+  const now = new Date();
+  let added = 0;
+  let skipped = 0;
+
+  inputs.forEach((input) => {
+    if (existingIds.has(input.noteId)) {
+      skipped++;
+      return;
+    }
+
+    sheet.appendRow([
+      input.noteId,
+      input.raw,
+      now,
+      '',
+      now,
+      'queued',
+      ''
+    ]);
+
+    existingIds.add(input.noteId);
+    added++;
+  });
+
+  const data = getDashboardData();
+  data.added = added;
+  data.skipped = skipped;
+  return data;
+}
+
+function refreshAllTrackedPosts(options) {
+  options = options || {};
+  setup();
+
+  const force = validateOverridePassword_(options.overridePassword);
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const tracks = getObjects_(ss.getSheetByName(TRACKS_SHEET_NAME));
+  const summary = { refreshed: 0, skipped: 0, errors: 0, details: [] };
+
+  tracks.forEach((track) => {
+    if (!track.note_id) return;
+
+    try {
+      const result = refreshOne_(track.note_id, { force });
+      if (result.skipped) {
+        summary.skipped++;
+      } else {
+        summary.refreshed++;
+      }
+      summary.details.push(result);
+    } catch (error) {
+      summary.errors++;
+      summary.details.push({ ok: false, noteId: track.note_id, error: error.message });
+      console.error(`${track.note_id}: ${error.message}`);
+    }
+  });
+
+  return summary;
+}
+
+function refreshOne_(noteId, options) {
+  options = options || {};
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const tracksSheet = ss.getSheetByName(TRACKS_SHEET_NAME);
+  const tracks = getObjects_(tracksSheet);
+  const trackIndex = tracks.findIndex((row) => String(row.note_id) === String(noteId));
+
+  if (trackIndex === -1) {
+    throw new Error('Tracked post not found.');
+  }
+
+  const track = tracks[trackIndex];
+  const cooldown = getCooldown_(track.last_checked_at);
+  if (!options.force && cooldown.blocked) {
+    return {
+      ok: true,
+      skipped: true,
+      reason: 'cooldown',
+      noteId,
+      nextAllowedAt: cooldown.nextAllowedAt
+    };
+  }
+
+  try {
+    updateTrackStatus_(tracksSheet, trackIndex, 'checking', '');
+
+    const sample = fetchMetrics_(noteId, track.submitted_url);
+    const resultsSheet = ss.getSheetByName(SHEET_NAME);
+    const previous = getLatestSample_(resultsSheet, noteId);
+    const dailyBaseline = getDailyBaseline_(resultsSheet, noteId, new Date(sample.fetchedAt));
+    const hourlyDelta = metricDelta_(sample, previous);
+    const dailyDelta = metricDelta_(sample, dailyBaseline);
+
+    resultsSheet.appendRow(makeRow_(sample, hourlyDelta, dailyDelta));
+    updateTrackStatus_(tracksSheet, trackIndex, 'active', '', sample.fetchedAt);
+
+    return { ok: true, skipped: false, noteId };
+  } catch (error) {
+    updateTrackStatus_(tracksSheet, trackIndex, 'error', error.message);
+    throw error;
+  }
+}
+
+function getDashboardData() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  ensureSheet_(ss, SHEET_NAME, HEADERS);
+  ensureSheet_(ss, TRACKS_SHEET_NAME, TRACK_HEADERS);
+
+  const results = getObjects_(ss.getSheetByName(SHEET_NAME));
+  const tracks = getObjects_(ss.getSheetByName(TRACKS_SHEET_NAME));
+  const latestByPost = {};
+
+  results.forEach((row) => {
+    if (row.note_id) latestByPost[row.note_id] = row;
+  });
+
+  return {
+    hasToken: Boolean(PropertiesService.getScriptProperties().getProperty('APIFY_TOKEN')),
+    tracks: tracks.map((track) => ({
+      ...track,
+      latest: latestByPost[track.note_id] || null
+    })),
+    recentRows: results.slice(-20).reverse()
+  };
 }
 
 function fetchMetrics_(noteId, submittedUrl) {
@@ -238,9 +239,7 @@ function fetchMetrics_(noteId, submittedUrl) {
     maxResultsPerInput: 1
   };
   const cookiesString = PropertiesService.getScriptProperties().getProperty('XHS_COOKIES');
-  if (cookiesString) {
-    payload.cookiesString = cookiesString;
-  }
+  if (cookiesString) payload.cookiesString = cookiesString;
 
   const response = UrlFetchApp.fetch(`${APIFY_ACTOR_URL}?token=${encodeURIComponent(token)}`, {
     method: 'post',
@@ -259,29 +258,34 @@ function fetchMetrics_(noteId, submittedUrl) {
   }
 
   const item = items[0];
-  const author = item.author || item.user || item.userInfo || {};
-  const interact = item.interactInfo || item.interaction || item.stats || {};
-  const sample = {
-    fetchedAt: item.scrapedAt || item._fetchedAt || item.fetchedAt || new Date(),
-    noteId: item.noteId || item.id || item.note_id || noteId,
-    title: item.title || item.noteTitle || item.displayTitle || item.descTitle || '',
-    author: item.userName || item.nickname || author.nickname || author.name || author.userName || '',
-    userId: item.userId || item.user_id || author.userId || author.id || '',
-    redId: item.userRedId || item.redId || item.red_id || author.redId || author.red_id || '',
-    type: item.noteType || item.type || item.note_type || '',
+  const sample = mapApifyItem_(item, noteId, noteUrl);
+
+  if (isEmptyMetricRow_(sample)) {
+    throw new Error(`Apify returned a row, but no usable title or metrics. Returned fields: ${describeReturnedFields_(item)}. Try adding XHS_COOKIES in Apps Script Properties, or this actor may not support this note without login cookies.`);
+  }
+
+  return sample;
+}
+
+function mapApifyItem_(item, noteId, noteUrl) {
+  const author = item.author || item.user || item.userInfo || item.user_info || {};
+  const interact = item.interactInfo || item.interaction || item.stats || item.statistics || item.counts || {};
+
+  return {
+    fetchedAt: firstValue_(item.scrapedAt, item._fetchedAt, item.fetchedAt, item.updatedAt, new Date()),
+    noteId: firstValue_(item.noteId, item.id, item.note_id, item.noteID, noteId),
+    title: firstValue_(item.title, item.noteTitle, item.displayTitle, item.descTitle, item.name, item.shareTitle),
+    author: firstValue_(item.userName, item.nickname, item.authorName, item.creatorName, author.nickname, author.name, author.userName),
+    userId: firstValue_(item.userId, item.user_id, author.userId, author.id),
+    redId: firstValue_(item.userRedId, item.redId, item.red_id, author.redId, author.red_id),
+    type: firstValue_(item.noteType, item.type, item.note_type),
     likes: numberOrBlank_(firstValue_(item.likedCount, item.likes, item.likeCount, item.liked_count, interact.likedCount, interact.likes, interact.likeCount)),
     comments: numberOrBlank_(firstValue_(item.commentsCount, item.commentCount, item.comments, item.comments_count, interact.commentCount, interact.comments)),
     saves: numberOrBlank_(firstValue_(item.collectedCount, item.collectCount, item.collects, item.saves, item.collected_count, interact.collectedCount, interact.collectCount, interact.collects)),
     shares: numberOrBlank_(firstValue_(item.sharedCount, item.shareCount, item.shares, item.shared_count, interact.sharedCount, interact.shareCount, interact.shares)),
     views: numberOrBlank_(firstValue_(item.viewCount, item.views, item.view_count, interact.viewCount, interact.views)),
-    pageUrl: item.notePageUrl || item.url || item.noteUrl || noteUrl
+    pageUrl: firstValue_(item.notePageUrl, item.url, item.noteUrl, noteUrl)
   };
-
-  if (!sample.title && !sample.author && sample.likes === 0 && sample.comments === 0 && sample.saves === 0 && sample.shares === 0) {
-    throw new Error(`Apify returned a row, but no usable title or metrics. Returned fields: ${describeReturnedFields_(item)}. Try adding XHS_COOKIES in Apps Script Properties, or this actor may not support this note without login cookies.`);
-  }
-
-  return sample;
 }
 
 function makeRow_(sample, hourlyDelta, dailyDelta) {
@@ -310,17 +314,10 @@ function makeRow_(sample, hourlyDelta, dailyDelta) {
   ];
 }
 
-function extractNoteId_(input) {
-  const text = String(input || '').trim();
-  const match = text.match(/(?:explore|discovery\/item)\/([a-f0-9]{24})/i);
-  if (match) return match[1];
-  if (/^[a-f0-9]{24}$/i.test(text)) return text;
-  return '';
-}
-
 function extractNoteInputs_(input) {
   const text = String(input || '').trim();
   if (!text) return [];
+
   const matches = [];
   const seen = {};
   const pattern = /https?:\/\/[^\s,，]+|[a-f0-9]{24}/gi;
@@ -330,6 +327,7 @@ function extractNoteInputs_(input) {
     const raw = match[0].trim();
     const resolved = resolveShortLink_(raw);
     const noteId = extractNoteId_(resolved);
+
     if (noteId && !seen[noteId]) {
       matches.push({ noteId, raw: resolved });
       seen[noteId] = true;
@@ -337,6 +335,14 @@ function extractNoteInputs_(input) {
   }
 
   return matches;
+}
+
+function extractNoteId_(input) {
+  const text = String(input || '').trim();
+  const match = text.match(/(?:explore|discovery\/item)\/([a-f0-9]{24})/i);
+  if (match) return match[1];
+  if (/^[a-f0-9]{24}$/i.test(text)) return text;
+  return '';
 }
 
 function resolveShortLink_(raw) {
@@ -354,6 +360,16 @@ function resolveShortLink_(raw) {
   }
 }
 
+function validateOverridePassword_(password) {
+  if (!password) return false;
+
+  const saved = PropertiesService.getScriptProperties().getProperty('REFRESH_OVERRIDE_PASSWORD');
+  if (!saved) throw new Error('Override password is not configured in Apps Script Properties.');
+  if (String(password) !== String(saved)) throw new Error('Override password is incorrect.');
+
+  return true;
+}
+
 function ensureSheet_(ss, name, headers) {
   const sheet = ss.getSheetByName(name) || ss.insertSheet(name);
   if (sheet.getLastRow() === 0) {
@@ -366,6 +382,7 @@ function ensureSheet_(ss, name, headers) {
 function getObjects_(sheet) {
   const values = sheet.getDataRange().getValues();
   if (values.length < 2) return [];
+
   const headers = values[0];
   return values.slice(1).map((row) =>
     headers.reduce((object, header, index) => {
@@ -376,17 +393,19 @@ function getObjects_(sheet) {
 }
 
 function getLatestSample_(sheet, noteId) {
-  const rows = getObjects_(sheet).filter((row) => row.note_id === noteId);
+  const rows = getObjects_(sheet).filter((row) => String(row.note_id) === String(noteId));
   return rowToSample_(rows.at(-1));
 }
 
 function getDailyBaseline_(sheet, noteId, fetchedAt) {
   const target = fetchedAt.getTime() - ONE_DAY_MS;
-  const rows = getObjects_(sheet).filter((row) => row.note_id === noteId);
+  const rows = getObjects_(sheet).filter((row) => String(row.note_id) === String(noteId));
+
   for (let i = rows.length - 1; i >= 0; i--) {
     const rowTime = new Date(rows[i].fetched_at).getTime();
     if (rowTime <= target) return rowToSample_(rows[i]);
   }
+
   return null;
 }
 
@@ -418,12 +437,6 @@ function numberOrBlank_(value) {
   return Number.isFinite(number) ? number : '';
 }
 
-function buildNoteUrl_(noteId, submittedUrl) {
-  const raw = String(submittedUrl || '').trim();
-  if (/^https?:\/\//i.test(raw)) return raw;
-  return `https://www.xiaohongshu.com/explore/${noteId}`;
-}
-
 function firstValue_() {
   for (let i = 0; i < arguments.length; i++) {
     if (arguments[i] !== undefined && arguments[i] !== null && arguments[i] !== '') return arguments[i];
@@ -431,9 +444,24 @@ function firstValue_() {
   return '';
 }
 
+function buildNoteUrl_(noteId, submittedUrl) {
+  const raw = String(submittedUrl || '').trim();
+  if (/^https?:\/\//i.test(raw)) return raw;
+  return `https://www.xiaohongshu.com/explore/${noteId}`;
+}
+
+function isEmptyMetricRow_(sample) {
+  return !sample.title &&
+    !sample.author &&
+    sample.likes === 0 &&
+    sample.comments === 0 &&
+    sample.saves === 0 &&
+    sample.shares === 0;
+}
+
 function describeReturnedFields_(item) {
   const topLevel = Object.keys(item || {}).slice(0, 30);
-  const nested = ['author', 'user', 'userInfo', 'interactInfo', 'interaction', 'stats']
+  const nested = ['author', 'user', 'userInfo', 'user_info', 'interactInfo', 'interaction', 'stats', 'statistics', 'counts']
     .filter((key) => item && item[key] && typeof item[key] === 'object')
     .map((key) => `${key}: ${Object.keys(item[key]).slice(0, 20).join(', ')}`);
   return [topLevel.join(', '), ...nested].filter(Boolean).join(' | ');
@@ -444,7 +472,7 @@ function updateTrackStatus_(sheet, zeroBasedDataIndex, status, error, checkedAt)
   const now = new Date();
   sheet.getRange(row, 4, 1, 4).setValues([[
     checkedAt || '',
-    new Date(now.getTime() + 60 * 60 * 1000),
+    new Date(now.getTime() + ONE_HOUR_MS),
     status,
     error || ''
   ]]);
@@ -452,13 +480,25 @@ function updateTrackStatus_(sheet, zeroBasedDataIndex, status, error, checkedAt)
 
 function getCooldown_(lastCheckedAt) {
   if (!lastCheckedAt) return { blocked: false };
+
   const last = new Date(lastCheckedAt).getTime();
   if (!Number.isFinite(last)) return { blocked: false };
-  const nextAllowedAt = new Date(last + 60 * 60 * 1000);
-  const blocked = Date.now() < nextAllowedAt.getTime();
+
+  const nextAllowedAt = new Date(last + ONE_HOUR_MS);
   return {
-    blocked,
+    blocked: Date.now() < nextAllowedAt.getTime(),
     nextAllowedAt,
     nextAllowedText: Utilities.formatDate(nextAllowedAt, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm')
   };
+}
+
+function jsonp_(callback, payload) {
+  const safeCallback = String(callback || 'callback').replace(/[^\w.$]/g, '');
+  const output = safeCallback
+    ? `${safeCallback}(${JSON.stringify(payload)})`
+    : JSON.stringify(payload);
+
+  return ContentService
+    .createTextOutput(output)
+    .setMimeType(safeCallback ? ContentService.MimeType.JAVASCRIPT : ContentService.MimeType.JSON);
 }
