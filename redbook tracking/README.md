@@ -73,8 +73,21 @@ Keep the Apify token and Google service account JSON as server environment varia
 
 ```text
 redbook tracking/
+  index.html      Redirects to the GitHub Pages dashboard
   apps-script/   Google Apps Script backend and Sheet writer
   github-site/   Static GitHub Pages frontend
   public/        Local Node fallback frontend
   server.mjs     Local Node fallback backend
+```
+
+For GitHub Pages, open:
+
+```text
+redbook tracking/index.html
+```
+
+or directly:
+
+```text
+redbook tracking/github-site/index.html
 ```
