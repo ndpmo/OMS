@@ -5,13 +5,14 @@ const body = document.querySelector('#tracks-body');
 const storageStatus = document.querySelector('#storage-status');
 const runStatus = document.querySelector('#run-status');
 const refreshAll = document.querySelector('#refresh-all');
-const overrideInput = document.querySelector('#override-input');
+const refreshPassword = document.querySelector('#refresh-password');
 const tokenPanel = document.querySelector('#token-panel');
 const tokenInput = document.querySelector('#token-input');
 const saveToken = document.querySelector('#save-token');
 const tokenStatus = document.querySelector('#token-status');
 
 const apiUrl = window.TRACKER_API_URL || '';
+const REFRESH_PASSWORD = '29768888pmo';
 
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
@@ -27,12 +28,18 @@ form.addEventListener('submit', async (event) => {
 });
 
 refreshAll.addEventListener('click', async () => {
+  if (refreshPassword.value.trim() !== REFRESH_PASSWORD) {
+    setMessage('刷新密碼不正確，沒有扣 Apify 費用。', true);
+    runStatus.textContent = '狀態：刷新已取消，密碼不正確。';
+    refreshPassword.focus();
+    return;
+  }
+
   setMessage('正在刷新全部筆記...');
   runStatus.textContent = '狀態：正在呼叫 Apps Script，請稍候。';
   try {
-    const overridePassword = overrideInput.value.trim();
-    const summary = await callApi('refreshAll', overridePassword ? { overridePassword } : {});
-    overrideInput.value = '';
+    const summary = await callApi('refreshAll');
+    refreshPassword.value = '';
     await loadDashboard();
     const text = `刷新完成：更新 ${summary.refreshed || 0}，略過 ${summary.skipped || 0}，錯誤 ${summary.errors || 0}。`;
     setMessage(text);
