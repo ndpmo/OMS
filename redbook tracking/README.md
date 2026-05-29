@@ -1,16 +1,17 @@
-# Redbook Hourly Tracker
+# Redbook Tracking
 
 Small standalone website for tracking Xiaohongshu / Little Redbook post metrics with Apify.
 
 ## What It Does
 
-- Accepts a Xiaohongshu post URL or note ID.
+- Accepts one or many Xiaohongshu post URLs, `xhslink.com` short links, or note IDs.
 - Fetches title, KOL name, likes, comments, saves, shares, and post metadata.
-- Appends one row per hourly check.
+- Appends one row per manual refresh.
 - Calculates hourly change from the previous row.
 - Calculates daily change from the closest row at least 24 hours earlier.
 - Stores a local CSV at `data/redbook-hourly-results.csv`.
 - Optionally syncs each row to Google Sheets.
+- Applies a one-hour cooldown per post to help control Apify cost.
 
 Current Apify actor:
 
@@ -23,6 +24,7 @@ This actor is configured in `apps-script/Code.gs` because it is priced at `$5 / 
 ## Run Locally
 
 ```bash
+cd "redbook tracking"
 APIFY_TOKEN="your_apify_token" npm start
 ```
 
@@ -66,3 +68,13 @@ http://YOUR_LOCAL_IP:3000
 For remote colleagues, deploy it to a small Node host such as Render, Railway, Fly.io, or a private server. Add the same environment variables in the host settings.
 
 Keep the Apify token and Google service account JSON as server environment variables only. Do not put them in browser code.
+
+## Folder Layout
+
+```text
+redbook tracking/
+  apps-script/   Google Apps Script backend and Sheet writer
+  github-site/   Static GitHub Pages frontend
+  public/        Local Node fallback frontend
+  server.mjs     Local Node fallback backend
+```
