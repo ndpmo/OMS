@@ -258,6 +258,10 @@ function fetchMetrics_(noteId, submittedUrl) {
   }
 
   const item = items[0];
+  if (isNoResultRow_(item)) {
+    throw new Error('Apify actor did not fetch this post. It returned only internal result counters, not post data. Try adding XHS_COOKIES in Apps Script Properties, or switch back to a paid actor that supports note details without cookies.');
+  }
+
   const sample = mapApifyItem_(item, noteId, noteUrl);
 
   if (isEmptyMetricRow_(sample)) {
@@ -457,6 +461,13 @@ function isEmptyMetricRow_(sample) {
     sample.comments === 0 &&
     sample.saves === 0 &&
     sample.shares === 0;
+}
+
+function isNoResultRow_(item) {
+  const keys = Object.keys(item || {});
+  return keys.length > 0 &&
+    keys.every((key) => key.indexOf('_') === 0) &&
+    Number(item._results_produced || 0) === 0;
 }
 
 function describeReturnedFields_(item) {
