@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Redbook Content Workbench</title>
+    <link rel="stylesheet" href="/content-workbench.css" />
+  </head>
+  <body>
+    <main class="page">
+      <header>
+        <p class="eyebrow">Manager Studio</p>
+        <h1>Generate, review, approve, and assign 200+ versions</h1>
+        <p>Fill your inputs, generate versions, approve individually, and assign to therapist staff numbers.</p>
+      </header>
+
+      <section class="panel">
+        <form id="generator-form">
+          <label>文章主題<input id="topic" required /></label>
+          <label>文章字數<input id="wordCount" placeholder="e.g. 250" required /></label>
+          <label>文章hashtag<textarea id="hashtags" rows="2" placeholder="#a #b #c" required></textarea></label>
+          <label>Prompt direction<textarea id="direction" rows="3" required></textarea></label>
+          <label>How many versions?<input id="count" type="number" min="1" max="500" value="200" required /></label>
+          <button type="submit">Generate Versions</button>
+          <p id="status" class="status"></p>
+        </form>
+      </section>
+
+      <section class="panel">
+        <h2>Review Queue</h2>
+        <div id="queue" class="grid"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Approved Pool</h2>
+        <div class="assign-row">
+          <input id="staffNumber" placeholder="Staff number" />
+          <input id="assignCount" type="number" min="1" value="1" />
+          <button id="assignBtn" type="button">Assign Approved Content</button>
+        </div>
+        <div id="approved" class="grid"></div>
+      </section>
+
+      <section class="panel">
+        <a href="/therapist-portal.html">Open Therapist Portal</a>
+      </section>
+    </main>
+    <script src="/content-workbench.js"></script>
+  </body>
+</html>

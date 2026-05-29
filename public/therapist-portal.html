@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Therapist Content Portal</title>
+    <link rel="stylesheet" href="/content-workbench.css" />
+  </head>
+  <body>
+    <main class="page">
+      <header>
+        <p class="eyebrow">Therapist Portal</p>
+        <h1>Login with Staff Number</h1>
+      </header>
+      <section class="panel">
+        <div class="assign-row">
+          <input id="staffLogin" placeholder="Enter staff number" />
+          <button id="loginBtn" type="button">Load My Content</button>
+        </div>
+        <p id="portalStatus" class="status"></p>
+      </section>
+      <section class="panel">
+        <h2>My Assigned Content</h2>
+        <div id="myContent" class="grid"></div>
+      </section>
+    </main>
+    <script src="/therapist-portal.js"></script>
+  </body>
+</html>

@@ -1,0 +1,12 @@
+:root{--ink:#201b16;--bg:#f4efe7;--panel:#fffaf2;--line:#d8ccb9;--accent:#1a6f66;--hot:#c64f23}
+*{box-sizing:border-box}body{margin:0;font-family:"Avenir Next","Trebuchet MS",sans-serif;background:var(--bg);color:var(--ink)}
+.page{max-width:1200px;margin:0 auto;padding:24px}
+h1{font-family:Georgia,serif;line-height:1.05}.eyebrow{font-size:12px;text-transform:uppercase;color:var(--accent);font-weight:700}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;margin:14px 0}
+form{display:grid;gap:10px}label{display:grid;gap:6px;font-weight:700}input,textarea,button{font:inherit}
+input,textarea{border:1px solid var(--line);border-radius:8px;padding:10px;background:#fff}button{background:var(--hot);border:0;border-radius:8px;color:#fff;padding:10px 14px;font-weight:700;cursor:pointer}
+.status{min-height:20px;color:#5f5a53}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+.card{border:1px solid var(--line);border-radius:10px;padding:12px;background:#fff}.card h3{margin:0 0 8px}.card p{margin:0 0 8px;font-size:14px;line-height:1.45}
+.row{display:flex;gap:8px;flex-wrap:wrap}.ghost{background:#fff;color:var(--accent);border:1px solid var(--accent)}
+.assign-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+@media(max-width:720px){.assign-row{flex-direction:column}}
