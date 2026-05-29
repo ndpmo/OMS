@@ -4,6 +4,7 @@ const approvedEl = document.querySelector("#approved");
 const statusEl = document.querySelector("#status");
 const assignBtn = document.querySelector("#assignBtn");
 const topicSummaryEl = document.querySelector("#topicSummary");
+const topicGapSummaryEl = document.querySelector("#topicGapSummary");
 const downloadLogBtn = document.querySelector("#downloadLogBtn");
 const syncApprovedBtn = document.querySelector("#syncApprovedBtn");
 const appsScriptUrlInput = document.querySelector("#appsScriptUrl");
@@ -15,6 +16,7 @@ const KEY = "redbook_content_bank_v1";
 let memoryState = { queue: [], approved: [], generationLogs: [] };
 let isGenerating = false;
 let generatingCount = 0;
+let cachedStaff = [];
 
 let state = loadState();
 if (!state.appsScriptUrl) {
@@ -59,6 +61,7 @@ testConnectionBtn.addEventListener("click", async () => {
   }
 });
 render();
+loadStaffForAutoAssign();
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -284,6 +287,7 @@ function render() {
   queueEl.innerHTML = "";
   approvedEl.innerHTML = "";
   renderTopicSummary();
+  renderTopicGapSummary();
 
   if (isGenerating) {
     queueEl.innerHTML = "";
@@ -322,6 +326,7 @@ function cardForQueue(item) {
   const row = document.createElement("div");
   row.className = "row";
   const approve = button("Approve", () => {
+    autoAssignApprovedItem(item);
     state.queue = state.queue.filter((x) => x.id !== item.id);
     item.approvedAt = new Date().toISOString();
     state.approved.push(item);
@@ -337,6 +342,18 @@ function cardForQueue(item) {
   row.append(approve, reject);
   card.appendChild(row);
   return card;
+}
+
+function autoAssignApprovedItem(item) {
+  if (!cachedStaff.length) return;
+  const key = `${item.topic || item.title || "Untitled"}|${item.topicDate || formatDateOnly(new Date())}`;
+  state.assignmentCursor = state.assignmentCursor || {};
+  const idx = Number(state.assignmentCursor[key] || 0);
+  const staff = cachedStaff[idx % cachedStaff.length];
+  item.assignedTo = staff.staffNo;
+  item.assignedDate = item.topicDate || formatDateOnly(new Date());
+  item.assignedAt = new Date().toISOString();
+  state.assignmentCursor[key] = idx + 1;
 }
 
 function cardForApproved(item) {
@@ -367,6 +384,7 @@ function renderTopicSummary() {
       <p class="kpi-row">Generated: ${stats.generated}</p>
       <p class="kpi-row">Approved: ${stats.approved}</p>
       <p class="kpi-row">Assigned: ${stats.assigned}</p>
+      <p class="kpi-row">Missing Therapist Assignments: ${stats.missing}</p>
     `;
     topicSummaryEl.appendChild(card);
   }
@@ -378,7 +396,7 @@ function groupByTopicDate() {
     const topic = item.topic || item.title || "Untitled";
     const date = item.topicDate || formatDateOnly(new Date(item.generatedAt || Date.now()));
     const key = `${topic} | ${date}`;
-    if (!map[key]) map[key] = { generated: 0, approved: 0, assigned: 0 };
+    if (!map[key]) map[key] = { generated: 0, approved: 0, assigned: 0, missing: 0 };
     if (kind === "generated") map[key].generated += 1;
     if (kind === "approved") map[key].approved += 1;
     if (kind === "assigned") map[key].assigned += 1;
@@ -389,7 +407,23 @@ function groupByTopicDate() {
     add(item, "approved");
     if (item.assignedTo) add(item, "assigned");
   });
+  Object.keys(map).forEach((key) => {
+    map[key].missing = Math.max(0, cachedStaff.length - map[key].assigned);
+  });
   return map;
+}
+
+function renderTopicGapSummary() {
+  if (!topicGapSummaryEl) return;
+  const grouped = groupByTopicDate();
+  const entries = Object.entries(grouped);
+  if (!entries.length) {
+    topicGapSummaryEl.innerHTML = "";
+    return;
+  }
+  topicGapSummaryEl.innerHTML = entries
+    .map(([key, stats]) => `<p class="kpi-row"><strong>${escapeHtml(key)}</strong>: ${stats.missing} therapist(s) still missing assignment</p>`)
+    .join("");
 }
 
 function upsertLog(item) {
@@ -572,7 +606,19 @@ async function testSheetConnection(baseUrl) {
     throw new Error(data.error || "Apps Script endpoint not reachable.");
   }
   const staff = Array.isArray(data.staff) ? data.staff : [];
-  return { staffCount: staff.length };
+  return { staffCount: staff.length, staff };
+}
+
+async function loadStaffForAutoAssign() {
+  const url = String(state.appsScriptUrl || "").trim();
+  if (!url) return;
+  try {
+    const result = await testSheetConnection(url);
+    cachedStaff = result.staff || [];
+    render();
+  } catch {
+    cachedStaff = [];
+  }
 }
 
 async function autoSyncGenerated(items) {
