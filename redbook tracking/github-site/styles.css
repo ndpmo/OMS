@@ -159,6 +159,18 @@ button {
   margin-top: 10px;
 }
 
+.override-row {
+  display: grid;
+  grid-template-columns: auto minmax(220px, 320px);
+  gap: 10px;
+  align-items: center;
+  margin: 0 0 14px;
+}
+
+.override-row label {
+  margin: 0;
+}
+
 .ghost {
   color: var(--teal);
   border: 1px solid rgba(11, 111, 104, 0.35);
@@ -257,7 +269,8 @@ th {
   }
 
   .top-panel,
-  .submit-box {
+  .submit-box,
+  .override-row {
     grid-template-columns: 1fr;
   }
 

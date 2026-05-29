@@ -109,7 +109,6 @@ function refreshOne(noteId, options) {
   const track = tracks[trackIndex];
   const cooldown = getCooldown_(track.last_checked_at);
   if (!options.force && cooldown.blocked) {
-    updateTrackStatus_(tracksSheet, trackIndex, 'cooldown', `請於 ${cooldown.nextAllowedText} 後再刷新。`);
     return { ok: true, skipped: true, reason: 'cooldown', noteId, nextAllowedAt: cooldown.nextAllowedAt };
   }
 
@@ -131,15 +130,17 @@ function refreshOne(noteId, options) {
   }
 }
 
-function refreshAllTrackedPosts() {
+function refreshAllTrackedPosts(options) {
+  options = options || {};
   setup();
+  const force = validateOverridePassword_(options.overridePassword);
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   const tracks = getObjects_(ss.getSheetByName(TRACKS_SHEET_NAME));
   const summary = { refreshed: 0, skipped: 0, errors: 0, details: [] };
   tracks.forEach((track) => {
     if (track.note_id) {
       try {
-        const result = refreshOne(track.note_id);
+        const result = refreshOne(track.note_id, { force });
         if (result && result.skipped) {
           summary.skipped++;
           summary.details.push(result);
@@ -192,7 +193,7 @@ function handleApiGet_(params) {
     } else if (action === 'addTrack') {
       data = addTrack(params.url || params.noteId || '');
     } else if (action === 'refreshAll') {
-      data = refreshAllTrackedPosts();
+      data = refreshAllTrackedPosts({ overridePassword: params.overridePassword || '' });
     } else if (action === 'saveToken') {
       data = saveApifyToken(params.token || '');
     } else {
@@ -203,6 +204,18 @@ function handleApiGet_(params) {
   } catch (error) {
     return jsonp_(params.callback, { ok: false, error: error.message });
   }
+}
+
+function validateOverridePassword_(password) {
+  if (!password) return false;
+  const saved = PropertiesService.getScriptProperties().getProperty('REFRESH_OVERRIDE_PASSWORD');
+  if (!saved) {
+    throw new Error('Override password is not configured in Apps Script Properties.');
+  }
+  if (String(password) !== String(saved)) {
+    throw new Error('Override password is incorrect.');
+  }
+  return true;
 }
 
 function jsonp_(callback, payload) {

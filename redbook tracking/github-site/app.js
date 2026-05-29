@@ -5,6 +5,7 @@ const body = document.querySelector('#tracks-body');
 const storageStatus = document.querySelector('#storage-status');
 const runStatus = document.querySelector('#run-status');
 const refreshAll = document.querySelector('#refresh-all');
+const overrideInput = document.querySelector('#override-input');
 const tokenPanel = document.querySelector('#token-panel');
 const tokenInput = document.querySelector('#token-input');
 const saveToken = document.querySelector('#save-token');
@@ -29,9 +30,11 @@ refreshAll.addEventListener('click', async () => {
   setMessage('正在刷新全部筆記...');
   runStatus.textContent = '狀態：正在呼叫 Apps Script，請稍候。';
   try {
-    const summary = await callApi('refreshAll');
+    const overridePassword = overrideInput.value.trim();
+    const summary = await callApi('refreshAll', overridePassword ? { overridePassword } : {});
+    overrideInput.value = '';
     await loadDashboard();
-    const text = `刷新完成：更新 ${summary.refreshed || 0}，冷卻中 ${summary.skipped || 0}，錯誤 ${summary.errors || 0}。`;
+    const text = `刷新完成：更新 ${summary.refreshed || 0}，略過 ${summary.skipped || 0}，錯誤 ${summary.errors || 0}。`;
     setMessage(text);
     runStatus.textContent = `狀態：${text}`;
   } catch (error) {
@@ -110,7 +113,7 @@ function statusBadge(status) {
     queued: '等待刷新',
     checking: '讀取中',
     active: '已更新',
-    cooldown: '冷卻中',
+    cooldown: '已略過',
     error: '錯誤',
     unknown: '未知'
   };
@@ -123,7 +126,7 @@ function statusHint(track, latest) {
   if (status === 'queued') return '<span class="sub">已加入清單，按「立即刷新」才會抓取數據。</span>';
   if (status === 'checking') return '<span class="sub">正在向 Apify 讀取資料。</span>';
   if (status === 'active') return `<span class="sub">上次成功：${date(track.last_checked_at || latest.fetched_at)}</span>`;
-  if (status === 'cooldown') return '<span class="sub">一小時內已更新過，為節省成本暫不重抓。</span>';
+  if (status === 'cooldown') return '<span class="sub">上次已更新；按刷新時若未滿一小時會自動略過。</span>';
   return '<span class="sub">等待下一步操作。</span>';
 }
 
