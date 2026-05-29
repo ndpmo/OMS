@@ -18,7 +18,10 @@
         <h2>Content Input</h2>
         <form id="generator-form">
           <label>Apps Script Web App URL<input id="appsScriptUrl" placeholder="https://script.google.com/macros/s/.../exec" /></label>
-          <button id="testConnectionBtn" type="button" class="ghost">Test Sheet Connection</button>
+          <div class="row">
+            <button id="testConnectionBtn" type="button" class="ghost">Test Sheet Connection</button>
+            <span id="connectionStatus" class="status"></span>
+          </div>
           <label>Gemini API Key (session only)<input id="apiKey" type="password" placeholder="Paste key here, not saved" /></label>
           <label>Gemini Model
             <select id="model">

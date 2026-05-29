@@ -8,6 +8,7 @@ const downloadLogBtn = document.querySelector("#downloadLogBtn");
 const syncApprovedBtn = document.querySelector("#syncApprovedBtn");
 const appsScriptUrlInput = document.querySelector("#appsScriptUrl");
 const testConnectionBtn = document.querySelector("#testConnectionBtn");
+const connectionStatusEl = document.querySelector("#connectionStatus");
 const DEFAULT_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxm91pim17BsLNvVDlD5vESopFXxgrA3lZlhzhi3Fuc83HGrrL3uROi8qZEq6z_1y6M/exec";
 
 const KEY = "redbook_content_bank_v1";
@@ -29,17 +30,30 @@ testConnectionBtn.addEventListener("click", async () => {
   const url = String(appsScriptUrlInput.value || "").trim();
   if (!url) {
     setStatus("Please enter Apps Script Web App URL first.", true);
+    if (connectionStatusEl) connectionStatusEl.textContent = "Missing URL";
     return;
   }
   state.appsScriptUrl = url;
   persist();
 
   testConnectionBtn.disabled = true;
+  if (connectionStatusEl) {
+    connectionStatusEl.textContent = "Testing...";
+    connectionStatusEl.style.color = "";
+  }
   try {
     const result = await testSheetConnection(url);
     setStatus(`Connected. Staff list rows available: ${result.staffCount}.`);
+    if (connectionStatusEl) {
+      connectionStatusEl.textContent = `Connected (${result.staffCount} staff)`;
+      connectionStatusEl.style.color = "#0f766e";
+    }
   } catch (error) {
     setStatus(`Connection test failed: ${error.message}`, true);
+    if (connectionStatusEl) {
+      connectionStatusEl.textContent = `Failed: ${error.message}`;
+      connectionStatusEl.style.color = "#b53d1c";
+    }
   } finally {
     testConnectionBtn.disabled = false;
   }
