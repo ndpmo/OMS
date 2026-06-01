@@ -592,10 +592,7 @@ async function syncApprovedOneReliable(item) {
     assignDate: item.assignedDate || formatDateOnly(new Date()),
     generatedAt: item.generatedAt || "",
     approvedAt: item.approvedAt || "",
-    assignedTo: item.assignedTo || "",
-    title: item.title || "",
-    hashtags: item.hashtags || "",
-    content: item.content || ""
+    assignedTo: item.assignedTo || ""
   });
   const url = base.includes("?") ? `${base}&${params.toString()}` : `${base}?${params.toString()}`;
   const response = await fetch(url, { method: "GET" });

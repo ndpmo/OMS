@@ -46,9 +46,6 @@ function doGet(e) {
     const topicDate = String(e.parameter.topicDate || "").trim();
     const assignDate = String(e.parameter.assignDate || "").trim();
     const id = String(e.parameter.id || "").trim();
-    const title = String(e.parameter.title || "").trim();
-    const hashtags = String(e.parameter.hashtags || "").trim();
-    const content = String(e.parameter.content || "").trim();
     const generatedAt = String(e.parameter.generatedAt || "").trim();
     const approvedAt = String(e.parameter.approvedAt || "").trim();
     const assignedTo = String(e.parameter.assignedTo || "").trim();
@@ -57,12 +54,13 @@ function doGet(e) {
       return jsonOut({ ok: false, error: "Missing topic/topicDate/id" });
     }
 
+    const generated = findGeneratedById_(id);
     const result = appendAssignedDirect_(topic, topicDate, assignDate, {
       id: id,
-      title: title,
-      hashtags: hashtags,
-      content: content,
-      generatedAt: generatedAt,
+      title: generated ? generated.title : "",
+      hashtags: generated ? generated.hashtags : "",
+      content: generated ? generated.content : "",
+      generatedAt: generatedAt || (generated ? generated.generatedAt : ""),
       approvedAt: approvedAt,
       assignedTo: assignedTo
     });
@@ -452,4 +450,27 @@ function getTopicProgress_() {
     map[k].missing = Math.max(0, staffCount - map[k].assigned);
   });
   return map;
+}
+
+function findGeneratedById_(id) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const generatedSheet = ensureGeneratedSheet_(ss);
+  const values = generatedSheet.getDataRange().getValues();
+  if (values.length <= 1) return null;
+  const h = indexMap_(values[0]);
+  for (let i = 1; i < values.length; i += 1) {
+    const r = values[i];
+    if (String(r[h.id] || "").trim() === id) {
+      return {
+        id: String(r[h.id] || ""),
+        topic: String(r[h.topic] || ""),
+        topicDate: String(r[h.topicDate] || ""),
+        generatedAt: String(r[h.generatedAt] || ""),
+        title: String(r[h.title] || ""),
+        hashtags: String(r[h.hashtags] || ""),
+        content: String(r[h.content] || "")
+      };
+    }
+  }
+  return null;
 }
