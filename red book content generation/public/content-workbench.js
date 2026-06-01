@@ -319,13 +319,10 @@ function cardForQueue(item) {
     render();
     if (state.appsScriptUrl && item.assignedTo) {
       try {
-        await postToAppsScript({
-          action: "approveAndAssign",
-          topic: item.topic || "",
-          topicDate: item.topicDate || formatDateOnly(new Date()),
-          assignDate: item.assignedDate || formatDateOnly(new Date()),
-          items: [item]
-        });
+        await syncApprovedOneReliable(item);
+        item.syncedAt = new Date().toISOString();
+        upsertLog(item);
+        persist();
       } catch (error) {
         setStatus(`Approved locally, but sheet assignment sync failed: ${error.message}`, true);
       }
@@ -582,6 +579,30 @@ async function postToAppsScript(payload) {
   // In no-cors mode the browser returns an opaque response; we cannot read body/status.
   // If fetch resolves, we treat it as sent.
   return { ok: true, opaque: response.type === "opaque" };
+}
+
+async function syncApprovedOneReliable(item) {
+  const base = String(state.appsScriptUrl || "").trim();
+  if (!base) throw new Error("Missing Apps Script URL.");
+  const params = new URLSearchParams({
+    action: "approveAssignOne",
+    id: item.id || "",
+    topic: item.topic || "",
+    topicDate: item.topicDate || formatDateOnly(new Date()),
+    assignDate: item.assignedDate || formatDateOnly(new Date()),
+    generatedAt: item.generatedAt || "",
+    approvedAt: item.approvedAt || "",
+    assignedTo: item.assignedTo || "",
+    title: item.title || "",
+    hashtags: item.hashtags || "",
+    content: item.content || ""
+  });
+  const url = base.includes("?") ? `${base}&${params.toString()}` : `${base}?${params.toString()}`;
+  const response = await fetch(url, { method: "GET" });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || data.ok === false) {
+    throw new Error(data.error || "Failed to save approved item to sheet.");
+  }
 }
 
 async function testSheetConnection(baseUrl) {

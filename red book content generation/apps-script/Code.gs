@@ -41,6 +41,34 @@ function doGet(e) {
     return jsonOut({ ok: true, topics: getTopicProgress_() });
   }
 
+  if (action === "approveAssignOne") {
+    const topic = String(e.parameter.topic || "").trim();
+    const topicDate = String(e.parameter.topicDate || "").trim();
+    const assignDate = String(e.parameter.assignDate || "").trim();
+    const id = String(e.parameter.id || "").trim();
+    const title = String(e.parameter.title || "").trim();
+    const hashtags = String(e.parameter.hashtags || "").trim();
+    const content = String(e.parameter.content || "").trim();
+    const generatedAt = String(e.parameter.generatedAt || "").trim();
+    const approvedAt = String(e.parameter.approvedAt || "").trim();
+    const assignedTo = String(e.parameter.assignedTo || "").trim();
+
+    if (!topic || !topicDate || !id) {
+      return jsonOut({ ok: false, error: "Missing topic/topicDate/id" });
+    }
+
+    const result = appendAssignedDirect_(topic, topicDate, assignDate, {
+      id: id,
+      title: title,
+      hashtags: hashtags,
+      content: content,
+      generatedAt: generatedAt,
+      approvedAt: approvedAt,
+      assignedTo: assignedTo
+    });
+    return jsonOut({ ok: true, inserted: result.inserted });
+  }
+
   return jsonOut({ ok: true, message: "Redbook Apps Script is running." });
 }
 
@@ -196,6 +224,36 @@ function appendGeneratedOnly_(topic, topicDate, items) {
     sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, rows[0].length).setValues(rows);
   }
   return { inserted: rows.length };
+}
+
+function appendAssignedDirect_(topic, topicDate, assignDate, item) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ensureAssignSheet_(ss);
+  const staff = getStaffList_();
+  const byNo = {};
+  staff.forEach(function (s) { byNo[s.staffNo] = s; });
+  const nowIso = isoNow_();
+  const asgDate = assignDate || Utilities.formatDate(new Date(), TZ, "yyyy-MM-dd");
+  const staffRow = byNo[item.assignedTo] || { staffNo: item.assignedTo || "", name: "", floor: "", xhsAccount: "" };
+
+  const row = [
+    item.id || ("auto_" + Date.now()),
+    topic,
+    topicDate,
+    item.generatedAt || nowIso,
+    item.approvedAt || nowIso,
+    asgDate,
+    nowIso,
+    staffRow.staffNo || "",
+    staffRow.name || "",
+    staffRow.floor || "",
+    staffRow.xhsAccount || "",
+    item.title || "",
+    item.hashtags || "",
+    item.content || ""
+  ];
+  sheet.getRange(sheet.getLastRow() + 1, 1, 1, row.length).setValues([row]);
+  return { inserted: 1 };
 }
 
 function getAssignmentsByStaff_(staffNo) {
