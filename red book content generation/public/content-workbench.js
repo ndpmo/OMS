@@ -124,13 +124,10 @@ form.addEventListener("submit", async (e) => {
     setStatus("請先貼上 OpenRouter API 金鑰再生成。", true);
     return;
   }
-  if (!referenceImageFile) {
-    setStatus("請先上傳參考圖片再生成。", true);
-    return;
-  }
-
   let referenceImage = null;
-  referenceImage = await fileToDataUrl(referenceImageFile);
+  if (referenceImageFile) {
+    referenceImage = await fileToDataUrl(referenceImageFile);
+  }
 
   setStatus("正在使用模型生成...");
   isGenerating = true;
