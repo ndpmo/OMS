@@ -444,8 +444,8 @@
 
       .metric-detail-item {
         display: grid;
-        grid-template-columns: minmax(150px, 1fr) minmax(150px, 1fr) minmax(100px, auto) minmax(90px, auto) minmax(90px, auto);
-        gap: 10px;
+        grid-template-columns: minmax(160px, 1.2fr) minmax(150px, 1.1fr) minmax(74px, 0.42fr) minmax(74px, 0.42fr) minmax(82px, 0.45fr) minmax(82px, 0.45fr) minmax(82px, 0.45fr);
+        gap: 8px;
         align-items: center;
         padding: 10px 12px;
         border: 1px solid rgba(255, 255, 255, 0.1);
@@ -466,8 +466,8 @@
 
       .metric-detail-header {
         display: grid;
-        grid-template-columns: minmax(150px, 1fr) minmax(150px, 1fr) minmax(100px, auto) minmax(90px, auto) minmax(90px, auto);
-        gap: 10px;
+        grid-template-columns: minmax(160px, 1.2fr) minmax(150px, 1.1fr) minmax(74px, 0.42fr) minmax(74px, 0.42fr) minmax(82px, 0.45fr) minmax(82px, 0.45fr) minmax(82px, 0.45fr);
+        gap: 8px;
         padding: 2px 12px 6px;
         color: var(--muted);
         font-size: 0.72rem;
@@ -479,7 +479,11 @@
       .metric-detail-item .team-size-cell,
       .metric-detail-header .team-size-header,
       .metric-detail-item .mtd-cell,
-      .metric-detail-header .mtd-header {
+      .metric-detail-header .mtd-header,
+      .metric-detail-item .mtd1-cell,
+      .metric-detail-header .mtd1-header,
+      .metric-detail-item .mtd2-cell,
+      .metric-detail-header .mtd2-header {
         text-align: right;
       }
 
@@ -499,6 +503,18 @@
       }
 
       .metric-detail-item .mtd-cell.mtd-bad {
+        color: var(--red);
+        font-weight: 800;
+      }
+
+      .metric-detail-item .mtd1-cell.mtd-good,
+      .metric-detail-item .mtd2-cell.mtd-good {
+        color: var(--green);
+        font-weight: 800;
+      }
+
+      .metric-detail-item .mtd1-cell.mtd-bad,
+      .metric-detail-item .mtd2-cell.mtd-bad {
         color: var(--red);
         font-weight: 800;
       }
@@ -2448,9 +2464,13 @@
             <div class="hero-metrics" aria-label="Program headline metrics">
               <div class="metric-card">
                 <span class="metric-card-title">Sign Up</span>
-                <div class="metric-row" data-metric-key="signup_tl">
-                  <strong id="metricSignupTl">0</strong>
-                  <span>1:6</span>
+                <div class="metric-row" data-metric-key="signup_tl_yos_gt6">
+                  <strong id="metricSignupTlYosGt6">0</strong>
+                  <span>1:6 (YOS&gt;6 month)</span>
+                </div>
+                <div class="metric-row" data-metric-key="signup_tl_yos_lt6">
+                  <strong id="metricSignupTlYosLt6">0</strong>
+                  <span>1:6 (YOS&lt;6 month)</span>
                 </div>
                 <div class="metric-row" data-metric-key="signup_as">
                   <strong id="metricSignupAs">0</strong>
@@ -2952,7 +2972,8 @@
         searchInput: document.querySelector("#searchInput"),
         assessmentDateFilter: document.querySelector("#assessmentDateFilter"),
         staffTable: document.querySelector("#staffTable"),
-        metricSignupTl: document.querySelector("#metricSignupTl"),
+        metricSignupTlYosGt6: document.querySelector("#metricSignupTlYosGt6"),
+        metricSignupTlYosLt6: document.querySelector("#metricSignupTlYosLt6"),
         metricSignupAs: document.querySelector("#metricSignupAs"),
         metricRejectAs: document.querySelector("#metricRejectAs"),
         metricRejectTl: document.querySelector("#metricRejectTl"),
@@ -3853,7 +3874,8 @@
 
       function renderMetrics() {
         const assessments = Object.values(state.assessments);
-        const signedToTl = metricPeopleByKey("signup_tl").length;
+        const signedToTlYosGt6 = metricPeopleByKey("signup_tl_yos_gt6").length;
+        const signedToTlYosLt6 = metricPeopleByKey("signup_tl_yos_lt6").length;
         const signedToAs = metricPeopleByKey("signup_as").length;
         const rejectAs = metricPeopleByKey("reject_as").length;
         const rejectTl = metricPeopleByKey("reject_tl").length;
@@ -3865,7 +3887,8 @@
         const pendingTl = metricPeopleByKey("pending_tl").length;
         const pendingEligibleE1 = metricPeopleByKey("pending_e1").length;
 
-        elements.metricSignupTl.textContent = signedToTl;
+        elements.metricSignupTlYosGt6.textContent = signedToTlYosGt6;
+        elements.metricSignupTlYosLt6.textContent = signedToTlYosLt6;
         elements.metricSignupAs.textContent = signedToAs;
         elements.metricRejectAs.textContent = rejectAs;
         elements.metricRejectTl.textContent = rejectTl;
@@ -3892,6 +3915,21 @@
           const key = String(person?.staffId || "").trim();
           return assessments[key] || null;
         };
+        const yosMonthsAtEnroll = (person) => {
+          const assessment = withAssessment(person);
+          const enrollDate = parseDateValue(assessment?.enrollDate || assessment?.assessmentDateTime || "");
+          const joinDate = parseDateValue(person?.lastJoinDate || "");
+          if (!enrollDate || !joinDate) {
+            const fallbackMonths = Number(person?.serviceMonths);
+            if (Number.isFinite(fallbackMonths) && fallbackMonths >= 0) return fallbackMonths;
+            return 0;
+          }
+          let months =
+            (enrollDate.getFullYear() - joinDate.getFullYear()) * 12 +
+            (enrollDate.getMonth() - joinDate.getMonth());
+          if (enrollDate.getDate() < joinDate.getDate()) months -= 1;
+          return months;
+        };
         const hasAssessmentDateOnly = (person) =>
           /\d{4}-\d{2}-\d{2}/.test(String(withAssessment(person)?.assessmentDateTime || "").trim());
         const byJoin = (person, value) => participationValue(withAssessment(person)) === value;
@@ -3901,6 +3939,16 @@
 
         const map = {
           signup_tl: byTargetTier("tl").filter((person) => byJoin(person, "Y")),
+          signup_tl_yos_gt6: byTargetTier("tl").filter((person) => {
+            if (!byJoin(person, "Y")) return false;
+            const months = yosMonthsAtEnroll(person);
+            return months > 6;
+          }),
+          signup_tl_yos_lt6: byTargetTier("tl").filter((person) => {
+            if (!byJoin(person, "Y")) return false;
+            const months = yosMonthsAtEnroll(person);
+            return months <= 6;
+          }),
           signup_as: byTargetTier("as").filter((person) => byJoin(person, "Y")),
           reject_as: byRole("AS").filter((person) => byJoin(person, "N")),
           reject_tl: byRole("TL").filter((person) => byJoin(person, "N")),
@@ -3931,6 +3979,8 @@
       function metricTitleByKey(metricKey) {
         const map = {
           signup_tl: "Sign Up · 1:6",
+          signup_tl_yos_gt6: "Sign Up · 1:6 (YOS > 6 month)",
+          signup_tl_yos_lt6: "Sign Up · 1:6 (YOS < 6 month)",
           signup_as: "Sign Up · 1:14",
           reject_as: "Rejected · AS",
           reject_tl: "Rejected · TL",
@@ -3962,8 +4012,14 @@
               const roleLabel = displayRole(person.position);
               const teamSize = metricTeamSizeText(person);
               const mtdValue = Number(person.mayMtd ?? salesPercent(person));
+              const mtd1Value = Number(person.apr);
+              const mtd2Value = Number(person.mar);
               const mtd = formatPercent(mtdValue);
+              const mtd1 = formatPercent(mtd1Value);
+              const mtd2 = formatPercent(mtd2Value);
               const mtdClass = Number.isFinite(mtdValue) && mtdValue >= 100 ? "mtd-good" : "mtd-bad";
+              const mtd1Class = Number.isFinite(mtd1Value) && mtd1Value >= 100 ? "mtd-good" : "mtd-bad";
+              const mtd2Class = Number.isFinite(mtd2Value) && mtd2Value >= 100 ? "mtd-good" : "mtd-bad";
               return `
                 <div class="metric-detail-item">
                   <strong>${escapeHtml(person.therapist || "-")}</strong>
@@ -3971,6 +4027,8 @@
                   <span class="position-cell">${escapeHtml(roleLabel)}</span>
                   <span class="team-size-cell">${escapeHtml(teamSize)}</span>
                   <span class="mtd-cell ${mtdClass}">${escapeHtml(mtd)}</span>
+                  <span class="mtd1-cell ${mtd1Class}">${escapeHtml(mtd1)}</span>
+                  <span class="mtd2-cell ${mtd2Class}">${escapeHtml(mtd2)}</span>
                 </div>
               `;
             })
@@ -3982,6 +4040,8 @@
               <span class="position-header">Position</span>
               <span class="team-size-header">Team Size</span>
               <span class="mtd-header">MTD</span>
+              <span class="mtd1-header">MTD-1</span>
+              <span class="mtd2-header">MTD-2</span>
             </div>
             ${rowsHtml}
           `;
