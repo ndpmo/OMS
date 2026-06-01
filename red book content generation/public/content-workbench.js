@@ -98,6 +98,9 @@ form.addEventListener("submit", async (e) => {
   const model = document.querySelector("#model").value.trim() || "gemini-2.5-flash";
   const wordCount = document.querySelector("#wordCount").value.trim();
   const hashtags = document.querySelector("#hashtags").value.trim();
+  const photoDirection = document.querySelector("#photoDirection").value.trim();
+  const photoInstruction = document.querySelector("#photoInstruction").value.trim();
+  const referenceImageFile = document.querySelector("#referenceImage").files?.[0] || null;
   const direction = document.querySelector("#direction").value.trim();
   const count = Number(document.querySelector("#count").value);
 
@@ -108,6 +111,11 @@ form.addEventListener("submit", async (e) => {
   if (!apiKey) {
     setStatus("Please paste Gemini API key before generating.", true);
     return;
+  }
+
+  let referenceImage = null;
+  if (referenceImageFile) {
+    referenceImage = await fileToDataUrl(referenceImageFile);
   }
 
   setStatus("Generating with Gemini...");
@@ -122,6 +130,9 @@ form.addEventListener("submit", async (e) => {
       topic,
       wordCount,
       hashtags,
+      photoDirection,
+      photoInstruction,
+      referenceImage,
       direction,
       count
     });
@@ -142,7 +153,7 @@ form.addEventListener("submit", async (e) => {
   }
 });
 
-async function generateWithGeminiBatches({ apiKey, model, topic, wordCount, hashtags, direction, count }) {
+async function generateWithGeminiBatches({ apiKey, model, topic, wordCount, hashtags, photoDirection, photoInstruction, referenceImage, direction, count }) {
   if (!apiKey) {
     throw new Error("Please paste Gemini API key first.");
   }
@@ -160,6 +171,9 @@ async function generateWithGeminiBatches({ apiKey, model, topic, wordCount, hash
       topic,
       wordCount,
       hashtags,
+      photoDirection,
+      photoInstruction,
+      referenceImage,
       direction,
       take
     });
@@ -173,6 +187,10 @@ async function generateWithGeminiBatches({ apiKey, model, topic, wordCount, hash
       generatedAt: new Date().toISOString(),
       content: item.content || "",
       hashtags: item.hashtags || hashtags,
+      photoDirection: photoDirection || "",
+      photoInstruction: photoInstruction || "",
+      referenceImageName: referenceImage?.name || "",
+      referenceImageDataUrl: referenceImage?.dataUrl || "",
       assignedTo: ""
     }));
     cursor += items.length;
@@ -423,6 +441,10 @@ function upsertLog(item) {
     assignedDate: item.assignedDate || "",
     assignedAt: item.assignedAt || "",
     hashtags: item.hashtags || "",
+    photoDirection: item.photoDirection || "",
+    photoInstruction: item.photoInstruction || "",
+    referenceImageName: item.referenceImageName || "",
+    referenceImageDataUrl: item.referenceImageDataUrl || "",
     content: item.content || ""
   };
   if (idx >= 0) state.generationLogs[idx] = row;
@@ -565,6 +587,15 @@ function formatDateOnly(value) {
 function csvCell(value) {
   const text = String(value).replaceAll('"', '""');
   return `"${text}"`;
+}
+
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve({ name: file.name || "reference-image", dataUrl: String(reader.result || "") });
+    reader.onerror = () => reject(new Error("Image read failed."));
+    reader.readAsDataURL(file);
+  });
 }
 
 async function postToAppsScript(payload) {

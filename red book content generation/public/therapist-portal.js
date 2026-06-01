@@ -35,13 +35,21 @@ function renderMine(items, staff) {
       card.className = "card";
       card.innerHTML = `<h3>${escapeHtml(item.title || topic)}</h3>
         <p>${escapeHtml(item.content).replaceAll("\n", "<br>")}</p>
-        <p><strong>Hashtags:</strong> ${escapeHtml(item.hashtags)}</p>`;
+        <p><strong>Hashtags:</strong> ${escapeHtml(item.hashtags)}</p>
+        <p><strong>Photo Content Direction:</strong> ${escapeHtml(item.photoDirection || "-")}</p>
+        <p><strong>Photo Instruction:</strong> ${escapeHtml(item.photoInstruction || "-")}</p>`;
 
       const row = document.createElement("div");
       row.className = "row";
       row.appendChild(copyButton("Copy 文章主題", topic));
       row.appendChild(copyButton("Copy 文章", item.content || ""));
       row.appendChild(copyButton("Copy hashtag", item.hashtags || ""));
+      if (item.referenceImageFileUrl || item.referenceImageDataUrl) {
+        row.appendChild(downloadImageButton(
+          item.referenceImageName || "reference-image",
+          item.referenceImageFileUrl || item.referenceImageDataUrl
+        ));
+      }
       card.appendChild(row);
       wrap.appendChild(card);
     });
@@ -72,6 +80,21 @@ function copyButton(label, value) {
     } catch {
       setStatus(`${label} failed. Try manual copy.`, true);
     }
+  });
+  return btn;
+}
+
+function downloadImageButton(fileName, href) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.textContent = "Download Reference Image";
+  btn.addEventListener("click", () => {
+    const a = document.createElement("a");
+    a.href = href;
+    a.target = "_blank";
+    a.download = fileName || "reference-image";
+    a.click();
+    setStatus("Reference image download started.");
   });
   return btn;
 }

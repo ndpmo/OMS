@@ -8,6 +8,7 @@
 const STAFF_SHEET = "staff list";
 const ASSIGN_SHEET = "assignments";
 const GENERATED_SHEET = "generated";
+const DRIVE_FOLDER_ID = "1aI1eTl4oJqdh41Q5lE-qekCSF1yvLXYU";
 const TZ = Session.getScriptTimeZone() || "Asia/Hong_Kong";
 
 function onOpen() {
@@ -60,6 +61,10 @@ function doGet(e) {
       title: generated ? generated.title : "",
       hashtags: generated ? generated.hashtags : "",
       content: generated ? generated.content : "",
+      photoDirection: generated ? generated.photoDirection : "",
+      photoInstruction: generated ? generated.photoInstruction : "",
+      referenceImageFileId: generated ? generated.referenceImageFileId : "",
+      referenceImageFileUrl: generated ? generated.referenceImageFileUrl : "",
       generatedAt: generatedAt || (generated ? generated.generatedAt : ""),
       approvedAt: approvedAt,
       assignedTo: assignedTo
@@ -207,6 +212,7 @@ function appendGeneratedOnly_(topic, topicDate, items) {
   const sheet = ensureGeneratedSheet_(ss);
 
   const rows = items.map(function (item, i) {
+    const uploaded = saveReferenceImageToDrive_(item.referenceImageName || "", item.referenceImageDataUrl || "");
     return [
       item.id || ("generated_" + Date.now() + "_" + i),
       topic,
@@ -214,7 +220,11 @@ function appendGeneratedOnly_(topic, topicDate, items) {
       item.generatedAt || isoNow_(),
       item.title || "",
       item.hashtags || "",
-      item.content || ""
+      item.content || "",
+      item.photoDirection || "",
+      item.photoInstruction || "",
+      uploaded.fileId,
+      uploaded.fileUrl
     ];
   });
 
@@ -248,7 +258,11 @@ function appendAssignedDirect_(topic, topicDate, assignDate, item) {
     staffRow.xhsAccount || "",
     item.title || "",
     item.hashtags || "",
-    item.content || ""
+    item.content || "",
+    item.photoDirection || "",
+    item.photoInstruction || "",
+    item.referenceImageFileId || "",
+    item.referenceImageFileUrl || ""
   ];
   sheet.getRange(sheet.getLastRow() + 1, 1, 1, row.length).setValues([row]);
   return { inserted: 1 };
@@ -320,7 +334,11 @@ function ensureAssignSheet_(ss) {
     "xhsAccount",
     "title",
     "hashtags",
-    "content"
+    "content",
+    "photoDirection",
+    "photoInstruction",
+    "referenceImageFileId",
+    "referenceImageFileUrl"
   ];
 
   if (sh.getLastRow() === 0) {
@@ -365,7 +383,19 @@ function ensureGeneratedSheet_(ss) {
   if (!sh) {
     sh = ss.insertSheet(GENERATED_SHEET);
   }
-  const headers = ["id", "topic", "topicDate", "generatedAt", "title", "hashtags", "content"];
+  const headers = [
+    "id",
+    "topic",
+    "topicDate",
+    "generatedAt",
+    "title",
+    "hashtags",
+    "content",
+    "photoDirection",
+    "photoInstruction",
+    "referenceImageFileId",
+    "referenceImageFileUrl"
+  ];
   if (sh.getLastRow() === 0) {
     sh.getRange(1, 1, 1, headers.length).setValues([headers]);
     sh.setFrozenRows(1);
@@ -395,7 +425,11 @@ function toAssignRow_(x) {
     x.xhsAccount,
     x.title,
     x.hashtags,
-    x.content
+    x.content,
+    x.photoDirection || "",
+    x.photoInstruction || "",
+    x.referenceImageFileId || "",
+    x.referenceImageFileUrl || ""
   ];
 }
 
@@ -468,9 +502,34 @@ function findGeneratedById_(id) {
         generatedAt: String(r[h.generatedAt] || ""),
         title: String(r[h.title] || ""),
         hashtags: String(r[h.hashtags] || ""),
-        content: String(r[h.content] || "")
+        content: String(r[h.content] || ""),
+        photoDirection: String(r[h.photoDirection] || ""),
+        photoInstruction: String(r[h.photoInstruction] || ""),
+        referenceImageFileId: String(r[h.referenceImageFileId] || ""),
+        referenceImageFileUrl: String(r[h.referenceImageFileUrl] || "")
       };
     }
   }
   return null;
+}
+
+function saveReferenceImageToDrive_(fileName, dataUrl) {
+  if (!dataUrl) return { fileId: "", fileUrl: "" };
+  try {
+    const commaIndex = dataUrl.indexOf(",");
+    if (commaIndex < 0) return { fileId: "", fileUrl: "" };
+    const meta = dataUrl.substring(0, commaIndex);
+    const b64 = dataUrl.substring(commaIndex + 1);
+    const mimeMatch = meta.match(/^data:(.*?);base64$/);
+    const mimeType = mimeMatch ? mimeMatch[1] : "image/png";
+    const bytes = Utilities.base64Decode(b64);
+    const safeName = fileName || ("reference_" + Date.now() + ".png");
+    const blob = Utilities.newBlob(bytes, mimeType, safeName);
+    const folder = DriveApp.getFolderById(DRIVE_FOLDER_ID);
+    const file = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    return { fileId: file.getId(), fileUrl: file.getUrl() };
+  } catch (err) {
+    return { fileId: "", fileUrl: "" };
+  }
 }
