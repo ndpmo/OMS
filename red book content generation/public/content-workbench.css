@@ -247,4 +247,12 @@ a:hover { text-decoration: underline; }
   .page { padding: 16px 12px 34px; }
   .assign-row { grid-template-columns: 1fr; }
   header { padding: 22px 18px; }
+  h1 { font-size: 38px; line-height: 1.04; }
+  h2 { font-size: 28px; }
+  .panel { padding: 14px; border-radius: 12px; }
+  .card { padding: 12px; }
+  .row { padding-left: 0; }
+  .row > * { width: 100%; }
+  button { width: 100%; min-height: 44px; }
+  a.ghost { width: 100%; }
 }

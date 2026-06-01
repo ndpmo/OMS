@@ -28,6 +28,10 @@ let state = loadState();
 if (!state.appsScriptUrl) {
   state.appsScriptUrl = DEFAULT_APPS_SCRIPT_URL;
 }
+const topicDateInput = document.querySelector("#topicDate");
+if (topicDateInput && !topicDateInput.value) {
+  topicDateInput.value = formatDateOnly(new Date());
+}
 appsScriptUrlInput.value = state.appsScriptUrl || "";
 appsScriptUrlInput.addEventListener("change", () => {
   state.appsScriptUrl = appsScriptUrlInput.value.trim();
@@ -101,6 +105,7 @@ providerSelect.addEventListener("change", updateProviderFieldVisibility);
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
   const topic = document.querySelector("#topic").value.trim();
+  const topicDate = document.querySelector("#topicDate").value.trim();
   const provider = document.querySelector("#provider").value.trim() || "gemini";
   const apiKey = document.querySelector("#apiKey").value.trim();
   const openrouterKey = document.querySelector("#openrouterKey").value.trim();
@@ -114,7 +119,7 @@ form.addEventListener("submit", async (e) => {
   const direction = document.querySelector("#direction").value.trim();
   const count = Number(document.querySelector("#count").value);
 
-  if (!topic || !wordCount || !hashtags || !direction || !count) {
+  if (!topic || !topicDate || !wordCount || !hashtags || !direction || !count) {
     setStatus("請填寫所有必填欄位。", true);
     return;
   }
@@ -144,6 +149,7 @@ form.addEventListener("submit", async (e) => {
       provider,
       model,
       topic,
+      topicDate,
       wordCount,
       hashtags,
       photoDirection,
@@ -169,7 +175,7 @@ form.addEventListener("submit", async (e) => {
   }
 });
 
-async function generateWithGeminiBatches({ apiKey, openrouterKey, openrouterModel, provider, model, topic, wordCount, hashtags, photoDirection, photoInstruction, referenceImage, direction, count }) {
+async function generateWithGeminiBatches({ apiKey, openrouterKey, openrouterModel, provider, model, topic, topicDate, wordCount, hashtags, photoDirection, photoInstruction, referenceImage, direction, count }) {
   const batchSize = 20;
   const output = [];
   let cursor = 1;
@@ -203,7 +209,7 @@ async function generateWithGeminiBatches({ apiKey, openrouterKey, openrouterMode
       id: cryptoRandomId(),
       title: item.title || `${topic} - Version ${cursor + i}`,
       topic,
-      topicDate: formatDateOnly(new Date()),
+      topicDate: topicDate || formatDateOnly(new Date()),
       generatedAt: new Date().toISOString(),
       content: item.content || "",
       hashtags: item.hashtags || hashtags,

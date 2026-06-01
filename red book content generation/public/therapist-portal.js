@@ -1,27 +1,55 @@
 const loginBtn = document.querySelector("#loginBtn");
+const applyFilterBtn = document.querySelector("#applyFilterBtn");
 const staffLogin = document.querySelector("#staffLogin");
+const dateFilterInput = document.querySelector("#dateFilter");
+const dateSortSelect = document.querySelector("#dateSort");
 const statusEl = document.querySelector("#portalStatus");
 const myContentEl = document.querySelector("#myContent");
 const KEY = "redbook_content_bank_v1";
+let currentItems = [];
+let currentStaff = "";
 
 loginBtn.addEventListener("click", () => {
   const staff = staffLogin.value.trim();
   if (!staff) return setStatus("請輸入員工編號。", true);
 
   const state = loadState();
-  const mine = (state.approved || []).filter((item) => item.assignedTo === staff);
-  renderMine(mine, staff);
+  currentItems = (state.approved || []).filter((item) => item.assignedTo === staff);
+  currentStaff = staff;
+  applyAndRender();
 });
 
-function renderMine(items, staff) {
+applyFilterBtn?.addEventListener("click", () => {
+  if (!currentStaff) return setStatus("請先輸入員工編號並載入內容。", true);
+  applyAndRender();
+});
+
+function applyAndRender() {
+  const targetDate = String(dateFilterInput?.value || "").trim();
+  const sortOrder = dateSortSelect?.value === "desc" ? "desc" : "asc";
+  let filtered = [...currentItems];
+  if (targetDate) {
+    filtered = filtered.filter((item) => String(item.topicDate || "") === targetDate);
+  }
+  filtered.sort((a, b) => {
+    const av = String(a.topicDate || "");
+    const bv = String(b.topicDate || "");
+    if (av === bv) return 0;
+    return sortOrder === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
+  });
+  renderMine(filtered, currentStaff, targetDate, sortOrder);
+}
+
+function renderMine(items, staff, targetDate, sortOrder) {
   myContentEl.innerHTML = "";
   if (!items.length) {
-    setStatus(`找不到員工 ${staff} 的分配內容。`, true);
+    if (targetDate) setStatus(`員工 ${staff} 在 ${targetDate} 沒有分配內容。`, true);
+    else setStatus(`找不到員工 ${staff} 的分配內容。`, true);
     myContentEl.innerHTML = "<p>目前尚無分配內容。</p>";
     return;
   }
 
-  setStatus(`已載入 ${items.length} 筆分配內容。`);
+  setStatus(`已載入 ${items.length} 筆分配內容（排序：${sortOrder === "asc" ? "日期舊到新" : "日期新到舊"}）。`);
   const grouped = groupByTopic(items);
   Object.entries(grouped).forEach(([topic, topicItems]) => {
     const section = document.createElement("section");
@@ -35,17 +63,26 @@ function renderMine(items, staff) {
       card.className = "card";
       const imageName = escapeHtml(item.referenceImageName || "未指定");
       card.innerHTML = `<h3>${escapeHtml(item.title || topic)}</h3>
+        <p><strong>計劃發文日期：</strong> ${escapeHtml(item.topicDate || "-")}</p>
         <p>${escapeHtml(item.content).replaceAll("\n", "<br>")}</p>
-        <p><strong>標籤：</strong> ${escapeHtml(item.hashtags)}</p>
-        <p><strong>貼文指定圖片：</strong>若有指定，發文時請務必使用。<strong>指定圖片檔案：</strong>${imageName}</p>`;
+        <p><strong>標籤：</strong> ${escapeHtml(item.hashtags)}</p>`;
 
       const row = document.createElement("div");
       row.className = "row";
       row.appendChild(copyButton("複製文章主題", topic));
       row.appendChild(copyButton("複製文章", item.content || ""));
       row.appendChild(copyButton("複製 hashtag", item.hashtags || ""));
-      row.appendChild(linkButton("開啟參考圖片資料夾", "https://drive.google.com/drive/u/2/folders/1NNiM2b4kTrQcH7FMU3hW-e1Wb9qPPhBl"));
       card.appendChild(row);
+
+      const designatedImageSection = document.createElement("div");
+      designatedImageSection.className = "panel";
+      designatedImageSection.style.marginTop = "10px";
+      designatedImageSection.innerHTML = `
+        <p><strong>貼文指定圖片（若有指定，發文請務必使用）</strong></p>
+        <p><strong>指定圖片檔案：</strong>${imageName}</p>
+      `;
+      designatedImageSection.appendChild(linkButton("開啟參考圖片資料夾", "https://drive.google.com/drive/u/2/folders/1NNiM2b4kTrQcH7FMU3hW-e1Wb9qPPhBl"));
+      card.appendChild(designatedImageSection);
 
       const otherImageGuide = document.createElement("div");
       otherImageGuide.className = "panel";
@@ -61,12 +98,12 @@ function renderMine(items, staff) {
       downloadSection.className = "panel";
       downloadSection.style.marginTop = "10px";
       if (item.referenceImageFileUrl || item.referenceImageDataUrl) {
-        downloadSection.innerHTML = `<p><strong>指定圖片檔案：</strong>${escapeHtml(item.referenceImageName || "reference-image")}</p>`;
+        downloadSection.innerHTML = `<p><strong>指定圖片預覽：</strong></p>`;
         const preview = document.createElement("img");
         preview.src = item.referenceImageFileUrl || item.referenceImageDataUrl;
         preview.alt = item.referenceImageName || "reference-image";
         preview.style.width = "100%";
-        preview.style.maxWidth = "360px";
+        preview.style.maxWidth = "100%";
         preview.style.borderRadius = "10px";
         preview.style.border = "1px solid #d5deea";
         preview.style.display = "block";
@@ -83,7 +120,7 @@ function renderMine(items, staff) {
           item.referenceImageFileUrl || item.referenceImageDataUrl
         ));
       } else {
-        downloadSection.innerHTML = "<p><strong>指定圖片檔案：</strong>目前未指定，請使用上方資料夾連結確認最新素材。</p>";
+        downloadSection.innerHTML = "<p><strong>指定圖片預覽：</strong>目前未指定，請使用上方資料夾連結確認最新素材。</p>";
       }
       card.appendChild(downloadSection);
       wrap.appendChild(card);
