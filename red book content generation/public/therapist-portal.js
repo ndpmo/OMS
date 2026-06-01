@@ -22,29 +22,58 @@ function renderMine(items, staff) {
   }
 
   setStatus(`${items.length} assigned item(s) loaded.`);
-  items.forEach((item) => {
-    const card = document.createElement("article");
-    card.className = "card";
-    card.innerHTML = `<h3>${escapeHtml(item.title)}</h3>
-      <p>${escapeHtml(item.content).replaceAll("\n", "<br>")}</p>
-      <p><strong>Hashtags:</strong> ${escapeHtml(item.hashtags)}</p>`;
+  const grouped = groupByTopic(items);
+  Object.entries(grouped).forEach(([topic, topicItems]) => {
+    const section = document.createElement("section");
+    section.className = "panel";
+    section.innerHTML = `<h2>文章主題: ${escapeHtml(topic)}</h2>`;
 
-    const copyBtn = document.createElement("button");
-    copyBtn.type = "button";
-    copyBtn.textContent = "Copy Content + Hashtags";
-    copyBtn.addEventListener("click", async () => {
-      const full = `${item.content}\n\n${item.hashtags}`;
-      try {
-        await navigator.clipboard.writeText(full);
-        setStatus("Copied to clipboard.");
-      } catch {
-        setStatus("Copy failed. Try manual copy.", true);
-      }
+    const wrap = document.createElement("div");
+    wrap.className = "grid";
+    topicItems.forEach((item) => {
+      const card = document.createElement("article");
+      card.className = "card";
+      card.innerHTML = `<h3>${escapeHtml(item.title || topic)}</h3>
+        <p>${escapeHtml(item.content).replaceAll("\n", "<br>")}</p>
+        <p><strong>Hashtags:</strong> ${escapeHtml(item.hashtags)}</p>`;
+
+      const row = document.createElement("div");
+      row.className = "row";
+      row.appendChild(copyButton("Copy 文章主題", topic));
+      row.appendChild(copyButton("Copy 文章", item.content || ""));
+      row.appendChild(copyButton("Copy hashtag", item.hashtags || ""));
+      card.appendChild(row);
+      wrap.appendChild(card);
     });
 
-    card.appendChild(copyBtn);
-    myContentEl.appendChild(card);
+    section.appendChild(wrap);
+    myContentEl.appendChild(section);
   });
+}
+
+function groupByTopic(items) {
+  const map = {};
+  items.forEach((item) => {
+    const topic = item.topic || "未分類主題";
+    if (!map[topic]) map[topic] = [];
+    map[topic].push(item);
+  });
+  return map;
+}
+
+function copyButton(label, value) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.textContent = label;
+  btn.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setStatus(`${label} copied.`);
+    } catch {
+      setStatus(`${label} failed. Try manual copy.`, true);
+    }
+  });
+  return btn;
 }
 
 function loadState() {
