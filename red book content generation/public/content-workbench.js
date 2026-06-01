@@ -105,6 +105,10 @@ form.addEventListener("submit", async (e) => {
     setStatus("Please fill all fields.", true);
     return;
   }
+  if (!apiKey) {
+    setStatus("Please paste Gemini API key before generating.", true);
+    return;
+  }
 
   setStatus("Generating with Gemini...");
   isGenerating = true;
@@ -129,16 +133,7 @@ form.addEventListener("submit", async (e) => {
     await autoSyncGenerated(generated);
     setStatus(`${generated.length} versions generated. Review and approve individually.`);
   } catch (error) {
-    setStatus(`Gemini failed (${error.message}). Using template fallback.`, true);
-    const generated = Array.from({ length: count }, (_, i) =>
-      buildVersion({ topic, wordCount, hashtags, direction, index: i + 1 })
-    );
-    state.queue = generated;
-    state.approved = [];
-    state.generationLogs = state.generationLogs || [];
-    persist();
-    render();
-    await autoSyncGenerated(generated);
+    setStatus(`Gemini failed (${error.message}).`, true);
   } finally {
     isGenerating = false;
     generatingCount = 0;
