@@ -4,8 +4,13 @@ const statusEl = document.querySelector("#status");
 const topicSummaryEl = document.querySelector("#topicSummary");
 const topicGapSummaryEl = document.querySelector("#topicGapSummary");
 const downloadLogBtn = document.querySelector("#downloadLogBtn");
-const syncApprovedBtn = document.querySelector("#syncApprovedBtn");
+const sync審批dBtn = document.querySelector("#sync審批dBtn");
 const appsScriptUrlInput = document.querySelector("#appsScriptUrl");
+const providerSelect = document.querySelector("#provider");
+const geminiKeyWrap = document.querySelector("#geminiKeyWrap");
+const geminiModelWrap = document.querySelector("#geminiModelWrap");
+const openrouterKeyWrap = document.querySelector("#openrouterKeyWrap");
+const openrouterModelWrap = document.querySelector("#openrouterModelWrap");
 const testConnectionBtn = document.querySelector("#testConnectionBtn");
 const resetLocalBtn = document.querySelector("#resetLocalBtn");
 const connectionStatusEl = document.querySelector("#connectionStatus");
@@ -38,8 +43,8 @@ fallbackStaffListInput.addEventListener("change", () => {
 testConnectionBtn.addEventListener("click", async () => {
   const url = String(appsScriptUrlInput.value || "").trim();
   if (!url) {
-    setStatus("Please enter Apps Script Web App URL first.", true);
-    if (connectionStatusEl) connectionStatusEl.textContent = "Missing URL";
+    setStatus("請先輸入 Apps Script 網址。", true);
+    if (connectionStatusEl) connectionStatusEl.textContent = "缺少網址";
     return;
   }
   state.appsScriptUrl = url;
@@ -47,20 +52,20 @@ testConnectionBtn.addEventListener("click", async () => {
 
   testConnectionBtn.disabled = true;
   if (connectionStatusEl) {
-    connectionStatusEl.textContent = "Testing...";
+    connectionStatusEl.textContent = "測試中...";
     connectionStatusEl.style.color = "";
   }
   try {
     const result = await testSheetConnection(url);
-    setStatus(`Connected. Staff list rows available: ${result.staffCount}.`);
+    setStatus(`已連線。可用員工資料：${result.staffCount}。`);
     if (connectionStatusEl) {
-      connectionStatusEl.textContent = `Connected (${result.staffCount} staff)`;
+      connectionStatusEl.textContent = `已連線（${result.staffCount} 位員工）`;
       connectionStatusEl.style.color = "#0f766e";
     }
   } catch (error) {
-    setStatus(`Connection test failed: ${error.message}`, true);
+    setStatus(`連線測試失敗：${error.message}`, true);
     if (connectionStatusEl) {
-      connectionStatusEl.textContent = `Failed: ${error.message}`;
+      connectionStatusEl.textContent = `失敗：${error.message}`;
       connectionStatusEl.style.color = "#b53d1c";
     }
   } finally {
@@ -84,41 +89,50 @@ resetLocalBtn.addEventListener("click", () => {
   }
   persist();
   render();
-  setStatus("Local cache reset. Dashboard now starts clean.");
+  setStatus("已重設本機快取，面板已清空。");
 });
 render();
 loadStaffForAutoAssign();
 syncFromSheet();
 setInterval(syncFromSheet, 20000);
+updateProviderFieldVisibility();
+providerSelect.addEventListener("change", updateProviderFieldVisibility);
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
   const topic = document.querySelector("#topic").value.trim();
+  const provider = document.querySelector("#provider").value.trim() || "gemini";
   const apiKey = document.querySelector("#apiKey").value.trim();
+  const openrouterKey = document.querySelector("#openrouterKey").value.trim();
+  const openrouterModel = document.querySelector("#openrouterModel").value.trim() || "openrouter/auto";
   const model = document.querySelector("#model").value.trim() || "gemini-2.5-flash";
   const wordCount = document.querySelector("#wordCount").value.trim();
   const hashtags = document.querySelector("#hashtags").value.trim();
-  const photoDirection = document.querySelector("#photoDirection").value.trim();
-  const photoInstruction = document.querySelector("#photoInstruction").value.trim();
   const referenceImageFile = document.querySelector("#referenceImage").files?.[0] || null;
   const direction = document.querySelector("#direction").value.trim();
   const count = Number(document.querySelector("#count").value);
 
   if (!topic || !wordCount || !hashtags || !direction || !count) {
-    setStatus("Please fill all fields.", true);
+    setStatus("請填寫所有必填欄位。", true);
     return;
   }
-  if (!apiKey) {
-    setStatus("Please paste Gemini API key before generating.", true);
+  if (provider === "gemini" && !apiKey) {
+    setStatus("請先貼上 Gemini API 金鑰再生成。", true);
+    return;
+  }
+  if (provider === "openrouter" && !openrouterKey) {
+    setStatus("請先貼上 OpenRouter API 金鑰再生成。", true);
+    return;
+  }
+  if (!referenceImageFile) {
+    setStatus("請先上傳參考圖片再生成。", true);
     return;
   }
 
   let referenceImage = null;
-  if (referenceImageFile) {
-    referenceImage = await fileToDataUrl(referenceImageFile);
-  }
+  referenceImage = await fileToDataUrl(referenceImageFile);
 
-  setStatus("Generating with Gemini...");
+  setStatus("正在使用模型生成...");
   isGenerating = true;
   generatingCount = count;
   render();
@@ -126,12 +140,13 @@ form.addEventListener("submit", async (e) => {
   try {
     const generated = await generateWithGeminiBatches({
       apiKey,
+      openrouterKey,
+      openrouterModel,
+      provider,
       model,
       topic,
       wordCount,
       hashtags,
-      photoDirection,
-      photoInstruction,
       referenceImage,
       direction,
       count
@@ -142,9 +157,9 @@ form.addEventListener("submit", async (e) => {
     persist();
     render();
     await autoSyncGenerated(generated);
-    setStatus(`${generated.length} versions generated. Review and approve individually.`);
+    setStatus(`${generated.length} 個版本已生成，請逐一審批。`);
   } catch (error) {
-    setStatus(`Gemini failed (${error.message}).`, true);
+    setStatus(`生成失敗（${error.message}）。`, true);
   } finally {
     isGenerating = false;
     generatingCount = 0;
@@ -153,10 +168,7 @@ form.addEventListener("submit", async (e) => {
   }
 });
 
-async function generateWithGeminiBatches({ apiKey, model, topic, wordCount, hashtags, photoDirection, photoInstruction, referenceImage, direction, count }) {
-  if (!apiKey) {
-    throw new Error("Please paste Gemini API key first.");
-  }
+async function generateWithGeminiBatches({ apiKey, openrouterKey, openrouterModel, provider, model, topic, wordCount, hashtags, referenceImage, direction, count }) {
   const batchSize = 20;
   const output = [];
   let cursor = 1;
@@ -165,19 +177,26 @@ async function generateWithGeminiBatches({ apiKey, model, topic, wordCount, hash
   while (output.length < count) {
     const take = Math.min(batchSize, count - output.length);
     setStatus(`Generating ${output.length + 1}-${output.length + take} of ${count}...`);
-    const data = await requestGeminiWithFallback({
-      apiKey,
-      modelChain,
-      topic,
-      wordCount,
-      hashtags,
-      photoDirection,
-      photoInstruction,
-      referenceImage,
-      direction,
-      take
-    });
-    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
+    const rawText = provider === "openrouter"
+      ? await requestOpenRouter({
+          apiKey: openrouterKey,
+          model: openrouterModel,
+          topic,
+          wordCount,
+          hashtags,
+          direction,
+          take
+        })
+      : (await requestGeminiWithFallback({
+          apiKey,
+          modelChain,
+          topic,
+          wordCount,
+          hashtags,
+          referenceImage,
+          direction,
+          take
+        }))?.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
     const parsed = JSON.parse(rawText);
     const items = (Array.isArray(parsed) ? parsed : []).map((item, i) => ({
       id: cryptoRandomId(),
@@ -187,8 +206,6 @@ async function generateWithGeminiBatches({ apiKey, model, topic, wordCount, hash
       generatedAt: new Date().toISOString(),
       content: item.content || "",
       hashtags: item.hashtags || hashtags,
-      photoDirection: photoDirection || "",
-      photoInstruction: photoInstruction || "",
       referenceImageName: referenceImage?.name || "",
       referenceImageDataUrl: referenceImage?.dataUrl || "",
       assignedTo: ""
@@ -198,6 +215,26 @@ async function generateWithGeminiBatches({ apiKey, model, topic, wordCount, hash
   }
 
   return output.slice(0, count);
+}
+
+async function requestOpenRouter({ apiKey, model, topic, wordCount, hashtags, direction, take }) {
+  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: "system", content: "Return only valid JSON array." },
+        { role: "user", content: buildGeminiPrompt({ topic, wordCount, hashtags, direction, count: take }) }
+      ]
+    })
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data?.error?.message || "OpenRouter request failed.");
+  return data?.choices?.[0]?.message?.content || "[]";
 }
 
 async function requestGeminiWithFallback({ apiKey, modelChain, topic, wordCount, hashtags, direction, take }) {
@@ -302,9 +339,9 @@ function render() {
       const card = document.createElement("article");
       card.className = "card";
       card.innerHTML = `
-        <h3>Generating Version ${i}...</h3>
-        <p>AI is preparing content. This card will update automatically when ready.</p>
-        <p><strong>Status:</strong> Generating...</p>
+        <h3>正在生成版本 ${i}...</h3>
+        <p>AI 正在準備內容，完成後會自動更新。</p>
+        <p><strong>狀態：</strong> 生成中...</p>
       `;
       queueEl.appendChild(card);
     }
@@ -312,7 +349,7 @@ function render() {
   }
 
   if (!state.queue.length) {
-    queueEl.innerHTML = "<p>No items in review queue yet.</p>";
+    queueEl.innerHTML = "<p>目前審核佇列沒有內容。</p>";
   }
 
   state.queue.forEach((item) => queueEl.appendChild(cardForQueue(item)));
@@ -327,8 +364,8 @@ function cardForQueue(item) {
 
   const row = document.createElement("div");
   row.className = "row";
-  const approve = button("Approve", async () => {
-    autoAssignApprovedItem(item);
+  const approve = button("審批", async () => {
+    autoAssign審批dItem(item);
     state.queue = state.queue.filter((x) => x.id !== item.id);
     item.approvedAt = new Date().toISOString();
     state.approved.push(item);
@@ -337,16 +374,16 @@ function cardForQueue(item) {
     render();
     if (state.appsScriptUrl && item.assignedTo) {
       try {
-        await syncApprovedOneReliable(item);
+        await sync審批dOneReliable(item);
         item.syncedAt = new Date().toISOString();
         upsertLog(item);
         persist();
       } catch (error) {
-        setStatus(`Approved locally, but sheet assignment sync failed: ${error.message}`, true);
+        setStatus(`審批d locally, but sheet assignment sync failed: ${error.message}`, true);
       }
     }
   });
-  const reject = button("Reject", () => {
+  const reject = button("退回", () => {
     state.queue = state.queue.filter((x) => x.id !== item.id);
     persist();
     render();
@@ -356,7 +393,7 @@ function cardForQueue(item) {
   return card;
 }
 
-function autoAssignApprovedItem(item) {
+function autoAssign審批dItem(item) {
   const assignPool = cachedStaff.length ? cachedStaff : (state.fallbackStaffNumbers || []).map((x) => ({ staffNo: x }));
   if (!assignPool.length) return;
   const key = `${item.topic || item.title || "Untitled"}`;
@@ -374,7 +411,7 @@ function renderTopicSummary() {
   const grouped = remoteTopicProgress || groupByTopicDate();
   const entries = Object.entries(grouped);
   if (!entries.length) {
-    topicSummaryEl.innerHTML = "<p>No topic generated yet.</p>";
+    topicSummaryEl.innerHTML = "<p>尚未生成任何主題。</p>";
     return;
   }
   for (const [key, stats] of entries) {
@@ -382,10 +419,10 @@ function renderTopicSummary() {
     card.className = "kpi-card";
     card.innerHTML = `
       <p class="kpi-title">${escapeHtml(key)}</p>
-      <p class="kpi-row">Generated: ${stats.generated}</p>
-      <p class="kpi-row">Approved: ${stats.approved}</p>
-      <p class="kpi-row">Assigned: ${stats.assigned}</p>
-      <p class="kpi-row">Missing Therapist Assignments: ${stats.missing}</p>
+      <p class="kpi-row">已生成： ${stats.generated}</p>
+      <p class="kpi-row">審批d: ${stats.approved}</p>
+      <p class="kpi-row">已分配： ${stats.assigned}</p>
+      <p class="kpi-row">尚未分配治療師： ${stats.missing}</p>
     `;
     topicSummaryEl.appendChild(card);
   }
@@ -423,7 +460,7 @@ function renderTopicGapSummary() {
     return;
   }
   topicGapSummaryEl.innerHTML = entries
-    .map(([key, stats]) => `<p class="kpi-row"><strong>${escapeHtml(key)}</strong>: ${stats.missing} therapist(s) still missing assignment</p>`)
+    .map(([key, stats]) => `<p class="kpi-row"><strong>${escapeHtml(key)}</strong>: ${stats.missing} 位治療師尚未分配</p>`)
     .join("");
 }
 
@@ -441,8 +478,6 @@ function upsertLog(item) {
     assignedDate: item.assignedDate || "",
     assignedAt: item.assignedAt || "",
     hashtags: item.hashtags || "",
-    photoDirection: item.photoDirection || "",
-    photoInstruction: item.photoInstruction || "",
     referenceImageName: item.referenceImageName || "",
     referenceImageDataUrl: item.referenceImageDataUrl || "",
     content: item.content || ""
@@ -454,7 +489,7 @@ function upsertLog(item) {
 downloadLogBtn.addEventListener("click", () => {
   const rows = state.generationLogs || [];
   if (!rows.length) {
-    setStatus("No logs yet. Approve at least one item first.", true);
+    setStatus("No logs yet. 審批 at least one item first.", true);
     return;
   }
   const headers = [
@@ -482,26 +517,26 @@ downloadLogBtn.addEventListener("click", () => {
   URL.revokeObjectURL(url);
 });
 
-syncApprovedBtn.addEventListener("click", async () => {
+sync審批dBtn.addEventListener("click", async () => {
   if (!state.appsScriptUrl) {
-    setStatus("Please enter Apps Script Web App URL first.", true);
+    setStatus("請先輸入 Apps Script 網址。", true);
     return;
   }
   const items = (state.approved || []).filter((x) => x.approvedAt);
   if (!items.length) {
-    setStatus("No approved items to sync.", true);
+    setStatus("目前沒有可同步的已審批內容。", true);
     return;
   }
   try {
     await postToAppsScript({
-      action: "appendApprovedOnly",
+      action: "append審批dOnly",
       topic: items[0]?.topic || "",
       topicDate: items[0]?.topicDate || formatDateOnly(new Date()),
       items
     });
-    setStatus(`Synced ${items.length} approved item(s) to sheet.`);
+    setStatus(`已同步 ${items.length} 筆已審批內容到試算表。`);
   } catch (error) {
-    setStatus(`Sync failed: ${error.message}`, true);
+    setStatus(`同步失敗：${error.message}`, true);
   }
 });
 
@@ -612,7 +647,7 @@ async function postToAppsScript(payload) {
   return { ok: true, opaque: response.type === "opaque" };
 }
 
-async function syncApprovedOneReliable(item) {
+async function sync審批dOneReliable(item) {
   const base = String(state.appsScriptUrl || "").trim();
   if (!base) throw new Error("Missing Apps Script URL.");
   const params = new URLSearchParams({
@@ -655,7 +690,7 @@ async function loadStaffForAutoAssign() {
   } catch {
     cachedStaff = [];
     if (connectionStatusEl) {
-      connectionStatusEl.textContent = "Sheet staff fetch unavailable, using fallback staff list.";
+      connectionStatusEl.textContent = "無法讀取試算表員工名單，改用備援名單。";
       connectionStatusEl.style.color = "#b45309";
     }
   }
@@ -690,6 +725,15 @@ function parseFallbackStaff(text) {
     .filter(Boolean);
 }
 
+function updateProviderFieldVisibility() {
+  const provider = providerSelect?.value || "gemini";
+  const showGemini = provider === "gemini";
+  if (geminiKeyWrap) geminiKeyWrap.style.display = showGemini ? "" : "none";
+  if (geminiModelWrap) geminiModelWrap.style.display = showGemini ? "" : "none";
+  if (openrouterKeyWrap) openrouterKeyWrap.style.display = showGemini ? "none" : "";
+  if (openrouterModelWrap) openrouterModelWrap.style.display = showGemini ? "none" : "";
+}
+
 async function autoSyncGenerated(items) {
   if (!state.appsScriptUrl || !Array.isArray(items) || !items.length) return;
   try {
@@ -700,6 +744,6 @@ async function autoSyncGenerated(items) {
       items
     });
   } catch (error) {
-    setStatus(`Generated locally, but generated-tab sync failed: ${error.message}`, true);
+    setStatus(`本地已生成，但同步到 generated 分頁失敗：${error.message}`, true);
   }
 }

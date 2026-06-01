@@ -3,29 +3,30 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Therapist Content Portal</title>
+    <title>治療師內容入口</title>
     <link rel="stylesheet" href="./content-workbench.css" />
   </head>
   <body>
     <main class="page">
       <header>
-        <p class="eyebrow">Therapist Portal</p>
-        <h1>Login with Staff Number</h1>
-        <p>Check your assigned content versions and copy them with one click.</p>
+        <p class="eyebrow">治療師入口</p>
+        <h1>以員工編號登入</h1>
+        <p>查看已分配內容並一鍵複製。</p>
       </header>
 
       <section class="panel">
-        <h2>Staff Login</h2>
+        <h2>員工登入</h2>
         <div class="assign-row">
-          <input id="staffLogin" placeholder="Enter staff number" />
-          <button id="loginBtn" type="button">Load My Content</button>
-          <a href="./content-workbench.html">Back to Manager Studio</a>
+          <input id="staffLogin" placeholder="輸入員工編號" />
+          <button id="loginBtn" type="button">載入我的內容</button>
+          <a href="./content-workbench.html">返回管理後台</a>
         </div>
         <p id="portalStatus" class="status"></p>
       </section>
 
       <section class="panel">
-        <h2>My Assigned Content</h2>
+        <h2>我被分配的內容</h2>
+        <p><a href="https://drive.google.com/drive/u/2/folders/1NNiM2b4kTrQcH7FMU3hW-e1Wb9qPPhBl" target="_blank" rel="noopener noreferrer">開啟參考圖片資料夾</a></p>
         <div id="myContent" class="grid"></div>
       </section>
     </main>

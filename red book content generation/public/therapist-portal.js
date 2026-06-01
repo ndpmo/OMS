@@ -6,7 +6,7 @@ const KEY = "redbook_content_bank_v1";
 
 loginBtn.addEventListener("click", () => {
   const staff = staffLogin.value.trim();
-  if (!staff) return setStatus("Please enter your staff number.", true);
+  if (!staff) return setStatus("請輸入員工編號。", true);
 
   const state = loadState();
   const mine = (state.approved || []).filter((item) => item.assignedTo === staff);
@@ -16,12 +16,12 @@ loginBtn.addEventListener("click", () => {
 function renderMine(items, staff) {
   myContentEl.innerHTML = "";
   if (!items.length) {
-    setStatus(`No assigned content found for ${staff}.`, true);
-    myContentEl.innerHTML = "<p>No assigned items yet.</p>";
+    setStatus(`找不到員工 ${staff} 的分配內容。`, true);
+    myContentEl.innerHTML = "<p>目前尚無分配內容。</p>";
     return;
   }
 
-  setStatus(`${items.length} assigned item(s) loaded.`);
+  setStatus(`已載入 ${items.length} 筆分配內容。`);
   const grouped = groupByTopic(items);
   Object.entries(grouped).forEach(([topic, topicItems]) => {
     const section = document.createElement("section");
@@ -35,15 +35,16 @@ function renderMine(items, staff) {
       card.className = "card";
       card.innerHTML = `<h3>${escapeHtml(item.title || topic)}</h3>
         <p>${escapeHtml(item.content).replaceAll("\n", "<br>")}</p>
-        <p><strong>Hashtags:</strong> ${escapeHtml(item.hashtags)}</p>
-        <p><strong>Photo Content Direction:</strong> ${escapeHtml(item.photoDirection || "-")}</p>
-        <p><strong>Photo Instruction:</strong> ${escapeHtml(item.photoInstruction || "-")}</p>`;
+        <p><strong>標籤：</strong> ${escapeHtml(item.hashtags)}</p>
+        <p><strong>圖片方向：</strong> ${escapeHtml(item.photoDirection || "-")}</p>
+        <p><strong>圖片說明：</strong> ${escapeHtml(item.photoInstruction || "-")}</p>`;
 
       const row = document.createElement("div");
       row.className = "row";
-      row.appendChild(copyButton("Copy 文章主題", topic));
-      row.appendChild(copyButton("Copy 文章", item.content || ""));
-      row.appendChild(copyButton("Copy hashtag", item.hashtags || ""));
+      row.appendChild(copyButton("複製文章主題", topic));
+      row.appendChild(copyButton("複製文章", item.content || ""));
+      row.appendChild(copyButton("複製 hashtag", item.hashtags || ""));
+      row.appendChild(linkButton("開啟參考圖片資料夾", "https://drive.google.com/drive/u/2/folders/1NNiM2b4kTrQcH7FMU3hW-e1Wb9qPPhBl"));
       if (item.referenceImageFileUrl || item.referenceImageDataUrl) {
         row.appendChild(downloadImageButton(
           item.referenceImageName || "reference-image",
@@ -76,9 +77,9 @@ function copyButton(label, value) {
   btn.addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText(value);
-      setStatus(`${label} copied.`);
+      setStatus(`${label} 已複製。`);
     } catch {
-      setStatus(`${label} failed. Try manual copy.`, true);
+      setStatus(`${label} 複製失敗，請手動複製。`, true);
     }
   });
   return btn;
@@ -87,16 +88,35 @@ function copyButton(label, value) {
 function downloadImageButton(fileName, href) {
   const btn = document.createElement("button");
   btn.type = "button";
-  btn.textContent = "Download Reference Image";
+  btn.textContent = "下載參考圖片";
   btn.addEventListener("click", () => {
     const a = document.createElement("a");
     a.href = href;
     a.target = "_blank";
     a.download = fileName || "reference-image";
     a.click();
-    setStatus("Reference image download started.");
+    setStatus("已開始下載參考圖片。");
   });
   return btn;
+}
+
+function linkButton(label, href) {
+  const a = document.createElement("a");
+  a.href = href;
+  a.target = "_blank";
+  a.rel = "noopener noreferrer";
+  a.textContent = label;
+  a.className = "ghost";
+  a.style.display = "inline-flex";
+  a.style.alignItems = "center";
+  a.style.justifyContent = "center";
+  a.style.minHeight = "42px";
+  a.style.padding = "10px 14px";
+  a.style.borderRadius = "11px";
+  a.style.border = "1px solid rgba(11, 110, 153, 0.45)";
+  a.style.textDecoration = "none";
+  a.style.fontWeight = "700";
+  return a;
 }
 
 function loadState() {
