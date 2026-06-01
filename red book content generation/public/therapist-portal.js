@@ -36,6 +36,7 @@ function renderMine(items, staff) {
       card.innerHTML = `<h3>${escapeHtml(item.title || topic)}</h3>
         <p>${escapeHtml(item.content).replaceAll("\n", "<br>")}</p>
         <p><strong>標籤：</strong> ${escapeHtml(item.hashtags)}</p>
+        <p><strong>貼文指定圖片：</strong>若有指定，發文時請務必使用。</p>
         <p><strong>圖片方向：</strong> ${escapeHtml(item.photoDirection || "-")}</p>
         <p><strong>圖片說明：</strong> ${escapeHtml(item.photoInstruction || "-")}</p>`;
 
@@ -45,13 +46,37 @@ function renderMine(items, staff) {
       row.appendChild(copyButton("複製文章", item.content || ""));
       row.appendChild(copyButton("複製 hashtag", item.hashtags || ""));
       row.appendChild(linkButton("開啟參考圖片資料夾", "https://drive.google.com/drive/u/2/folders/1NNiM2b4kTrQcH7FMU3hW-e1Wb9qPPhBl"));
+      card.appendChild(row);
+
+      const downloadSection = document.createElement("div");
+      downloadSection.className = "panel";
+      downloadSection.style.marginTop = "10px";
       if (item.referenceImageFileUrl || item.referenceImageDataUrl) {
-        row.appendChild(downloadImageButton(
+        downloadSection.innerHTML = `<p><strong>指定圖片檔案：</strong>${escapeHtml(item.referenceImageName || "reference-image")}</p>`;
+        const preview = document.createElement("img");
+        preview.src = item.referenceImageFileUrl || item.referenceImageDataUrl;
+        preview.alt = item.referenceImageName || "reference-image";
+        preview.style.width = "100%";
+        preview.style.maxWidth = "360px";
+        preview.style.borderRadius = "10px";
+        preview.style.border = "1px solid #d5deea";
+        preview.style.display = "block";
+        preview.style.margin = "8px 0";
+        downloadSection.appendChild(preview);
+
+        const holdHint = document.createElement("p");
+        holdHint.className = "status";
+        holdHint.textContent = "手機可長按圖片直接儲存。";
+        downloadSection.appendChild(holdHint);
+
+        downloadSection.appendChild(downloadImageButton(
           item.referenceImageName || "reference-image",
           item.referenceImageFileUrl || item.referenceImageDataUrl
         ));
+      } else {
+        downloadSection.innerHTML = "<p><strong>指定圖片檔案：</strong>目前未指定，請使用上方資料夾連結確認最新素材。</p>";
       }
-      card.appendChild(row);
+      card.appendChild(downloadSection);
       wrap.appendChild(card);
     });
 
