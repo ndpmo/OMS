@@ -108,6 +108,8 @@ form.addEventListener("submit", async (e) => {
   const model = document.querySelector("#model").value.trim() || "gemini-2.5-flash";
   const wordCount = document.querySelector("#wordCount").value.trim();
   const hashtags = document.querySelector("#hashtags").value.trim();
+  const photoDirection = document.querySelector("#photoDirection").value.trim();
+  const photoInstruction = document.querySelector("#photoInstruction").value.trim();
   const referenceImageFile = document.querySelector("#referenceImage").files?.[0] || null;
   const direction = document.querySelector("#direction").value.trim();
   const count = Number(document.querySelector("#count").value);
@@ -144,6 +146,8 @@ form.addEventListener("submit", async (e) => {
       topic,
       wordCount,
       hashtags,
+      photoDirection,
+      photoInstruction,
       referenceImage,
       direction,
       count
@@ -165,7 +169,7 @@ form.addEventListener("submit", async (e) => {
   }
 });
 
-async function generateWithGeminiBatches({ apiKey, openrouterKey, openrouterModel, provider, model, topic, wordCount, hashtags, referenceImage, direction, count }) {
+async function generateWithGeminiBatches({ apiKey, openrouterKey, openrouterModel, provider, model, topic, wordCount, hashtags, photoDirection, photoInstruction, referenceImage, direction, count }) {
   const batchSize = 20;
   const output = [];
   let cursor = 1;
@@ -203,6 +207,8 @@ async function generateWithGeminiBatches({ apiKey, openrouterKey, openrouterMode
       generatedAt: new Date().toISOString(),
       content: item.content || "",
       hashtags: item.hashtags || hashtags,
+      photoDirection: photoDirection || "",
+      photoInstruction: photoInstruction || "",
       referenceImageName: referenceImage?.name || "",
       referenceImageDataUrl: referenceImage?.dataUrl || "",
       assignedTo: ""

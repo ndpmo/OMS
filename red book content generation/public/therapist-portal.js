@@ -33,12 +33,11 @@ function renderMine(items, staff) {
     topicItems.forEach((item) => {
       const card = document.createElement("article");
       card.className = "card";
+      const imageName = escapeHtml(item.referenceImageName || "未指定");
       card.innerHTML = `<h3>${escapeHtml(item.title || topic)}</h3>
         <p>${escapeHtml(item.content).replaceAll("\n", "<br>")}</p>
         <p><strong>標籤：</strong> ${escapeHtml(item.hashtags)}</p>
-        <p><strong>貼文指定圖片：</strong>若有指定，發文時請務必使用。</p>
-        <p><strong>圖片方向：</strong> ${escapeHtml(item.photoDirection || "-")}</p>
-        <p><strong>圖片說明：</strong> ${escapeHtml(item.photoInstruction || "-")}</p>`;
+        <p><strong>貼文指定圖片：</strong>若有指定，發文時請務必使用。<strong>指定圖片檔案：</strong>${imageName}</p>`;
 
       const row = document.createElement("div");
       row.className = "row";
@@ -47,6 +46,16 @@ function renderMine(items, staff) {
       row.appendChild(copyButton("複製 hashtag", item.hashtags || ""));
       row.appendChild(linkButton("開啟參考圖片資料夾", "https://drive.google.com/drive/u/2/folders/1NNiM2b4kTrQcH7FMU3hW-e1Wb9qPPhBl"));
       card.appendChild(row);
+
+      const otherImageGuide = document.createElement("div");
+      otherImageGuide.className = "panel";
+      otherImageGuide.style.marginTop = "10px";
+      otherImageGuide.innerHTML = `
+        <p><strong>其他圖片拍攝指引（治療師發文需遵守）</strong></p>
+        <p><strong>圖片方向：</strong> ${escapeHtml(item.photoDirection || "-")}</p>
+        <p><strong>圖片說明：</strong> ${escapeHtml(item.photoInstruction || "-")}</p>
+      `;
+      card.appendChild(otherImageGuide);
 
       const downloadSection = document.createElement("div");
       downloadSection.className = "panel";
