@@ -559,11 +559,17 @@ function button(label, onClick, ghost = false) {
 }
 
 function persist() {
+  const safeState = buildStorageSafeState(state);
   if (!canUseLocalStorage()) {
-    memoryState = structuredCloneSafe(state);
+    memoryState = structuredCloneSafe(safeState);
     return;
   }
-  localStorage.setItem(KEY, JSON.stringify(state));
+  try {
+    localStorage.setItem(KEY, JSON.stringify(safeState));
+  } catch (error) {
+    memoryState = structuredCloneSafe(safeState);
+    setStatus("本機快取已達上限，已改用暫存記憶體（重整頁面後不保留）。", true);
+  }
 }
 
 function loadState() {
@@ -599,6 +605,21 @@ function canUseLocalStorage() {
 
 function structuredCloneSafe(value) {
   return JSON.parse(JSON.stringify(value));
+}
+
+function buildStorageSafeState(source) {
+  const cleanItem = (item) => ({
+    ...item,
+    referenceImageDataUrl: ""
+  });
+  return {
+    ...source,
+    queue: Array.isArray(source.queue) ? source.queue.map(cleanItem) : [],
+    approved: Array.isArray(source.approved) ? source.approved.map(cleanItem) : [],
+    generationLogs: Array.isArray(source.generationLogs)
+      ? source.generationLogs.map((x) => ({ ...x, referenceImageDataUrl: "" }))
+      : []
+  };
 }
 
 function setStatus(text, isError = false) {
