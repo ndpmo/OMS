@@ -8,6 +8,7 @@
 const STAFF_SHEET = "staff list";
 const ASSIGN_SHEET = "assignments";
 const GENERATED_SHEET = "generated";
+const SPREADSHEET_ID = "14O9d5M4d8mfGvNPN-KXZy6FSI3OF4g2cKNfX13Gj3lI";
 const DRIVE_FOLDER_ID = "1aI1eTl4oJqdh41Q5lE-qekCSF1yvLXYU";
 const TZ = Session.getScriptTimeZone() || "Asia/Hong_Kong";
 
@@ -19,10 +20,24 @@ function onOpen() {
 }
 
 function setupRedbookSheets() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getWorkbook_();
   ensureStaffSheet_(ss);
   ensureGeneratedSheet_(ss);
   ensureAssignSheet_(ss);
+}
+
+function authorizeDriveAccess() {
+  const tinyPng = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=";
+  const uploaded = saveReferenceImageToDrive_("redbook-drive-auth-test.png", tinyPng);
+  if (!uploaded.fileId) {
+    throw new Error(uploaded.error || "Drive authorization test failed.");
+  }
+  Logger.log("Drive upload authorization OK: " + uploaded.fileUrl);
+  return uploaded.fileUrl;
+}
+
+function getWorkbook_() {
+  return SpreadsheetApp.openById(SPREADSHEET_ID);
 }
 
 function doGet(e) {
@@ -40,6 +55,15 @@ function doGet(e) {
 
   if (action === "topicProgress") {
     return jsonOut({ ok: true, topics: getTopicProgress_() });
+  }
+
+  if (action === "testDriveUpload") {
+    const tinyPng = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=";
+    const uploaded = saveReferenceImageToDrive_("redbook-upload-test.png", tinyPng);
+    if (!uploaded.fileId) {
+      return jsonOut({ ok: false, error: uploaded.error || "Drive upload test failed. Check Apps Script authorization and folder access." });
+    }
+    return jsonOut({ ok: true, fileId: uploaded.fileId, fileUrl: uploaded.fileUrl });
   }
 
   if (action === "approveAssignOne") {
@@ -120,6 +144,50 @@ function doPost(e) {
       return jsonOut({ ok: true, inserted: result.inserted });
     }
 
+    if (action === "approveAssignOneWithImage") {
+      const topic = String(body.topic || "").trim();
+      const topicDate = String(body.topicDate || "").trim();
+      const assignDate = String(body.assignDate || "").trim();
+      const id = String(body.id || "").trim();
+      const generatedAt = String(body.generatedAt || "").trim();
+      const approvedAt = String(body.approvedAt || "").trim();
+      const assignedTo = String(body.assignedTo || "").trim();
+      const title = String(body.title || "").trim();
+      const hashtags = String(body.hashtags || "").trim();
+      const content = String(body.content || "").trim();
+      const photoDirection = String(body.photoDirection || "").trim();
+      const photoInstruction = String(body.photoInstruction || "").trim();
+      const referenceImageName = String(body.referenceImageName || "").trim();
+      const referenceImageDataUrl = String(body.referenceImageDataUrl || "").trim();
+
+      if (!topic || !topicDate || !id) {
+        return jsonOut({ ok: false, error: "Missing topic/topicDate/id" });
+      }
+
+      const generated = findGeneratedById_(id);
+      let uploaded = {
+        fileId: generated ? generated.referenceImageFileId : "",
+        fileUrl: generated ? generated.referenceImageFileUrl : ""
+      };
+      if (!uploaded.fileId && referenceImageDataUrl) {
+        uploaded = saveReferenceImageToDrive_(referenceImageName, referenceImageDataUrl);
+      }
+      const result = appendAssignedDirect_(topic, topicDate, assignDate, {
+        id: id,
+        title: title,
+        hashtags: hashtags,
+        content: content,
+        photoDirection: photoDirection,
+        photoInstruction: photoInstruction,
+        referenceImageFileId: uploaded.fileId || "",
+        referenceImageFileUrl: uploaded.fileUrl || "",
+        generatedAt: generatedAt,
+        approvedAt: approvedAt,
+        assignedTo: assignedTo
+      });
+      return jsonOut({ ok: true, inserted: result.inserted, uploaded: uploaded.fileId ? 1 : 0 });
+    }
+
     return jsonOut({ ok: false, error: "Unknown action" });
   } catch (err) {
     return jsonOut({ ok: false, error: err.message || String(err) });
@@ -127,7 +195,7 @@ function doPost(e) {
 }
 
 function approveAndAssign_(topic, topicDate, items, assignDate) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getWorkbook_();
   const sheet = ensureAssignSheet_(ss);
   const staff = getStaffList_();
   if (!staff.length) throw new Error("No staff found in 'staff list' col C.");
@@ -177,7 +245,7 @@ function approveAndAssign_(topic, topicDate, items, assignDate) {
 }
 
 function appendApprovedOnly_(topic, topicDate, items) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getWorkbook_();
   const sheet = ensureAssignSheet_(ss);
 
   const rows = items.map(function (item, i) {
@@ -208,11 +276,17 @@ function appendApprovedOnly_(topic, topicDate, items) {
 }
 
 function appendGeneratedOnly_(topic, topicDate, items) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getWorkbook_();
   const sheet = ensureGeneratedSheet_(ss);
+  const referenceItem = items.find(function (item) {
+    return item.referenceImageDataUrl;
+  }) || {};
+  const uploaded = saveReferenceImageToDrive_(
+    referenceItem.referenceImageName || "",
+    referenceItem.referenceImageDataUrl || ""
+  );
 
   const rows = items.map(function (item, i) {
-    const uploaded = saveReferenceImageToDrive_(item.referenceImageName || "", item.referenceImageDataUrl || "");
     return [
       item.id || ("generated_" + Date.now() + "_" + i),
       topic,
@@ -223,8 +297,8 @@ function appendGeneratedOnly_(topic, topicDate, items) {
       item.content || "",
       item.photoDirection || "",
       item.photoInstruction || "",
-      uploaded.fileId,
-      uploaded.fileUrl
+      uploaded.fileId || "",
+      uploaded.fileUrl || ""
     ];
   });
 
@@ -235,7 +309,7 @@ function appendGeneratedOnly_(topic, topicDate, items) {
 }
 
 function appendAssignedDirect_(topic, topicDate, assignDate, item) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getWorkbook_();
   const sheet = ensureAssignSheet_(ss);
   const staff = getStaffList_();
   const byNo = {};
@@ -269,7 +343,7 @@ function appendAssignedDirect_(topic, topicDate, assignDate, item) {
 }
 
 function getAssignmentsByStaff_(staffNo) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getWorkbook_();
   const sheet = ensureAssignSheet_(ss);
   const values = sheet.getDataRange().getValues();
   if (values.length <= 1) return [];
@@ -284,18 +358,27 @@ function getAssignmentsByStaff_(staffNo) {
         id: r[idx.id],
         topic: r[idx.topic],
         topicDate: r[idx.topicDate],
+        generatedAt: r[idx.generatedAt],
+        approvedAt: r[idx.approvedAt],
         assignDate: r[idx.assignDate],
+        assignedAt: r[idx.assignedAt],
         staffNo: r[idx.staffNo],
         staffName: r[idx.staffName],
+        floor: r[idx.floor],
+        xhsAccount: r[idx.xhsAccount],
         title: r[idx.title],
         hashtags: r[idx.hashtags],
-        content: r[idx.content]
+        content: r[idx.content],
+        photoDirection: r[idx.photoDirection],
+        photoInstruction: r[idx.photoInstruction],
+        referenceImageFileId: r[idx.referenceImageFileId],
+        referenceImageFileUrl: r[idx.referenceImageFileUrl]
       };
     });
 }
 
 function getStaffList_() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getWorkbook_();
   const sh = ss.getSheetByName(STAFF_SHEET);
   if (!sh) throw new Error("Missing sheet: " + STAFF_SHEET);
 
@@ -436,6 +519,13 @@ function toAssignRow_(x) {
 function indexMap_(header) {
   const map = {};
   header.forEach(function (h, i) { map[String(h)] = i; });
+  // Backward compatibility for old typo column names.
+  if (map.referenceImageFileId === undefined && map.referenceImageFieldId !== undefined) {
+    map.referenceImageFileId = map.referenceImageFieldId;
+  }
+  if (map.referenceImageFileUrl === undefined && map.referenceImageFieldUrl !== undefined) {
+    map.referenceImageFileUrl = map.referenceImageFieldUrl;
+  }
   return map;
 }
 
@@ -450,7 +540,7 @@ function jsonOut(obj) {
 }
 
 function getTopicProgress_() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getWorkbook_();
   const generatedSheet = ensureGeneratedSheet_(ss);
   const assignSheet = ensureAssignSheet_(ss);
   const staffCount = getStaffList_().length;
@@ -487,7 +577,7 @@ function getTopicProgress_() {
 }
 
 function findGeneratedById_(id) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getWorkbook_();
   const generatedSheet = ensureGeneratedSheet_(ss);
   const values = generatedSheet.getDataRange().getValues();
   if (values.length <= 1) return null;
@@ -514,10 +604,10 @@ function findGeneratedById_(id) {
 }
 
 function saveReferenceImageToDrive_(fileName, dataUrl) {
-  if (!dataUrl) return { fileId: "", fileUrl: "" };
+  if (!dataUrl) return { fileId: "", fileUrl: "", error: "" };
   try {
     const commaIndex = dataUrl.indexOf(",");
-    if (commaIndex < 0) return { fileId: "", fileUrl: "" };
+    if (commaIndex < 0) return { fileId: "", fileUrl: "", error: "Invalid data URL." };
     const meta = dataUrl.substring(0, commaIndex);
     const b64 = dataUrl.substring(commaIndex + 1);
     const mimeMatch = meta.match(/^data:(.*?);base64$/);
@@ -525,11 +615,22 @@ function saveReferenceImageToDrive_(fileName, dataUrl) {
     const bytes = Utilities.base64Decode(b64);
     const safeName = fileName || ("reference_" + Date.now() + ".png");
     const blob = Utilities.newBlob(bytes, mimeType, safeName);
-    const folder = DriveApp.getFolderById(DRIVE_FOLDER_ID);
-    const file = folder.createFile(blob);
-    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-    return { fileId: file.getId(), fileUrl: file.getUrl() };
+    let file = null;
+    try {
+      const folder = DriveApp.getFolderById(DRIVE_FOLDER_ID);
+      file = folder.createFile(blob);
+    } catch (folderErr) {
+      // Fallback: still save file to root drive to avoid losing image assignment.
+      file = DriveApp.createFile(blob);
+    }
+    if (!file) return { fileId: "", fileUrl: "", error: "Drive file object was not created." };
+    try {
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    } catch (shareErr) {
+      // Keep file even if public sharing cannot be changed in current domain policy.
+    }
+    return { fileId: file.getId(), fileUrl: file.getUrl(), error: "" };
   } catch (err) {
-    return { fileId: "", fileUrl: "" };
+    return { fileId: "", fileUrl: "", error: err.message || String(err) };
   }
 }

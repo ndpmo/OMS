@@ -1,23 +1,54 @@
 const loginBtn = document.querySelector("#loginBtn");
 const applyFilterBtn = document.querySelector("#applyFilterBtn");
 const staffLogin = document.querySelector("#staffLogin");
-const dateFilterInput = document.querySelector("#dateFilter");
+const dateFromInput = document.querySelector("#dateFrom");
+const dateToInput = document.querySelector("#dateTo");
 const dateSortSelect = document.querySelector("#dateSort");
 const statusEl = document.querySelector("#portalStatus");
 const myContentEl = document.querySelector("#myContent");
 const KEY = "redbook_content_bank_v1";
+const DEFAULT_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxm91pim17BsLNvVDlD5vESopFXxgrA3lZlhzhi3Fuc83HGrrL3uROi8qZEq6z_1y6M/exec";
 let currentItems = [];
 let currentStaff = "";
+const today = formatDateOnly(new Date());
+if (dateFromInput) dateFromInput.value = today;
+if (dateToInput) dateToInput.value = today;
 
 loginBtn.addEventListener("click", () => {
+  loadForStaff();
+});
+
+async function loadForStaff() {
   const staff = staffLogin.value.trim();
   if (!staff) return setStatus("請輸入員工編號。", true);
 
   const state = loadState();
-  currentItems = (state.approved || []).filter((item) => item.assignedTo === staff);
+  const localItems = (state.approved || []).filter((item) => item.assignedTo === staff);
+  const appsScriptUrl = String(state.appsScriptUrl || DEFAULT_APPS_SCRIPT_URL).trim();
+  if (appsScriptUrl) {
+    try {
+      const remoteItems = await fetchAssignments(appsScriptUrl, staff);
+      if (remoteItems.length) {
+        currentItems = remoteItems;
+        setStatus(`已從雲端載入 ${remoteItems.length} 筆分配內容。`);
+      } else {
+        currentItems = localItems;
+        if (!localItems.length) {
+          setStatus("雲端已連線，但此員工目前沒有分配內容。", true);
+        }
+      }
+    } catch (error) {
+      currentItems = localItems;
+      if (!localItems.length) {
+        setStatus(`雲端讀取失敗：${error.message || "請檢查 Apps Script 部署權限"}`, true);
+      }
+    }
+  } else {
+    currentItems = localItems;
+  }
   currentStaff = staff;
   applyAndRender();
-});
+}
 
 applyFilterBtn?.addEventListener("click", () => {
   if (!currentStaff) return setStatus("請先輸入員工編號並載入內容。", true);
@@ -25,31 +56,53 @@ applyFilterBtn?.addEventListener("click", () => {
 });
 
 function applyAndRender() {
-  const targetDate = String(dateFilterInput?.value || "").trim();
+  const dateFrom = String(dateFromInput?.value || "").trim();
+  const dateTo = String(dateToInput?.value || "").trim();
   const sortOrder = dateSortSelect?.value === "desc" ? "desc" : "asc";
   let filtered = [...currentItems];
-  if (targetDate) {
-    filtered = filtered.filter((item) => String(item.topicDate || "") === targetDate);
+  if (dateFrom || dateTo) {
+    filtered = filtered.filter((item) => {
+      const d = normalizeDateKey(item.topicDate);
+      if (!d) return false;
+      if (dateFrom && d < dateFrom) return false;
+      if (dateTo && d > dateTo) return false;
+      return true;
+    });
   }
   filtered.sort((a, b) => {
-    const av = String(a.topicDate || "");
-    const bv = String(b.topicDate || "");
+    const av = normalizeDateKey(a.topicDate);
+    const bv = normalizeDateKey(b.topicDate);
     if (av === bv) return 0;
     return sortOrder === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
   });
-  renderMine(filtered, currentStaff, targetDate, sortOrder);
+  if ((dateFrom || dateTo) && !filtered.length && currentItems.length) {
+    const fallbackItems = [...currentItems].sort((a, b) => {
+      const av = normalizeDateKey(a.topicDate);
+      const bv = normalizeDateKey(b.topicDate);
+      if (av === bv) return 0;
+      return sortOrder === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
+    });
+    renderMine(fallbackItems, currentStaff, { dateFrom: "", dateTo: "", sortOrder, autoFallback: true });
+    return;
+  }
+  renderMine(filtered, currentStaff, { dateFrom, dateTo, sortOrder });
 }
 
-function renderMine(items, staff, targetDate, sortOrder) {
+function renderMine(items, staff, filters) {
+  const { dateFrom, dateTo, sortOrder, autoFallback } = filters;
   myContentEl.innerHTML = "";
   if (!items.length) {
-    if (targetDate) setStatus(`員工 ${staff} 在 ${targetDate} 沒有分配內容。`, true);
+    if (dateFrom || dateTo) setStatus(`員工 ${staff} 在所選日期範圍沒有分配內容。`, true);
     else setStatus(`找不到員工 ${staff} 的分配內容。`, true);
     myContentEl.innerHTML = "<p>目前尚無分配內容。</p>";
     return;
   }
 
-  setStatus(`已載入 ${items.length} 筆分配內容（排序：${sortOrder === "asc" ? "日期舊到新" : "日期新到舊"}）。`);
+  if (autoFallback) {
+    setStatus(`所選日期範圍沒有內容，已自動顯示員工 ${staff} 全部分配（排序：${sortOrder === "asc" ? "日期舊到新" : "日期新到舊"}）。`);
+  } else {
+    setStatus(`已載入 ${items.length} 筆分配內容（排序：${sortOrder === "asc" ? "日期舊到新" : "日期新到舊"}）。`);
+  }
   const grouped = groupByTopic(items);
   Object.entries(grouped).forEach(([topic, topicItems]) => {
     const section = document.createElement("section");
@@ -74,55 +127,51 @@ function renderMine(items, staff, targetDate, sortOrder) {
       row.appendChild(copyButton("複製 hashtag", item.hashtags || ""));
       card.appendChild(row);
 
-      const designatedImageSection = document.createElement("div");
-      designatedImageSection.className = "panel";
-      designatedImageSection.style.marginTop = "10px";
-      designatedImageSection.innerHTML = `
-        <p><strong>貼文指定圖片（若有指定，發文請務必使用）</strong></p>
+      const imageRequirementSection = document.createElement("div");
+      imageRequirementSection.className = "panel";
+      imageRequirementSection.style.marginTop = "10px";
+      imageRequirementSection.innerHTML = `
+        <p><strong>圖片要求（治療師發文需遵守）</strong></p>
+        <p><strong>貼文指定圖片：</strong>若有指定，發文時請務必使用</p>
         <p><strong>指定圖片檔案：</strong>${imageName}</p>
+        <p><strong>其他圖片方向：</strong> ${escapeHtml(item.photoDirection || "-")}</p>
+        <p><strong>其他圖片說明：</strong> ${escapeHtml(item.photoInstruction || "-")}</p>
       `;
-      designatedImageSection.appendChild(linkButton("開啟參考圖片資料夾", "https://drive.google.com/drive/u/2/folders/1NNiM2b4kTrQcH7FMU3hW-e1Wb9qPPhBl"));
-      card.appendChild(designatedImageSection);
-
-      const otherImageGuide = document.createElement("div");
-      otherImageGuide.className = "panel";
-      otherImageGuide.style.marginTop = "10px";
-      otherImageGuide.innerHTML = `
-        <p><strong>其他圖片拍攝指引（治療師發文需遵守）</strong></p>
-        <p><strong>圖片方向：</strong> ${escapeHtml(item.photoDirection || "-")}</p>
-        <p><strong>圖片說明：</strong> ${escapeHtml(item.photoInstruction || "-")}</p>
-      `;
-      card.appendChild(otherImageGuide);
-
-      const downloadSection = document.createElement("div");
-      downloadSection.className = "panel";
-      downloadSection.style.marginTop = "10px";
-      if (item.referenceImageFileUrl || item.referenceImageDataUrl) {
-        downloadSection.innerHTML = `<p><strong>指定圖片預覽：</strong></p>`;
-        const preview = document.createElement("img");
-        preview.src = item.referenceImageFileUrl || item.referenceImageDataUrl;
-        preview.alt = item.referenceImageName || "reference-image";
-        preview.style.width = "100%";
-        preview.style.maxWidth = "100%";
-        preview.style.borderRadius = "10px";
-        preview.style.border = "1px solid #d5deea";
-        preview.style.display = "block";
-        preview.style.margin = "8px 0";
-        downloadSection.appendChild(preview);
+      imageRequirementSection.appendChild(linkButton("開啟參考圖片資料夾", "https://drive.google.com/drive/u/2/folders/1NNiM2b4kTrQcH7FMU3hW-e1Wb9qPPhBl"));
+      const previewSrc = getImagePreviewSrc(item);
+      const downloadHref = getImageDownloadHref(item);
+      if (previewSrc || downloadHref) {
+        const previewTitle = document.createElement("p");
+        previewTitle.innerHTML = "<strong>指定圖片預覽：</strong>";
+        imageRequirementSection.appendChild(previewTitle);
+        if (previewSrc) {
+          const preview = document.createElement("img");
+          preview.src = previewSrc;
+          preview.alt = item.referenceImageName || "reference-image";
+          preview.style.width = "100%";
+          preview.style.maxWidth = "100%";
+          preview.style.borderRadius = "10px";
+          preview.style.border = "1px solid #d5deea";
+          preview.style.display = "block";
+          preview.style.margin = "8px 0";
+          imageRequirementSection.appendChild(preview);
+        }
 
         const holdHint = document.createElement("p");
         holdHint.className = "status";
         holdHint.textContent = "手機可長按圖片直接儲存。";
-        downloadSection.appendChild(holdHint);
+        imageRequirementSection.appendChild(holdHint);
 
-        downloadSection.appendChild(downloadImageButton(
+        imageRequirementSection.appendChild(downloadImageButton(
           item.referenceImageName || "reference-image",
-          item.referenceImageFileUrl || item.referenceImageDataUrl
+          downloadHref || previewSrc
         ));
       } else {
-        downloadSection.innerHTML = "<p><strong>指定圖片預覽：</strong>目前未指定，請使用上方資料夾連結確認最新素材。</p>";
+        const noPreview = document.createElement("p");
+        noPreview.innerHTML = "<strong>指定圖片預覽：</strong>目前未指定，請使用上方資料夾連結確認最新素材。";
+        imageRequirementSection.appendChild(noPreview);
       }
-      card.appendChild(downloadSection);
+      card.appendChild(imageRequirementSection);
       wrap.appendChild(card);
     });
 
@@ -171,6 +220,22 @@ function downloadImageButton(fileName, href) {
   return btn;
 }
 
+function getImagePreviewSrc(item) {
+  if (item.referenceImageDataUrl) return item.referenceImageDataUrl;
+  if (item.referenceImageFileId) {
+    return `https://drive.google.com/thumbnail?id=${encodeURIComponent(item.referenceImageFileId)}&sz=w1000`;
+  }
+  return "";
+}
+
+function getImageDownloadHref(item) {
+  if (item.referenceImageDataUrl) return item.referenceImageDataUrl;
+  if (item.referenceImageFileId) {
+    return `https://drive.google.com/uc?export=download&id=${encodeURIComponent(item.referenceImageFileId)}`;
+  }
+  return item.referenceImageFileUrl || "";
+}
+
 function linkButton(label, href) {
   const a = document.createElement("a");
   a.href = href;
@@ -198,6 +263,40 @@ function loadState() {
   }
 }
 
+async function fetchAssignments(baseUrl, staffNo) {
+  const qs = new URLSearchParams({
+    action: "byStaff",
+    staffNo: String(staffNo || "").trim()
+  });
+  const url = baseUrl.includes("?") ? `${baseUrl}&${qs.toString()}` : `${baseUrl}?${qs.toString()}`;
+  const response = await fetch(url, { method: "GET" });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || data.ok === false) throw new Error(data.error || "fetch assignments failed");
+  const rows = Array.isArray(data.rows) ? data.rows : [];
+  return rows.map((r) => ({
+    id: r.id || "",
+    topic: r.topic || "",
+    topicDate: r.topicDate || "",
+    generatedAt: r.generatedAt || "",
+    approvedAt: r.approvedAt || "",
+    assignedDate: r.assignDate || "",
+    assignedAt: r.assignedAt || "",
+    assignedTo: r.staffNo || "",
+    staffName: r.staffName || "",
+    floor: r.floor || "",
+    xhsAccount: r.xhsAccount || "",
+    title: r.title || "",
+    hashtags: r.hashtags || "",
+    content: r.content || "",
+    photoDirection: r.photoDirection || "",
+    photoInstruction: r.photoInstruction || "",
+    referenceImageName: r.referenceImageFile || "",
+    referenceImageFileId: r.referenceImageFileId || "",
+    referenceImageFileUrl: r.referenceImageFileUrl || "",
+    referenceImageDataUrl: ""
+  }));
+}
+
 function setStatus(text, isError = false) {
   statusEl.textContent = text;
   statusEl.style.color = isError ? "#b53d1c" : "";
@@ -210,4 +309,28 @@ function escapeHtml(s) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function formatDateOnly(value) {
+  const d = new Date(value);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function normalizeDateKey(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  const ddmmyyyy = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (ddmmyyyy) {
+    const dd = ddmmyyyy[1].padStart(2, "0");
+    const mm = ddmmyyyy[2].padStart(2, "0");
+    const yyyy = ddmmyyyy[3];
+    return `${yyyy}-${mm}-${dd}`;
+  }
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return "";
+  return formatDateOnly(parsed);
 }

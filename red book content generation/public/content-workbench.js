@@ -4,7 +4,7 @@ const statusEl = document.querySelector("#status");
 const topicSummaryEl = document.querySelector("#topicSummary");
 const topicGapSummaryEl = document.querySelector("#topicGapSummary");
 const downloadLogBtn = document.querySelector("#downloadLogBtn");
-const sync審批dBtn = document.querySelector("#sync審批dBtn");
+const syncApprovedBtn = document.querySelector("#syncApprovedBtn");
 const appsScriptUrlInput = document.querySelector("#appsScriptUrl");
 const providerSelect = document.querySelector("#provider");
 const geminiKeyWrap = document.querySelector("#geminiKeyWrap");
@@ -12,6 +12,7 @@ const geminiModelWrap = document.querySelector("#geminiModelWrap");
 const openrouterKeyWrap = document.querySelector("#openrouterKeyWrap");
 const openrouterModelWrap = document.querySelector("#openrouterModelWrap");
 const testConnectionBtn = document.querySelector("#testConnectionBtn");
+const testUploadBtn = document.querySelector("#testUploadBtn");
 const resetLocalBtn = document.querySelector("#resetLocalBtn");
 const connectionStatusEl = document.querySelector("#connectionStatus");
 const fallbackStaffListInput = document.querySelector("#fallbackStaffList");
@@ -23,6 +24,7 @@ let isGenerating = false;
 let generatingCount = 0;
 let cachedStaff = [];
 let remoteTopicProgress = null;
+let latestReferenceImage = null;
 
 let state = loadState();
 if (!state.appsScriptUrl) {
@@ -77,6 +79,48 @@ testConnectionBtn.addEventListener("click", async () => {
   }
 });
 
+testUploadBtn?.addEventListener("click", async () => {
+  const url = String(appsScriptUrlInput.value || state.appsScriptUrl || "").trim();
+  if (!url) {
+    setStatus("請先輸入 Apps Script 網址。", true);
+    if (connectionStatusEl) {
+      connectionStatusEl.textContent = "缺少 Apps Script 網址";
+      connectionStatusEl.style.color = "#b53d1c";
+    }
+    return;
+  }
+  state.appsScriptUrl = url;
+  persist();
+  testUploadBtn.disabled = true;
+  const originalText = testUploadBtn.textContent;
+  testUploadBtn.textContent = "測試中...";
+  setStatus("正在測試 Drive 圖片上傳...");
+  if (connectionStatusEl) {
+    connectionStatusEl.textContent = "正在測試圖片上傳...";
+    connectionStatusEl.style.color = "";
+  }
+  try {
+    const data = await fetchJsonWithAction(url, "testDriveUpload");
+    if (!data?.ok || !data.fileId) {
+      throw new Error(data?.error || "Drive upload test failed.");
+    }
+    setStatus(`圖片上傳測試成功：${data.fileId}`);
+    if (connectionStatusEl) {
+      connectionStatusEl.textContent = `圖片上傳成功：${data.fileId}`;
+      connectionStatusEl.style.color = "#0f766e";
+    }
+  } catch (error) {
+    setStatus(`圖片上傳測試失敗：${error.message}`, true);
+    if (connectionStatusEl) {
+      connectionStatusEl.textContent = `圖片上傳失敗：${error.message}`;
+      connectionStatusEl.style.color = "#b53d1c";
+    }
+  } finally {
+    testUploadBtn.disabled = false;
+    testUploadBtn.textContent = originalText || "測試圖片上傳";
+  }
+});
+
 resetLocalBtn.addEventListener("click", () => {
   const keepUrl = state.appsScriptUrl || DEFAULT_APPS_SCRIPT_URL;
   const keepFallback = state.fallbackStaffNumbers || [];
@@ -101,6 +145,17 @@ syncFromSheet();
 setInterval(syncFromSheet, 20000);
 updateProviderFieldVisibility();
 providerSelect.addEventListener("change", updateProviderFieldVisibility);
+document.querySelector("#referenceImage")?.addEventListener("change", async (event) => {
+  const file = event.target.files?.[0] || null;
+  latestReferenceImage = null;
+  if (!file) return;
+  try {
+    latestReferenceImage = await fileToDataUrl(file);
+    setStatus(`已準備指定圖片：${latestReferenceImage.name}`);
+  } catch (error) {
+    setStatus(`讀取指定圖片失敗：${error.message}`, true);
+  }
+});
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -133,7 +188,10 @@ form.addEventListener("submit", async (e) => {
   }
   let referenceImage = null;
   if (referenceImageFile) {
-    referenceImage = await fileToDataUrl(referenceImageFile);
+    referenceImage = latestReferenceImage?.name === referenceImageFile.name
+      ? latestReferenceImage
+      : await fileToDataUrl(referenceImageFile);
+    latestReferenceImage = referenceImage;
   }
 
   setStatus("正在使用模型生成...");
@@ -374,6 +432,22 @@ function cardForQueue(item) {
   const row = document.createElement("div");
   row.className = "row";
   const approve = button("審批", async () => {
+    const activeFile = document.querySelector("#referenceImage")?.files?.[0] || null;
+    if (item.referenceImageName && !item.referenceImageDataUrl && activeFile) {
+      try {
+        const reread = latestReferenceImage?.name === activeFile.name ? latestReferenceImage : await fileToDataUrl(activeFile);
+        item.referenceImageName = item.referenceImageName || reread.name;
+        item.referenceImageDataUrl = reread.dataUrl;
+        latestReferenceImage = reread;
+      } catch (error) {
+        setStatus(`審批前讀取指定圖片失敗：${error.message}`, true);
+        return;
+      }
+    }
+    if (item.referenceImageName && !item.referenceImageDataUrl) {
+      setStatus("指定圖片資料已遺失，請重新選擇圖片後再審批。", true);
+      return;
+    }
     autoAssign審批dItem(item);
     state.queue = state.queue.filter((x) => x.id !== item.id);
     item.approvedAt = new Date().toISOString();
@@ -383,7 +457,11 @@ function cardForQueue(item) {
     render();
     if (state.appsScriptUrl && item.assignedTo) {
       try {
-        await sync審批dOneReliable(item);
+        if (item.referenceImageDataUrl) {
+          await syncApprovedOneWithImage(item);
+        } else {
+          await sync審批dOneReliable(item);
+        }
         item.syncedAt = new Date().toISOString();
         upsertLog(item);
         persist();
@@ -400,6 +478,26 @@ function cardForQueue(item) {
   row.append(approve, reject);
   card.appendChild(row);
   return card;
+}
+
+async function syncApprovedOneWithImage(item) {
+  await postToAppsScript({
+    action: "approveAssignOneWithImage",
+    id: item.id || "",
+    topic: item.topic || "",
+    topicDate: item.topicDate || formatDateOnly(new Date()),
+    assignDate: item.assignedDate || formatDateOnly(new Date()),
+    generatedAt: item.generatedAt || "",
+    approvedAt: item.approvedAt || "",
+    assignedTo: item.assignedTo || "",
+    title: item.title || "",
+    hashtags: item.hashtags || "",
+    content: item.content || "",
+    photoDirection: item.photoDirection || "",
+    photoInstruction: item.photoInstruction || "",
+    referenceImageName: item.referenceImageName || "",
+    referenceImageDataUrl: item.referenceImageDataUrl || ""
+  });
 }
 
 function autoAssign審批dItem(item) {
@@ -526,7 +624,7 @@ downloadLogBtn.addEventListener("click", () => {
   URL.revokeObjectURL(url);
 });
 
-sync審批dBtn.addEventListener("click", async () => {
+syncApprovedBtn?.addEventListener("click", async () => {
   if (!state.appsScriptUrl) {
     setStatus("請先輸入 Apps Script 網址。", true);
     return;
@@ -538,7 +636,7 @@ sync審批dBtn.addEventListener("click", async () => {
   }
   try {
     await postToAppsScript({
-      action: "append審批dOnly",
+      action: "appendApprovedOnly",
       topic: items[0]?.topic || "",
       topicDate: items[0]?.topicDate || formatDateOnly(new Date()),
       items
@@ -655,11 +753,54 @@ function csvCell(value) {
 }
 
 function fileToDataUrl(file) {
+  if (file?.type?.startsWith("image/")) {
+    return compressImageToDataUrl(file);
+  }
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve({ name: file.name || "reference-image", dataUrl: String(reader.result || "") });
     reader.onerror = () => reject(new Error("Image read failed."));
     reader.readAsDataURL(file);
+  });
+}
+
+function compressImageToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const maxSide = 1600;
+        const scale = Math.min(1, maxSide / Math.max(img.width || 1, img.height || 1));
+        const width = Math.max(1, Math.round((img.width || 1) * scale));
+        const height = Math.max(1, Math.round((img.height || 1) * scale));
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+        const outputName = file.name ? file.name.replace(/\.[^.]+$/, ".jpg") : "reference-image.jpg";
+        canvas.toBlob((blob) => {
+          URL.revokeObjectURL(objectUrl);
+          if (!blob) {
+            reject(new Error("Image compression failed."));
+            return;
+          }
+          const reader = new FileReader();
+          reader.onload = () => resolve({ name: outputName, dataUrl: String(reader.result || "") });
+          reader.onerror = () => reject(new Error("Compressed image read failed."));
+          reader.readAsDataURL(blob);
+        }, "image/jpeg", 0.86);
+      } catch (error) {
+        URL.revokeObjectURL(objectUrl);
+        reject(error);
+      }
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error("Image preview failed."));
+    };
+    img.src = objectUrl;
   });
 }
 
@@ -767,11 +908,15 @@ function updateProviderFieldVisibility() {
 async function autoSyncGenerated(items) {
   if (!state.appsScriptUrl || !Array.isArray(items) || !items.length) return;
   try {
+    const compactItems = items.map((item, index) => ({
+      ...item,
+      referenceImageDataUrl: index === 0 ? (item.referenceImageDataUrl || "") : ""
+    }));
     await postToAppsScript({
       action: "appendGeneratedOnly",
       topic: items[0]?.topic || document.querySelector("#topic").value.trim() || "",
       topicDate: items[0]?.topicDate || formatDateOnly(new Date()),
-      items
+      items: compactItems
     });
   } catch (error) {
     setStatus(`本地已生成，但同步到 generated 分頁失敗：${error.message}`, true);
