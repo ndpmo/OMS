@@ -19,7 +19,7 @@
         <div class="assign-row">
           <input id="staffLogin" placeholder="輸入員工編號" />
           <button id="loginBtn" type="button">載入我的內容</button>
-          <a href="./content-workbench.html">返回管理後台</a>
+          <a id="managerBackLink" href="./content-workbench.html">返回管理後台</a>
         </div>
         <p id="portalStatus" class="status"></p>
         <div class="assign-row">
@@ -38,6 +38,18 @@
         <p><a href="https://drive.google.com/drive/u/2/folders/1NNiM2b4kTrQcH7FMU3hW-e1Wb9qPPhBl" target="_blank" rel="noopener noreferrer">開啟參考圖片資料夾</a></p>
         <div id="myContent" class="grid"></div>
       </section>
+
+      <dialog id="managerPasswordDialog" class="password-dialog">
+        <form method="dialog">
+          <h2>管理後台密碼</h2>
+          <label>請輸入密碼<input id="managerPasswordInput" type="password" autocomplete="current-password" /></label>
+          <p id="managerPasswordStatus" class="status"></p>
+          <div class="row">
+            <button id="managerPasswordSubmit" type="button">進入管理後台</button>
+            <button type="button" class="ghost" id="managerPasswordCancel">取消</button>
+          </div>
+        </form>
+      </dialog>
     </main>
     <script src="./therapist-portal.js"></script>
   </body>

@@ -6,6 +6,12 @@ const dateToInput = document.querySelector("#dateTo");
 const dateSortSelect = document.querySelector("#dateSort");
 const statusEl = document.querySelector("#portalStatus");
 const myContentEl = document.querySelector("#myContent");
+const managerBackLink = document.querySelector("#managerBackLink");
+const managerPasswordDialog = document.querySelector("#managerPasswordDialog");
+const managerPasswordInput = document.querySelector("#managerPasswordInput");
+const managerPasswordSubmit = document.querySelector("#managerPasswordSubmit");
+const managerPasswordCancel = document.querySelector("#managerPasswordCancel");
+const managerPasswordStatus = document.querySelector("#managerPasswordStatus");
 const KEY = "redbook_content_bank_v1";
 const DEFAULT_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxm91pim17BsLNvVDlD5vESopFXxgrA3lZlhzhi3Fuc83HGrrL3uROi8qZEq6z_1y6M/exec";
 let currentItems = [];
@@ -16,6 +22,84 @@ if (dateToInput) dateToInput.value = today;
 
 loginBtn.addEventListener("click", () => {
   loadForStaff();
+});
+
+managerBackLink?.addEventListener("click", (event) => {
+  event.preventDefault();
+  if (!managerPasswordDialog?.showModal) {
+    const password = window.prompt("請輸入管理後台密碼");
+    checkManagerPassword(password || "").then((ok) => {
+      if (ok) window.location.href = managerBackLink.href;
+      else setStatus("管理後台密碼錯誤。", true);
+    }).catch((error) => {
+      setStatus(`無法驗證管理後台密碼：${error.message || "請檢查 Apps Script 設定"}`, true);
+    });
+    return;
+  }
+  if (managerPasswordInput) managerPasswordInput.value = "";
+  if (managerPasswordStatus) managerPasswordStatus.textContent = "";
+  managerPasswordDialog.showModal();
+  managerPasswordInput?.focus();
+});
+
+managerPasswordSubmit?.addEventListener("click", async () => {
+  const password = String(managerPasswordInput?.value || "");
+  if (managerPasswordStatus) {
+    managerPasswordStatus.textContent = "正在驗證密碼...";
+    managerPasswordStatus.style.color = "";
+  }
+  if (managerPasswordSubmit) managerPasswordSubmit.disabled = true;
+  try {
+    const isCorrect = await checkManagerPassword(password);
+    if (!isCorrect) {
+      if (managerPasswordStatus) {
+        managerPasswordStatus.textContent = "密碼錯誤，請再試一次。";
+        managerPasswordStatus.style.color = "#b53d1c";
+      }
+      managerPasswordInput?.focus();
+      return;
+    }
+    window.location.href = managerBackLink.href;
+  } catch (error) {
+    if (managerPasswordStatus) {
+      managerPasswordStatus.textContent = `無法驗證密碼：${error.message || "請檢查 Apps Script 設定"}`;
+      managerPasswordStatus.style.color = "#b53d1c";
+    }
+    managerPasswordInput?.focus();
+  } finally {
+    if (managerPasswordSubmit) managerPasswordSubmit.disabled = false;
+  }
+});
+
+async function checkManagerPassword(password) {
+  const data = new TextEncoder().encode(password);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+  const state = loadState();
+  const appsScriptUrl = String(state.appsScriptUrl || DEFAULT_APPS_SCRIPT_URL).trim();
+  const qs = new URLSearchParams({
+    action: "managerAuth",
+    hash: hashHex
+  });
+  const url = appsScriptUrl.includes("?") ? `${appsScriptUrl}&${qs.toString()}` : `${appsScriptUrl}?${qs.toString()}`;
+  const response = await fetch(url, { method: "GET" });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok || result.ok === false) {
+    throw new Error(result.error || "password check failed");
+  }
+  return result.authorized === true;
+}
+
+managerPasswordCancel?.addEventListener("click", () => {
+  managerPasswordDialog?.close();
+});
+
+managerPasswordInput?.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    managerPasswordSubmit?.click();
+  }
 });
 
 async function loadForStaff() {

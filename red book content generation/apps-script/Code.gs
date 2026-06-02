@@ -43,6 +43,18 @@ function getWorkbook_() {
 function doGet(e) {
   const action = (e.parameter.action || "").trim();
 
+  if (action === "managerAuth") {
+    const submittedHash = String(e.parameter.hash || "").trim();
+    const expectedHash = PropertiesService.getScriptProperties().getProperty("MANAGER_PASSWORD_HASH") || "";
+    if (!expectedHash) {
+      return jsonOut({ ok: false, error: "Missing MANAGER_PASSWORD_HASH script property." });
+    }
+    if (!submittedHash) {
+      return jsonOut({ ok: false, error: "Missing password hash." });
+    }
+    return jsonOut({ ok: true, authorized: submittedHash === expectedHash });
+  }
+
   if (action === "staff") {
     return jsonOut({ ok: true, staff: getStaffList_() });
   }
