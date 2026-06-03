@@ -198,7 +198,9 @@ function renderMine(items, staff, filters) {
     topicItems.forEach((item) => {
       const card = document.createElement("article");
       card.className = "card";
-      const imageName = escapeHtml(item.referenceImageName || "未指定");
+      const referenceImages = getReferenceImages(item);
+      const hasSpecifiedImage = referenceImages.length > 0;
+      const imageName = escapeHtml(getReferenceImageLabel(item, referenceImages));
       card.innerHTML = `<h3>${escapeHtml(item.title || topic)}</h3>
         <p><strong>計劃發文日期：</strong> ${escapeHtml(item.topicDate || "-")}</p>
         <p>${escapeHtml(item.content).replaceAll("\n", "<br>")}</p>
@@ -219,19 +221,23 @@ function renderMine(items, staff, filters) {
         <p><strong>貼文指定圖片：</strong>若有指定，發文時請務必使用</p>
         <p><strong>指定圖片檔案：</strong>${imageName}</p>
         <p><strong>其他圖片方向：</strong> ${escapeHtml(item.photoDirection || "-")}</p>
-        <p><strong>其他圖片說明：</strong> ${escapeHtml(item.photoInstruction || "-")}</p>
       `;
       imageRequirementSection.appendChild(linkButton("開啟參考圖片資料夾", "https://drive.google.com/drive/u/2/folders/1NNiM2b4kTrQcH7FMU3hW-e1Wb9qPPhBl"));
-      const previewSrc = getImagePreviewSrc(item);
-      const downloadHref = getImageDownloadHref(item);
-      if (previewSrc || downloadHref) {
+      if (referenceImages.length) {
         const previewTitle = document.createElement("p");
-        previewTitle.innerHTML = "<strong>指定圖片預覽：</strong>";
+        previewTitle.innerHTML = `<strong>指定圖片預覽：</strong>共 ${referenceImages.length} 張`;
         imageRequirementSection.appendChild(previewTitle);
-        if (previewSrc) {
+        referenceImages.forEach((image, index) => {
+          const previewSrc = getImagePreviewSrc(image);
+          const downloadHref = getImageDownloadHref(image);
+          if (previewSrc) {
+            const imageLabel = document.createElement("p");
+            imageLabel.innerHTML = `<strong>圖片 ${index + 1}：</strong>${escapeHtml(image.name || "指定圖片")}`;
+            imageRequirementSection.appendChild(imageLabel);
+
           const preview = document.createElement("img");
           preview.src = previewSrc;
-          preview.alt = item.referenceImageName || "reference-image";
+            preview.alt = image.name || "reference-image";
           preview.style.width = "100%";
           preview.style.maxWidth = "100%";
           preview.style.borderRadius = "10px";
@@ -239,17 +245,21 @@ function renderMine(items, staff, filters) {
           preview.style.display = "block";
           preview.style.margin = "8px 0";
           imageRequirementSection.appendChild(preview);
-        }
+          }
+
+          if (downloadHref || previewSrc) {
+            imageRequirementSection.appendChild(downloadImageButton(
+              image.name || `reference-image-${index + 1}`,
+              downloadHref || previewSrc,
+              referenceImages.length > 1 ? `下載圖片 ${index + 1}` : "下載參考圖片"
+            ));
+          }
+        });
 
         const holdHint = document.createElement("p");
         holdHint.className = "status";
         holdHint.textContent = "手機可長按圖片直接儲存。";
         imageRequirementSection.appendChild(holdHint);
-
-        imageRequirementSection.appendChild(downloadImageButton(
-          item.referenceImageName || "reference-image",
-          downloadHref || previewSrc
-        ));
       } else {
         const noPreview = document.createElement("p");
         noPreview.innerHTML = "<strong>指定圖片預覽：</strong>目前未指定，請使用上方資料夾連結確認最新素材。";
@@ -262,6 +272,13 @@ function renderMine(items, staff, filters) {
     section.appendChild(wrap);
     myContentEl.appendChild(section);
   });
+}
+
+function getReferenceImageLabel(item, referenceImages) {
+  const names = referenceImages.map((image) => image.name).filter(Boolean);
+  if (names.length) return names.join("、");
+  if (referenceImages.length) return `已指定 ${referenceImages.length} 張圖片，請使用下方預覽/下載圖片`;
+  return "未指定";
 }
 
 function groupByTopic(items) {
@@ -289,10 +306,10 @@ function copyButton(label, value) {
   return btn;
 }
 
-function downloadImageButton(fileName, href) {
+function downloadImageButton(fileName, href, label = "下載參考圖片") {
   const btn = document.createElement("button");
   btn.type = "button";
-  btn.textContent = "下載參考圖片";
+  btn.textContent = label;
   btn.addEventListener("click", () => {
     const a = document.createElement("a");
     a.href = href;
@@ -304,20 +321,83 @@ function downloadImageButton(fileName, href) {
   return btn;
 }
 
-function getImagePreviewSrc(item) {
-  if (item.referenceImageDataUrl) return item.referenceImageDataUrl;
-  if (item.referenceImageFileId) {
-    return `https://drive.google.com/thumbnail?id=${encodeURIComponent(item.referenceImageFileId)}&sz=w1000`;
+function getReferenceImages(item) {
+  const parsedFromUrl = parseReferenceImageList(item.referenceImageFileUrl);
+  const parsedFromId = parseReferenceImageIds(item.referenceImageFileId);
+  const explicitImages = Array.isArray(item.referenceImages) ? item.referenceImages : [];
+  const merged = [...explicitImages, ...parsedFromUrl];
+
+  parsedFromId.forEach((id, index) => {
+    if (!merged[index]) merged[index] = {};
+    merged[index].fileId = merged[index].fileId || id;
+  });
+
+  if (!merged.length && (item.referenceImageDataUrl || item.referenceImageFileId || item.referenceImageFileUrl || item.referenceImageName)) {
+    merged.push({
+      name: item.referenceImageName || "",
+      dataUrl: item.referenceImageDataUrl || "",
+      fileId: item.referenceImageFileId || "",
+      fileUrl: item.referenceImageFileUrl || ""
+    });
   }
-  return "";
+
+  return merged
+    .map((image) => ({
+      name: image.name || "",
+      dataUrl: image.dataUrl || "",
+      fileId: image.fileId || image.id || "",
+      fileUrl: image.fileUrl || image.url || ""
+    }))
+    .filter((image) => image.dataUrl || image.fileId || image.fileUrl || image.name);
 }
 
-function getImageDownloadHref(item) {
-  if (item.referenceImageDataUrl) return item.referenceImageDataUrl;
-  if (item.referenceImageFileId) {
-    return `https://drive.google.com/uc?export=download&id=${encodeURIComponent(item.referenceImageFileId)}`;
+function parseReferenceImageList(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      return parsed.map((entry) => {
+        if (typeof entry === "string") return { fileUrl: entry };
+        return {
+          name: entry.name || "",
+          fileId: entry.fileId || entry.id || "",
+          fileUrl: entry.fileUrl || entry.url || ""
+        };
+      });
+    }
+  } catch {
+    // Fall through to legacy text splitting.
   }
-  return item.referenceImageFileUrl || "";
+  return raw.split(/\n+/).filter(Boolean).map((url) => ({ fileUrl: url }));
+}
+
+function parseReferenceImageIds(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed.map((x) => String(x || "").trim()).filter(Boolean);
+  } catch {
+    // Fall through to legacy text splitting.
+  }
+  return raw.split(/\n+/).filter(Boolean);
+}
+
+function getImagePreviewSrc(image) {
+  if (image.dataUrl) return image.dataUrl;
+  if (image.fileId) {
+    return `https://drive.google.com/thumbnail?id=${encodeURIComponent(image.fileId)}&sz=w1000`;
+  }
+  return image.fileUrl || "";
+}
+
+function getImageDownloadHref(image) {
+  if (image.dataUrl) return image.dataUrl;
+  if (image.fileId) {
+    return `https://drive.google.com/uc?export=download&id=${encodeURIComponent(image.fileId)}`;
+  }
+  return image.fileUrl || "";
 }
 
 function linkButton(label, href) {

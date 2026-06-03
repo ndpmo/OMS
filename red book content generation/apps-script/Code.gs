@@ -171,6 +171,7 @@ function doPost(e) {
       const photoInstruction = String(body.photoInstruction || "").trim();
       const referenceImageName = String(body.referenceImageName || "").trim();
       const referenceImageDataUrl = String(body.referenceImageDataUrl || "").trim();
+      const referenceImages = Array.isArray(body.referenceImages) ? body.referenceImages : [];
 
       if (!topic || !topicDate || !id) {
         return jsonOut({ ok: false, error: "Missing topic/topicDate/id" });
@@ -181,8 +182,8 @@ function doPost(e) {
         fileId: generated ? generated.referenceImageFileId : "",
         fileUrl: generated ? generated.referenceImageFileUrl : ""
       };
-      if (!uploaded.fileId && referenceImageDataUrl) {
-        uploaded = saveReferenceImageToDrive_(referenceImageName, referenceImageDataUrl);
+      if (!uploaded.fileId && (referenceImages.length || referenceImageDataUrl)) {
+        uploaded = saveReferenceImagesToDrive_(referenceImages, referenceImageName, referenceImageDataUrl);
       }
       const result = appendAssignedDirect_(topic, topicDate, assignDate, {
         id: id,
@@ -291,9 +292,10 @@ function appendGeneratedOnly_(topic, topicDate, items) {
   const ss = getWorkbook_();
   const sheet = ensureGeneratedSheet_(ss);
   const referenceItem = items.find(function (item) {
-    return item.referenceImageDataUrl;
+    return (Array.isArray(item.referenceImages) && item.referenceImages.some(function (image) { return image && image.dataUrl; })) || item.referenceImageDataUrl;
   }) || {};
-  const uploaded = saveReferenceImageToDrive_(
+  const uploaded = saveReferenceImagesToDrive_(
+    Array.isArray(referenceItem.referenceImages) ? referenceItem.referenceImages : [],
     referenceItem.referenceImageName || "",
     referenceItem.referenceImageDataUrl || ""
   );
@@ -613,6 +615,59 @@ function findGeneratedById_(id) {
     }
   }
   return null;
+}
+
+function saveReferenceImagesToDrive_(images, fallbackName, fallbackDataUrl) {
+  const list = normalizeReferenceImages_(images, fallbackName, fallbackDataUrl);
+  if (!list.length) return { fileId: "", fileUrl: "", error: "" };
+
+  const uploaded = [];
+  const errors = [];
+  list.forEach(function (image, index) {
+    const saved = saveReferenceImageToDrive_(
+      image.name || ("reference-image-" + (index + 1) + ".jpg"),
+      image.dataUrl || ""
+    );
+    if (saved.fileId) {
+      uploaded.push({
+        id: saved.fileId,
+        url: saved.fileUrl || "",
+        name: image.name || ("reference-image-" + (index + 1))
+      });
+    } else if (saved.error) {
+      errors.push(saved.error);
+    }
+  });
+
+  if (!uploaded.length) {
+    return { fileId: "", fileUrl: "", error: errors.join("; ") || "" };
+  }
+
+  return {
+    fileId: uploaded.length === 1 ? uploaded[0].id : JSON.stringify(uploaded.map(function (x) { return x.id; })),
+    fileUrl: JSON.stringify(uploaded),
+    error: errors.join("; ")
+  };
+}
+
+function normalizeReferenceImages_(images, fallbackName, fallbackDataUrl) {
+  const source = Array.isArray(images) ? images : [];
+  const list = source
+    .filter(function (image) { return image && image.dataUrl; })
+    .map(function (image, index) {
+      return {
+        name: String(image.name || fallbackName || ("reference-image-" + (index + 1) + ".jpg")),
+        dataUrl: String(image.dataUrl || "")
+      };
+    });
+
+  if (!list.length && fallbackDataUrl) {
+    list.push({
+      name: String(fallbackName || "reference-image.jpg"),
+      dataUrl: String(fallbackDataUrl || "")
+    });
+  }
+  return list;
 }
 
 function saveReferenceImageToDrive_(fileName, dataUrl) {

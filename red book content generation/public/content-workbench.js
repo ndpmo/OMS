@@ -24,7 +24,7 @@ let isGenerating = false;
 let generatingCount = 0;
 let cachedStaff = [];
 let remoteTopicProgress = null;
-let latestReferenceImage = null;
+let latestReferenceImages = [];
 
 let state = loadState();
 if (!state.appsScriptUrl) {
@@ -146,12 +146,12 @@ setInterval(syncFromSheet, 20000);
 updateProviderFieldVisibility();
 providerSelect.addEventListener("change", updateProviderFieldVisibility);
 document.querySelector("#referenceImage")?.addEventListener("change", async (event) => {
-  const file = event.target.files?.[0] || null;
-  latestReferenceImage = null;
-  if (!file) return;
+  const files = Array.from(event.target.files || []);
+  latestReferenceImages = [];
+  if (!files.length) return;
   try {
-    latestReferenceImage = await fileToDataUrl(file);
-    setStatus(`已準備指定圖片：${latestReferenceImage.name}`);
+    latestReferenceImages = await Promise.all(files.map(fileToDataUrl));
+    setStatus(`已準備 ${latestReferenceImages.length} 張指定圖片：${latestReferenceImages.map((x) => x.name).join("、")}`);
   } catch (error) {
     setStatus(`讀取指定圖片失敗：${error.message}`, true);
   }
@@ -169,8 +169,7 @@ form.addEventListener("submit", async (e) => {
   const wordCount = document.querySelector("#wordCount").value.trim();
   const hashtags = document.querySelector("#hashtags").value.trim();
   const photoDirection = document.querySelector("#photoDirection").value.trim();
-  const photoInstruction = document.querySelector("#photoInstruction").value.trim();
-  const referenceImageFile = document.querySelector("#referenceImage").files?.[0] || null;
+  const referenceImageFiles = Array.from(document.querySelector("#referenceImage").files || []);
   const direction = document.querySelector("#direction").value.trim();
   const count = Number(document.querySelector("#count").value);
 
@@ -186,12 +185,14 @@ form.addEventListener("submit", async (e) => {
     setStatus("請先貼上 OpenRouter API 金鑰再生成。", true);
     return;
   }
-  let referenceImage = null;
-  if (referenceImageFile) {
-    referenceImage = latestReferenceImage?.name === referenceImageFile.name
-      ? latestReferenceImage
-      : await fileToDataUrl(referenceImageFile);
-    latestReferenceImage = referenceImage;
+  let referenceImages = [];
+  if (referenceImageFiles.length) {
+    const selectedNames = referenceImageFiles.map((file) => file.name).join("|");
+    const cachedNames = latestReferenceImages.map((image) => image.name).join("|");
+    referenceImages = selectedNames === cachedNames
+      ? latestReferenceImages
+      : await Promise.all(referenceImageFiles.map(fileToDataUrl));
+    latestReferenceImages = referenceImages;
   }
 
   setStatus("正在使用模型生成...");
@@ -211,8 +212,7 @@ form.addEventListener("submit", async (e) => {
       wordCount,
       hashtags,
       photoDirection,
-      photoInstruction,
-      referenceImage,
+      referenceImages,
       direction,
       count
     });
@@ -233,11 +233,12 @@ form.addEventListener("submit", async (e) => {
   }
 });
 
-async function generateWithGeminiBatches({ apiKey, openrouterKey, openrouterModel, provider, model, topic, topicDate, wordCount, hashtags, photoDirection, photoInstruction, referenceImage, direction, count }) {
+async function generateWithGeminiBatches({ apiKey, openrouterKey, openrouterModel, provider, model, topic, topicDate, wordCount, hashtags, photoDirection, referenceImages, direction, count }) {
   const batchSize = 20;
   const output = [];
   let cursor = 1;
   const modelChain = uniqueModels([model, "gemini-2.5-flash", "gemini-2.0-flash"]);
+  const languagePreference = detectChineseScriptPreference(direction);
 
   while (output.length < count) {
     const take = Math.min(batchSize, count - output.length);
@@ -250,6 +251,7 @@ async function generateWithGeminiBatches({ apiKey, openrouterKey, openrouterMode
           wordCount,
           hashtags,
           direction,
+          languagePreference,
           take
         })
       : (await requestGeminiWithFallback({
@@ -260,21 +262,23 @@ async function generateWithGeminiBatches({ apiKey, openrouterKey, openrouterMode
           hashtags,
           referenceImage,
           direction,
+          languagePreference,
           take
         }))?.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
     const parsed = JSON.parse(rawText);
     const items = (Array.isArray(parsed) ? parsed : []).map((item, i) => ({
       id: cryptoRandomId(),
-      title: item.title || `${topic} - Version ${cursor + i}`,
+      title: normalizeGeneratedScript(item.title || `${topic} - Version ${cursor + i}`, languagePreference),
       topic,
       topicDate: topicDate || formatDateOnly(new Date()),
       generatedAt: new Date().toISOString(),
-      content: item.content || "",
-      hashtags: item.hashtags || hashtags,
+      content: normalizeGeneratedScript(item.content || "", languagePreference),
+      hashtags: normalizeHashtags(normalizeGeneratedScript(item.hashtags || hashtags, languagePreference)),
       photoDirection: photoDirection || "",
-      photoInstruction: photoInstruction || "",
-      referenceImageName: referenceImage?.name || "",
-      referenceImageDataUrl: referenceImage?.dataUrl || "",
+      photoInstruction: "",
+      referenceImageName: getReferenceImageNames(referenceImages),
+      referenceImageDataUrl: referenceImages?.[0]?.dataUrl || "",
+      referenceImages: normalizeReferenceImages(referenceImages),
       assignedTo: ""
     }));
     cursor += items.length;
@@ -284,7 +288,7 @@ async function generateWithGeminiBatches({ apiKey, openrouterKey, openrouterMode
   return output.slice(0, count);
 }
 
-async function requestOpenRouter({ apiKey, model, topic, wordCount, hashtags, direction, take }) {
+async function requestOpenRouter({ apiKey, model, topic, wordCount, hashtags, direction, languagePreference, take }) {
   const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -294,8 +298,8 @@ async function requestOpenRouter({ apiKey, model, topic, wordCount, hashtags, di
     body: JSON.stringify({
       model,
       messages: [
-        { role: "system", content: "Return only valid JSON array." },
-        { role: "user", content: buildGeminiPrompt({ topic, wordCount, hashtags, direction, count: take }) }
+        { role: "system", content: buildSystemPrompt(languagePreference) },
+        { role: "user", content: buildGeminiPrompt({ topic, wordCount, hashtags, direction, languagePreference, count: take }) }
       ]
     })
   });
@@ -304,7 +308,7 @@ async function requestOpenRouter({ apiKey, model, topic, wordCount, hashtags, di
   return data?.choices?.[0]?.message?.content || "[]";
 }
 
-async function requestGeminiWithFallback({ apiKey, modelChain, topic, wordCount, hashtags, direction, take }) {
+async function requestGeminiWithFallback({ apiKey, modelChain, topic, wordCount, hashtags, direction, languagePreference, take }) {
   let lastError = "Failed to generate content.";
   for (let m = 0; m < modelChain.length; m += 1) {
     const activeModel = modelChain[m];
@@ -320,9 +324,12 @@ async function requestGeminiWithFallback({ apiKey, modelChain, topic, wordCount,
           body: JSON.stringify({
             contents: [{
               parts: [{
-                text: buildGeminiPrompt({ topic, wordCount, hashtags, direction, count: take })
+                text: buildGeminiPrompt({ topic, wordCount, hashtags, direction, languagePreference, count: take })
               }]
             }],
+            systemInstruction: {
+              parts: [{ text: buildSystemPrompt(languagePreference) }]
+            },
             generationConfig: {
               responseMimeType: "application/json"
             }
@@ -346,16 +353,96 @@ async function requestGeminiWithFallback({ apiKey, modelChain, topic, wordCount,
   throw new Error(lastError);
 }
 
-function buildGeminiPrompt({ topic, wordCount, hashtags, direction, count }) {
+function buildSystemPrompt(languagePreference) {
+  return [
+    "Return only a valid JSON array. Do not include markdown or explanation.",
+    "Each array item must include exactly these content fields: title, content, hashtags.",
+    buildLanguageInstruction(languagePreference)
+  ].filter(Boolean).join("\n");
+}
+
+function buildGeminiPrompt({ topic, wordCount, hashtags, direction, languagePreference, count }) {
   return [
     `Generate ${count} unique Xiaohongshu (Little Redbook) content versions.`,
     `Topic: ${topic}`,
     `Target word count per version: about ${wordCount} words`,
     `Hashtags to include or adapt: ${hashtags}`,
     `Direction: ${direction}`,
+    buildLanguageInstruction(languagePreference),
+    "Hashtag formatting rule: separate hashtags with spaces only. Do not use commas between hashtags.",
     "Return ONLY valid JSON array.",
     "Each item must include keys: title, content, hashtags."
-  ].join("\\n");
+  ].filter(Boolean).join("\\n");
+}
+
+function detectChineseScriptPreference(text) {
+  const value = String(text || "").toLowerCase();
+  if (/(简体|簡體|简体字|簡體字|simplified chinese|simplified)/i.test(value)) return "simplified";
+  if (/(繁体|繁體|traditional chinese|traditional)/i.test(value)) return "traditional";
+  return "";
+}
+
+function buildLanguageInstruction(languagePreference) {
+  if (languagePreference === "simplified") {
+    return [
+      "LANGUAGE REQUIREMENT: Write all generated title, content, and hashtags in Simplified Chinese only.",
+      "Do not output Traditional Chinese characters such as 體、醫、針、無、創、韓、國、風、濕、導、療、師、標、籤、護、膚、長.",
+      "If the source prompt uses Traditional Chinese, convert the wording to Simplified Chinese in the output."
+    ].join(" ");
+  }
+  if (languagePreference === "traditional") {
+    return "LANGUAGE REQUIREMENT: Write all generated title, content, and hashtags in Traditional Chinese only.";
+  }
+  return "LANGUAGE REQUIREMENT: Follow the written Chinese script requested inside Direction. If Direction says Simplified Chinese or 用簡體字/用简体字, output Simplified Chinese only.";
+}
+
+function normalizeGeneratedScript(text, languagePreference) {
+  if (languagePreference !== "simplified") return String(text || "");
+  return toSimplifiedChineseCommon(text);
+}
+
+function normalizeHashtags(text) {
+  return String(text || "")
+    .replace(/[,，、]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function normalizeReferenceImages(images) {
+  return (Array.isArray(images) ? images : [])
+    .filter((image) => image && (image.dataUrl || image.fileId || image.fileUrl || image.name))
+    .map((image) => ({
+      name: image.name || "",
+      dataUrl: image.dataUrl || "",
+      fileId: image.fileId || "",
+      fileUrl: image.fileUrl || ""
+    }));
+}
+
+function getReferenceImageNames(images) {
+  return normalizeReferenceImages(images)
+    .map((image) => image.name)
+    .filter(Boolean)
+    .join("\n");
+}
+
+function toSimplifiedChineseCommon(text) {
+  const map = {
+    "醫": "医", "療": "疗", "針": "针", "無": "无", "創": "创", "韓": "韩", "國": "国", "風": "风", "趨": "趋", "勢": "势",
+    "熱": "热", "傳": "传", "統": "统", "復": "复", "長": "长", "導": "导", "護": "护", "膚": "肤", "類": "类",
+    "筆": "笔", "記": "记", "專": "专", "驚": "惊", "與": "与", "詞": "词", "淺": "浅", "顯": "显", "寫": "写",
+    "標": "标", "題": "题", "籤": "签", "讀": "读", "嘗": "尝", "傷": "伤", "見": "见", "議": "议", "資": "资", "訊": "讯",
+    "總": "总", "週": "周", "強": "强", "腫": "肿", "潤": "润", "緻": "致", "準": "准", "損": "损", "減": "减",
+    "層": "层", "皺": "皱", "紋": "纹", "儀": "仪", "過": "过", "雙": "双", "頻": "频", "聲": "声", "分鐘": "分钟",
+    "動": "动", "協": "协", "煥": "焕", "將": "将", "濃": "浓", "營": "营", "養": "养", "滲": "渗", "適": "适",
+    "種": "种", "業": "业", "內": "内", "絕": "绝", "對": "对", "現": "现", "諧": "谐", "變": "变", "價": "价",
+    "這": "这", "個": "个", "點": "点", "還": "还", "讓": "让", "開": "开", "關": "关", "擔": "担", "擁": "拥",
+    "鬆": "松", "實": "实", "數": "数", "據": "据", "專": "专", "態": "态", "愛": "爱", "帶": "带", "嗎": "吗",
+    "別": "别", "條": "条", "體": "体", "們": "们", "對": "对", "裡": "里", "剛": "刚", "氣": "气", "從": "从",
+    "為": "为", "沒": "没", "發": "发", "滿": "满", "臉": "脸", "紅": "红", "級": "级", "爛": "烂", "應": "应",
+    "該": "该", "選": "选", "寶": "宝", "貝": "贝", "網": "网", "區": "区", "嗎": "吗", "唸": "念", "詫": "诧"
+  };
+  return String(text || "").replace(/[醫療針無創韓國風趨勢熱傳統復長導護膚類筆記專驚與詞淺顯寫標題籤讀嘗傷見議資訊總週強腫潤緻準損減層皺紋儀過雙頻聲動協煥將濃營養滲適種業內絕對現諧變價這個點還讓開關擔擁鬆實數據態愛帶嗎別條體們裡剛氣從為沒發滿臉紅級爛應該選寶貝網區唸詫]/g, (char) => map[char] || char);
 }
 
 function isRetriableGeminiError(message) {
@@ -389,7 +476,7 @@ function buildVersion({ topic, wordCount, hashtags, direction, index }) {
     topicDate,
     generatedAt: now.toISOString(),
     content: `Hook: Share one strong observation about ${topic}.\n\nBody (${wordCount} words target): Use this direction -> ${direction}. Include practical steps, one personal perspective, and one result-focused close.\n\nCTA: Ask readers to comment or save for later.`,
-    hashtags,
+    hashtags: normalizeHashtags(hashtags),
     assignedTo: ""
   };
 }
@@ -432,19 +519,8 @@ function cardForQueue(item) {
   const row = document.createElement("div");
   row.className = "row";
   const approve = button("審批", async () => {
-    const activeFile = document.querySelector("#referenceImage")?.files?.[0] || null;
-    if (item.referenceImageName && !item.referenceImageDataUrl && activeFile) {
-      try {
-        const reread = latestReferenceImage?.name === activeFile.name ? latestReferenceImage : await fileToDataUrl(activeFile);
-        item.referenceImageName = item.referenceImageName || reread.name;
-        item.referenceImageDataUrl = reread.dataUrl;
-        latestReferenceImage = reread;
-      } catch (error) {
-        setStatus(`審批前讀取指定圖片失敗：${error.message}`, true);
-        return;
-      }
-    }
-    if (item.referenceImageName && !item.referenceImageDataUrl) {
+    const restored = await ensureItemReferenceImages(item);
+    if (!restored) {
       setStatus("指定圖片資料已遺失，請重新選擇圖片後再審批。", true);
       return;
     }
@@ -457,7 +533,7 @@ function cardForQueue(item) {
     render();
     if (state.appsScriptUrl && item.assignedTo) {
       try {
-        if (item.referenceImageDataUrl) {
+        if (hasReferenceImageData(item)) {
           await syncApprovedOneWithImage(item);
         } else {
           await sync審批dOneReliable(item);
@@ -480,6 +556,38 @@ function cardForQueue(item) {
   return card;
 }
 
+async function ensureItemReferenceImages(item) {
+  const images = normalizeReferenceImages(item.referenceImages);
+  const hasExpectedImages = images.length || item.referenceImageName;
+  const hasData = images.some((image) => image.dataUrl) || item.referenceImageDataUrl;
+  if (!hasExpectedImages || hasData) return true;
+
+  const activeFiles = Array.from(document.querySelector("#referenceImage")?.files || []);
+  if (!activeFiles.length) return false;
+  try {
+    const selectedNames = activeFiles.map((file) => file.name).join("|");
+    const cachedNames = latestReferenceImages.map((image) => image.name).join("|");
+    const reread = selectedNames === cachedNames
+      ? latestReferenceImages
+      : await Promise.all(activeFiles.map(fileToDataUrl));
+    latestReferenceImages = reread;
+    item.referenceImages = normalizeReferenceImages(reread);
+    item.referenceImageName = getReferenceImageNames(reread);
+    item.referenceImageDataUrl = item.referenceImages[0]?.dataUrl || "";
+    return true;
+  } catch (error) {
+    setStatus(`審批前讀取指定圖片失敗：${error.message}`, true);
+    return false;
+  }
+}
+
+function hasReferenceImageData(item) {
+  return Boolean(
+    item.referenceImageDataUrl ||
+    normalizeReferenceImages(item.referenceImages).some((image) => image.dataUrl)
+  );
+}
+
 async function syncApprovedOneWithImage(item) {
   await postToAppsScript({
     action: "approveAssignOneWithImage",
@@ -496,7 +604,8 @@ async function syncApprovedOneWithImage(item) {
     photoDirection: item.photoDirection || "",
     photoInstruction: item.photoInstruction || "",
     referenceImageName: item.referenceImageName || "",
-    referenceImageDataUrl: item.referenceImageDataUrl || ""
+    referenceImageDataUrl: item.referenceImageDataUrl || "",
+    referenceImages: normalizeReferenceImages(item.referenceImages)
   });
 }
 
@@ -587,6 +696,7 @@ function upsertLog(item) {
     hashtags: item.hashtags || "",
     referenceImageName: item.referenceImageName || "",
     referenceImageDataUrl: item.referenceImageDataUrl || "",
+    referenceImages: normalizeReferenceImages(item.referenceImages).map((image) => ({ ...image, dataUrl: "" })),
     content: item.content || ""
   };
   if (idx >= 0) state.generationLogs[idx] = row;
@@ -708,7 +818,8 @@ function structuredCloneSafe(value) {
 function buildStorageSafeState(source) {
   const cleanItem = (item) => ({
     ...item,
-    referenceImageDataUrl: ""
+    referenceImageDataUrl: "",
+    referenceImages: normalizeReferenceImages(item.referenceImages).map((image) => ({ ...image, dataUrl: "" }))
   });
   return {
     ...source,
@@ -910,7 +1021,10 @@ async function autoSyncGenerated(items) {
   try {
     const compactItems = items.map((item, index) => ({
       ...item,
-      referenceImageDataUrl: index === 0 ? (item.referenceImageDataUrl || "") : ""
+      referenceImageDataUrl: index === 0 ? (item.referenceImageDataUrl || "") : "",
+      referenceImages: index === 0
+        ? normalizeReferenceImages(item.referenceImages)
+        : normalizeReferenceImages(item.referenceImages).map((image) => ({ ...image, dataUrl: "" }))
     }));
     await postToAppsScript({
       action: "appendGeneratedOnly",
