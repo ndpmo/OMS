@@ -199,8 +199,6 @@ function renderMine(items, staff, filters) {
       const card = document.createElement("article");
       card.className = "card";
       const referenceImages = getReferenceImages(item);
-      const hasSpecifiedImage = referenceImages.length > 0;
-      const imageName = escapeHtml(getReferenceImageLabel(item, referenceImages));
       card.innerHTML = `<h3>${escapeHtml(item.title || topic)}</h3>
         <p><strong>計劃發文日期：</strong> ${escapeHtml(item.topicDate || "-")}</p>
         <p>${escapeHtml(item.content).replaceAll("\n", "<br>")}</p>
@@ -216,55 +214,58 @@ function renderMine(items, staff, filters) {
       const imageRequirementSection = document.createElement("div");
       imageRequirementSection.className = "panel";
       imageRequirementSection.style.marginTop = "10px";
-      imageRequirementSection.innerHTML = `
-        <p><strong>圖片要求（治療師發文需遵守）</strong></p>
+      imageRequirementSection.innerHTML = "<p><strong>圖片要求（治療師發文需遵守）</strong></p>";
+
+      const specifiedImageSection = document.createElement("div");
+      specifiedImageSection.className = "panel";
+      specifiedImageSection.style.marginTop = "10px";
+      specifiedImageSection.innerHTML = `
         <p><strong>貼文指定圖片：</strong>若有指定，發文時請務必使用</p>
-        <p><strong>指定圖片檔案：</strong>${imageName}</p>
-        <p><strong>其他圖片方向：</strong> ${escapeHtml(item.photoDirection || "-")}</p>
       `;
-      imageRequirementSection.appendChild(linkButton("開啟參考圖片資料夾", "https://drive.google.com/drive/u/2/folders/1NNiM2b4kTrQcH7FMU3hW-e1Wb9qPPhBl"));
       if (referenceImages.length) {
         const previewTitle = document.createElement("p");
         previewTitle.innerHTML = `<strong>指定圖片預覽：</strong>共 ${referenceImages.length} 張`;
-        imageRequirementSection.appendChild(previewTitle);
+        specifiedImageSection.appendChild(previewTitle);
         referenceImages.forEach((image, index) => {
           const previewSrc = getImagePreviewSrc(image);
-          const downloadHref = getImageDownloadHref(image);
           if (previewSrc) {
             const imageLabel = document.createElement("p");
             imageLabel.innerHTML = `<strong>圖片 ${index + 1}：</strong>${escapeHtml(image.name || "指定圖片")}`;
-            imageRequirementSection.appendChild(imageLabel);
+            specifiedImageSection.appendChild(imageLabel);
 
-          const preview = document.createElement("img");
-          preview.src = previewSrc;
+            const preview = document.createElement("img");
+            preview.src = previewSrc;
             preview.alt = image.name || "reference-image";
-          preview.style.width = "100%";
-          preview.style.maxWidth = "100%";
-          preview.style.borderRadius = "10px";
-          preview.style.border = "1px solid #d5deea";
-          preview.style.display = "block";
-          preview.style.margin = "8px 0";
-          imageRequirementSection.appendChild(preview);
-          }
-
-          if (downloadHref || previewSrc) {
-            imageRequirementSection.appendChild(downloadImageButton(
-              image.name || `reference-image-${index + 1}`,
-              downloadHref || previewSrc,
-              referenceImages.length > 1 ? `下載圖片 ${index + 1}` : "下載參考圖片"
-            ));
+            preview.style.width = "100%";
+            preview.style.maxWidth = "100%";
+            preview.style.borderRadius = "10px";
+            preview.style.border = "1px solid #d5deea";
+            preview.style.display = "block";
+            preview.style.margin = "8px 0";
+            specifiedImageSection.appendChild(preview);
           }
         });
 
         const holdHint = document.createElement("p");
         holdHint.className = "status";
-        holdHint.textContent = "手機可長按圖片直接儲存。";
-        imageRequirementSection.appendChild(holdHint);
+        holdHint.textContent = "手機可長按圖片直接儲存；桌面可右鍵另存圖片。";
+        specifiedImageSection.appendChild(holdHint);
       } else {
         const noPreview = document.createElement("p");
-        noPreview.innerHTML = "<strong>指定圖片預覽：</strong>目前未指定，請使用上方資料夾連結確認最新素材。";
-        imageRequirementSection.appendChild(noPreview);
+        noPreview.innerHTML = "<strong>指定圖片預覽：</strong>目前未指定。";
+        specifiedImageSection.appendChild(noPreview);
       }
+      imageRequirementSection.appendChild(specifiedImageSection);
+
+      const otherImageSection = document.createElement("div");
+      otherImageSection.className = "panel";
+      otherImageSection.style.marginTop = "10px";
+      otherImageSection.innerHTML = `
+        <p><strong>其他圖片方向：</strong> ${escapeHtml(item.photoDirection || "-")}</p>
+      `;
+      otherImageSection.appendChild(linkButton("開啟參考圖片資料夾", "https://drive.google.com/drive/u/2/folders/1NNiM2b4kTrQcH7FMU3hW-e1Wb9qPPhBl"));
+      imageRequirementSection.appendChild(otherImageSection);
+
       card.appendChild(imageRequirementSection);
       wrap.appendChild(card);
     });
@@ -272,13 +273,6 @@ function renderMine(items, staff, filters) {
     section.appendChild(wrap);
     myContentEl.appendChild(section);
   });
-}
-
-function getReferenceImageLabel(item, referenceImages) {
-  const names = referenceImages.map((image) => image.name).filter(Boolean);
-  if (names.length) return names.join("、");
-  if (referenceImages.length) return `已指定 ${referenceImages.length} 張圖片，請使用下方預覽/下載圖片`;
-  return "未指定";
 }
 
 function groupByTopic(items) {
@@ -302,21 +296,6 @@ function copyButton(label, value) {
     } catch {
       setStatus(`${label} 複製失敗，請手動複製。`, true);
     }
-  });
-  return btn;
-}
-
-function downloadImageButton(fileName, href, label = "下載參考圖片") {
-  const btn = document.createElement("button");
-  btn.type = "button";
-  btn.textContent = label;
-  btn.addEventListener("click", () => {
-    const a = document.createElement("a");
-    a.href = href;
-    a.target = "_blank";
-    a.download = fileName || "reference-image";
-    a.click();
-    setStatus("已開始下載參考圖片。");
   });
   return btn;
 }
