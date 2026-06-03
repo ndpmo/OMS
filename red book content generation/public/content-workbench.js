@@ -13,12 +13,17 @@ const openrouterKeyWrap = document.querySelector("#openrouterKeyWrap");
 const openrouterModelWrap = document.querySelector("#openrouterModelWrap");
 const testConnectionBtn = document.querySelector("#testConnectionBtn");
 const testUploadBtn = document.querySelector("#testUploadBtn");
+const saveDraftBtn = document.querySelector("#saveDraftBtn");
+const loadDraftBtn = document.querySelector("#loadDraftBtn");
+const clearDraftBtn = document.querySelector("#clearDraftBtn");
 const resetLocalBtn = document.querySelector("#resetLocalBtn");
 const connectionStatusEl = document.querySelector("#connectionStatus");
 const fallbackStaffListInput = document.querySelector("#fallbackStaffList");
 const DEFAULT_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxm91pim17BsLNvVDlD5vESopFXxgrA3lZlhzhi3Fuc83HGrrL3uROi8qZEq6z_1y6M/exec";
 
 const KEY = "redbook_content_bank_v1";
+const DRAFT_KEY = "redbook_manager_input_draft_v1";
+const WINDOW_DRAFT_KEY = "__redbookManagerDraft";
 let memoryState = { queue: [], approved: [], generationLogs: [] };
 let isGenerating = false;
 let generatingCount = 0;
@@ -35,6 +40,7 @@ if (topicDateInput && !topicDateInput.value) {
   topicDateInput.value = formatDateOnly(new Date());
 }
 appsScriptUrlInput.value = state.appsScriptUrl || "";
+applySavedManagerDraft({ silent: true });
 appsScriptUrlInput.addEventListener("change", () => {
   state.appsScriptUrl = appsScriptUrlInput.value.trim();
   persist();
@@ -121,6 +127,22 @@ testUploadBtn?.addEventListener("click", async () => {
   }
 });
 
+saveDraftBtn?.addEventListener("click", () => {
+  saveManagerDraft();
+  setStatus("已儲存目前輸入內容。API 金鑰及圖片檔案不會被保存。");
+});
+
+loadDraftBtn?.addEventListener("click", () => {
+  const loaded = applySavedManagerDraft();
+  if (loaded) setStatus("已載入已儲存的輸入內容。請重新貼上 API 金鑰及重新選擇圖片。");
+  else setStatus("未找到已儲存的輸入內容。", true);
+});
+
+clearDraftBtn?.addEventListener("click", () => {
+  clearManagerDraft();
+  setStatus("已清除已儲存的輸入內容。");
+});
+
 resetLocalBtn.addEventListener("click", () => {
   const keepUrl = state.appsScriptUrl || DEFAULT_APPS_SCRIPT_URL;
   const keepFallback = state.fallbackStaffNumbers || [];
@@ -159,6 +181,7 @@ document.querySelector("#referenceImage")?.addEventListener("change", async (eve
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
+  saveManagerDraft({ silent: true });
   const topic = document.querySelector("#topic").value.trim();
   const topicDate = document.querySelector("#topicDate").value.trim();
   const provider = document.querySelector("#provider").value.trim() || "openrouter";
@@ -791,6 +814,124 @@ function button(label, onClick, ghost = false) {
   b.textContent = label;
   b.addEventListener("click", onClick);
   return b;
+}
+
+function getManagerDraftFromForm() {
+  return {
+    savedAt: new Date().toISOString(),
+    appsScriptUrl: getFieldValue("appsScriptUrl"),
+    provider: getFieldValue("provider"),
+    model: getFieldValue("model"),
+    openrouterModel: getFieldValue("openrouterModel"),
+    topic: getFieldValue("topic"),
+    topicDate: getFieldValue("topicDate"),
+    wordCount: getFieldValue("wordCount"),
+    hashtags: getFieldValue("hashtags"),
+    photoDirection: getFieldValue("photoDirection"),
+    direction: getFieldValue("direction"),
+    count: getFieldValue("count"),
+    fallbackStaffList: getFieldValue("fallbackStaffList")
+  };
+}
+
+function saveManagerDraft(options = {}) {
+  const draft = getManagerDraftFromForm();
+  state.appsScriptUrl = draft.appsScriptUrl || state.appsScriptUrl || DEFAULT_APPS_SCRIPT_URL;
+  state.fallbackStaffNumbers = parseFallbackStaff(draft.fallbackStaffList || "");
+  persist();
+
+  try {
+    if (canUseLocalStorage()) {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    } else {
+      saveDraftToWindowName(draft);
+    }
+  } catch (error) {
+    saveDraftToWindowName(draft);
+    if (!options.silent) {
+      setStatus("瀏覽器未能永久保存，已暫存在目前分頁。", true);
+    }
+  }
+}
+
+function applySavedManagerDraft(options = {}) {
+  const draft = loadManagerDraft();
+  if (!draft) return false;
+
+  setFieldValue("appsScriptUrl", draft.appsScriptUrl);
+  setFieldValue("provider", draft.provider || "openrouter");
+  setFieldValue("model", draft.model);
+  setFieldValue("openrouterModel", draft.openrouterModel);
+  setFieldValue("topic", draft.topic);
+  setFieldValue("topicDate", draft.topicDate);
+  setFieldValue("wordCount", draft.wordCount);
+  setFieldValue("hashtags", draft.hashtags);
+  setFieldValue("photoDirection", draft.photoDirection);
+  setFieldValue("direction", draft.direction);
+  setFieldValue("count", draft.count);
+  setFieldValue("fallbackStaffList", draft.fallbackStaffList);
+
+  state.appsScriptUrl = draft.appsScriptUrl || state.appsScriptUrl || DEFAULT_APPS_SCRIPT_URL;
+  state.fallbackStaffNumbers = parseFallbackStaff(draft.fallbackStaffList || "");
+  updateProviderFieldVisibility();
+  persist();
+  if (!options.silent) {
+    setStatus("已載入已儲存的輸入內容。");
+  }
+  return true;
+}
+
+function loadManagerDraft() {
+  try {
+    if (canUseLocalStorage()) {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      return raw ? JSON.parse(raw) : null;
+    }
+  } catch {
+    // Fall through to window.name fallback.
+  }
+  return loadDraftFromWindowName();
+}
+
+function clearManagerDraft() {
+  try {
+    if (canUseLocalStorage()) {
+      localStorage.removeItem(DRAFT_KEY);
+    }
+  } catch {
+    // Keep clearing fallback below.
+  }
+  saveDraftToWindowName(null);
+}
+
+function getFieldValue(id) {
+  return String(document.querySelector(`#${id}`)?.value || "").trim();
+}
+
+function setFieldValue(id, value) {
+  if (value === undefined || value === null) return;
+  const el = document.querySelector(`#${id}`);
+  if (el) el.value = String(value);
+}
+
+function loadDraftFromWindowName() {
+  try {
+    const data = JSON.parse(window.name || "{}");
+    return data && data[WINDOW_DRAFT_KEY] ? data[WINDOW_DRAFT_KEY] : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveDraftToWindowName(draft) {
+  try {
+    const data = JSON.parse(window.name || "{}");
+    if (draft) data[WINDOW_DRAFT_KEY] = draft;
+    else delete data[WINDOW_DRAFT_KEY];
+    window.name = JSON.stringify(data);
+  } catch {
+    window.name = draft ? JSON.stringify({ [WINDOW_DRAFT_KEY]: draft }) : "";
+  }
 }
 
 function persist() {
