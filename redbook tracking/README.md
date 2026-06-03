@@ -11,7 +11,7 @@ Small standalone website for tracking Xiaohongshu / Little Redbook post metrics 
 - Calculates daily change from the closest row at least 24 hours earlier.
 - Stores a local CSV at `data/redbook-hourly-results.csv`.
 - Optionally syncs each row to Google Sheets.
-- Applies a one-hour cooldown per post to help control Apify cost.
+- Requires the frontend refresh password before a paid refresh can run.
 
 Current Apify actor:
 
@@ -19,7 +19,7 @@ Current Apify actor:
 sian.agency/xiaohongshu-rednote-scraper
 ```
 
-This actor is configured in `apps-script/Code.gs`. It is more reliable for note detail data, so keep the manual refresh and one-hour cooldown enabled to control Apify cost.
+This actor is configured in `apps-script/Code.gs`. It is more reliable for note detail data, so keep refresh password-protected to control Apify cost.
 
 ## Run Locally
 

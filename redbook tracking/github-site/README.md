@@ -24,4 +24,4 @@ window.TRACKER_API_URL = 'https://script.google.com/macros/s/.../exec';
 
 ## Important
 
-If the Apps Script deployment is public, anyone with the GitHub Pages URL can submit post URLs for tracking. The Apify token is still hidden in Apps Script Properties, but usage can increase if the page is shared widely. Refreshes are manually triggered and capped at once per post per hour.
+If the Apps Script deployment is public, anyone with the GitHub Pages URL can submit post URLs for tracking. The Apify token is still hidden in Apps Script Properties, but usage can increase if the page is shared widely. Refreshes are manually triggered and require the frontend refresh password.

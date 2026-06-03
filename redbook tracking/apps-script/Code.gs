@@ -3,6 +3,7 @@ const SHEET_NAME = 'Hourly Results';
 const TRACKS_SHEET_NAME = 'Tracked Posts';
 const APIFY_ACTOR_URL = 'https://api.apify.com/v2/acts/sian.agency~xiaohongshu-rednote-scraper/run-sync-get-dataset-items';
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+const REFRESH_PASSWORD = '29768888pmo';
 
 const HEADERS = [
   'fetched_at',
@@ -59,7 +60,7 @@ function handleApiGet_(params) {
     } else if (action === 'addTrack') {
       data = addTrack(params.url || params.noteId || '');
     } else if (action === 'refreshAll') {
-      data = refreshAllTrackedPosts();
+      data = refreshAllTrackedPosts(params.refreshPassword || '');
     } else if (action === 'saveToken') {
       data = saveApifyToken(params.token || '');
     } else {
@@ -86,6 +87,15 @@ function saveApifyToken(token) {
 
   PropertiesService.getScriptProperties().setProperty('APIFY_TOKEN', String(token).trim());
   return { saved: true };
+}
+
+function removeAutomaticRefreshTriggers() {
+  ScriptApp.getProjectTriggers().forEach((trigger) => {
+    if (trigger.getHandlerFunction() === 'refreshAllTrackedPosts') {
+      ScriptApp.deleteTrigger(trigger);
+    }
+  });
+  return { ok: true };
 }
 
 function addTrack(rawInput) {
@@ -129,7 +139,8 @@ function addTrack(rawInput) {
   return data;
 }
 
-function refreshAllTrackedPosts() {
+function refreshAllTrackedPosts(refreshPassword) {
+  validateRefreshPassword_(refreshPassword);
   setup();
 
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
@@ -345,6 +356,12 @@ function resolveShortLink_(raw) {
     return headers.Location || headers.location || raw;
   } catch (error) {
     return raw;
+  }
+}
+
+function validateRefreshPassword_(password) {
+  if (String(password || '').trim() !== REFRESH_PASSWORD) {
+    throw new Error('Refresh password is required.');
   }
 }
 

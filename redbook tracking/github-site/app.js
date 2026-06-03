@@ -38,7 +38,7 @@ refreshAll.addEventListener('click', async () => {
   setMessage('正在刷新全部筆記...');
   runStatus.textContent = '狀態：正在呼叫 Apps Script，請稍候。';
   try {
-    const summary = await callApi('refreshAll');
+    const summary = await callApi('refreshAll', { refreshPassword: refreshPassword.value.trim() });
     refreshPassword.value = '';
     await loadDashboard();
     const text = `刷新完成：更新 ${summary.refreshed || 0}，略過 ${summary.skipped || 0}，錯誤 ${summary.errors || 0}。`;
