@@ -567,9 +567,11 @@ function getTopicProgress_() {
     const h = indexMap_(generatedValues[0]);
     generatedValues.slice(1).forEach(function (r) {
       const topic = String(r[h.topic] || "").trim();
+      const topicDate = normalizeDateForOutput_(r[h.topicDate]);
       if (!topic) return;
-      if (!map[topic]) map[topic] = { generated: 0, approved: 0, assigned: 0, missing: 0 };
-      map[topic].generated += 1;
+      const key = topicProgressKey_(topicDate, topic);
+      if (!map[key]) map[key] = { topic: topic, topicDate: topicDate, generated: 0, approved: 0, assigned: 0, missing: 0 };
+      map[key].generated += 1;
     });
   }
 
@@ -577,10 +579,12 @@ function getTopicProgress_() {
     const h = indexMap_(assignValues[0]);
     assignValues.slice(1).forEach(function (r) {
       const topic = String(r[h.topic] || "").trim();
+      const topicDate = normalizeDateForOutput_(r[h.topicDate]);
       if (!topic) return;
-      if (!map[topic]) map[topic] = { generated: 0, approved: 0, assigned: 0, missing: 0 };
-      map[topic].approved += 1;
-      if (String(r[h.staffNo] || "").trim()) map[topic].assigned += 1;
+      const key = topicProgressKey_(topicDate, topic);
+      if (!map[key]) map[key] = { topic: topic, topicDate: topicDate, generated: 0, approved: 0, assigned: 0, missing: 0 };
+      map[key].approved += 1;
+      if (String(r[h.staffNo] || "").trim()) map[key].assigned += 1;
     });
   }
 
@@ -588,6 +592,22 @@ function getTopicProgress_() {
     map[k].missing = Math.max(0, staffCount - map[k].assigned);
   });
   return map;
+}
+
+function topicProgressKey_(topicDate, topic) {
+  return String(topicDate || "-") + "__" + String(topic || "Untitled");
+}
+
+function normalizeDateForOutput_(value) {
+  if (Object.prototype.toString.call(value) === "[object Date]" && !isNaN(value.getTime())) {
+    return Utilities.formatDate(value, TZ, "yyyy-MM-dd");
+  }
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  const parsed = new Date(raw);
+  if (!isNaN(parsed.getTime())) return Utilities.formatDate(parsed, TZ, "yyyy-MM-dd");
+  return raw;
 }
 
 function findGeneratedById_(id) {

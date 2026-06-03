@@ -161,7 +161,7 @@ form.addEventListener("submit", async (e) => {
   e.preventDefault();
   const topic = document.querySelector("#topic").value.trim();
   const topicDate = document.querySelector("#topicDate").value.trim();
-  const provider = document.querySelector("#provider").value.trim() || "gemini";
+  const provider = document.querySelector("#provider").value.trim() || "openrouter";
   const apiKey = document.querySelector("#apiKey").value.trim();
   const openrouterKey = document.querySelector("#openrouterKey").value.trim();
   const openrouterModel = document.querySelector("#openrouterModel").value.trim() || "openrouter/auto";
@@ -633,8 +633,11 @@ function renderTopicSummary() {
   for (const [key, stats] of entries) {
     const card = document.createElement("article");
     card.className = "kpi-card";
+    const topic = stats.topic || getTopicFromProgressKey(key);
+    const publishDate = stats.topicDate || getDateFromProgressKey(key);
     card.innerHTML = `
-      <p class="kpi-title">${escapeHtml(key)}</p>
+      <p class="kpi-row"><strong>預定發布日期：</strong>${escapeHtml(publishDate || "-")}</p>
+      <p class="kpi-title">${escapeHtml(topic)}</p>
       <p class="kpi-row">已生成： ${stats.generated}</p>
       <p class="kpi-row">審批d: ${stats.approved}</p>
       <p class="kpi-row">已分配： ${stats.assigned}</p>
@@ -648,8 +651,9 @@ function groupByTopicDate() {
   const map = {};
   const add = (item, kind) => {
     const topic = item.topic || item.title || "Untitled";
-    const key = topic;
-    if (!map[key]) map[key] = { generated: 0, approved: 0, assigned: 0, missing: 0 };
+    const topicDate = normalizeProgressDate(item.topicDate) || "-";
+    const key = `${topicDate}__${topic}`;
+    if (!map[key]) map[key] = { topic, topicDate, generated: 0, approved: 0, assigned: 0, missing: 0 };
     if (kind === "generated") map[key].generated += 1;
     if (kind === "approved") map[key].approved += 1;
     if (kind === "assigned") map[key].assigned += 1;
@@ -676,8 +680,31 @@ function renderTopicGapSummary() {
     return;
   }
   topicGapSummaryEl.innerHTML = entries
-    .map(([key, stats]) => `<p class="kpi-row"><strong>${escapeHtml(key)}</strong>: ${stats.missing} 位治療師尚未分配</p>`)
+    .map(([key, stats]) => {
+      const topic = stats.topic || getTopicFromProgressKey(key);
+      const publishDate = stats.topicDate || getDateFromProgressKey(key);
+      return `<p class="kpi-row"><strong>${escapeHtml(publishDate || "-")}｜文章主題：${escapeHtml(topic)}</strong>｜${stats.missing} 位治療師尚未分配</p>`;
+    })
     .join("");
+}
+
+function normalizeProgressDate(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return raw;
+  return formatDateOnly(parsed);
+}
+
+function getDateFromProgressKey(key) {
+  const text = String(key || "");
+  return text.includes("__") ? text.split("__")[0] : "";
+}
+
+function getTopicFromProgressKey(key) {
+  const text = String(key || "");
+  return text.includes("__") ? text.split("__").slice(1).join("__") : text;
 }
 
 function upsertLog(item) {
@@ -1008,7 +1035,7 @@ function parseFallbackStaff(text) {
 }
 
 function updateProviderFieldVisibility() {
-  const provider = providerSelect?.value || "gemini";
+  const provider = providerSelect?.value || "openrouter";
   const showGemini = provider === "gemini";
   if (geminiKeyWrap) geminiKeyWrap.style.display = showGemini ? "" : "none";
   if (geminiModelWrap) geminiModelWrap.style.display = showGemini ? "" : "none";

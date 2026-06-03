@@ -187,11 +187,14 @@ function renderMine(items, staff, filters) {
   } else {
     setStatus(`已載入 ${items.length} 筆分配內容（排序：${sortOrder === "asc" ? "日期舊到新" : "日期新到舊"}）。`);
   }
-  const grouped = groupByTopic(items);
-  Object.entries(grouped).forEach(([topic, topicItems]) => {
+  const grouped = groupByPublishDateAndTopic(items);
+  grouped.forEach(({ topic, publishDate, items: topicItems }) => {
     const section = document.createElement("section");
     section.className = "panel";
-    section.innerHTML = `<h2>文章主題: ${escapeHtml(topic)}</h2>`;
+    section.innerHTML = `
+      <p class="eyebrow">預定發布日期：${escapeHtml(publishDate || "-")}</p>
+      <h2>文章主題：${escapeHtml(topic)}</h2>
+    `;
 
     const wrap = document.createElement("div");
     wrap.className = "grid";
@@ -200,7 +203,6 @@ function renderMine(items, staff, filters) {
       card.className = "card";
       const referenceImages = getReferenceImages(item);
       card.innerHTML = `<h3>${escapeHtml(item.title || topic)}</h3>
-        <p><strong>計劃發文日期：</strong> ${escapeHtml(item.topicDate || "-")}</p>
         <p>${escapeHtml(item.content).replaceAll("\n", "<br>")}</p>
         <p><strong>標籤：</strong> ${escapeHtml(item.hashtags)}</p>`;
 
@@ -275,14 +277,16 @@ function renderMine(items, staff, filters) {
   });
 }
 
-function groupByTopic(items) {
+function groupByPublishDateAndTopic(items) {
   const map = {};
   items.forEach((item) => {
     const topic = item.topic || "未分類主題";
-    if (!map[topic]) map[topic] = [];
-    map[topic].push(item);
+    const publishDate = normalizeDateKey(item.topicDate) || String(item.topicDate || "").trim() || "-";
+    const key = `${publishDate}__${topic}`;
+    if (!map[key]) map[key] = { topic, publishDate, items: [] };
+    map[key].items.push(item);
   });
-  return map;
+  return Object.values(map);
 }
 
 function copyButton(label, value) {
