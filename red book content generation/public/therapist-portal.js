@@ -208,7 +208,7 @@ function renderMine(items, staff, filters) {
 
       const row = document.createElement("div");
       row.className = "row";
-      row.appendChild(copyButton("複製文章主題", topic));
+      row.appendChild(copyButton("複製文章主題", item.title || topic));
       row.appendChild(copyButton("複製文章", item.content || ""));
       row.appendChild(copyButton("複製 hashtag", item.hashtags || ""));
       card.appendChild(row);
