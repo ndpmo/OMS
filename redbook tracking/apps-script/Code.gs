@@ -447,7 +447,7 @@ function buildNoteUrl_(noteId, submittedUrl) {
   if (!cleanNoteId) {
     throw new Error(`Invalid Xiaohongshu note ID or URL: ${String(noteId || submittedUrl || '').slice(0, 120)}`);
   }
-  return `https://www.xiaohongshu.com/explore/${cleanNoteId}`;
+  return `https://www.xiaohongshu.com/discovery/item/${cleanNoteId}`;
 }
 
 function normalizeNoteId_(value) {
