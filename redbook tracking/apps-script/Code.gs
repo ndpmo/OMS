@@ -443,11 +443,16 @@ function firstValue_() {
 }
 
 function buildNoteUrl_(noteId, submittedUrl) {
+  const raw = String(submittedUrl || '').trim();
+  if (/^https?:\/\/(?:www\.)?xiaohongshu\.com\//i.test(raw) || /^https?:\/\/(?:www\.)?xhslink\.com\//i.test(raw)) {
+    return raw;
+  }
+
   const cleanNoteId = normalizeNoteId_(noteId) || extractNoteId_(submittedUrl);
   if (!cleanNoteId) {
     throw new Error(`Invalid Xiaohongshu note ID or URL: ${String(noteId || submittedUrl || '').slice(0, 120)}`);
   }
-  return `https://www.xiaohongshu.com/discovery/item/${cleanNoteId}`;
+  return `https://www.xiaohongshu.com/explore/${cleanNoteId}`;
 }
 
 function normalizeNoteId_(value) {
