@@ -172,7 +172,8 @@ function refreshOne_(noteId) {
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   const tracksSheet = ss.getSheetByName(TRACKS_SHEET_NAME);
   const tracks = getObjects_(tracksSheet);
-  const trackIndex = tracks.findIndex((row) => String(row.note_id) === String(noteId));
+  const targetNoteId = normalizeNoteId_(noteId);
+  const trackIndex = tracks.findIndex((row) => normalizeNoteId_(row.note_id) === targetNoteId);
 
   if (trackIndex === -1) {
     throw new Error('Tracked post not found.');
@@ -182,17 +183,17 @@ function refreshOne_(noteId) {
   try {
     updateTrackStatus_(tracksSheet, trackIndex, 'checking', '');
 
-    const sample = fetchMetrics_(noteId, track.submitted_url);
+    const sample = fetchMetrics_(targetNoteId, track.submitted_url);
     const resultsSheet = ss.getSheetByName(SHEET_NAME);
-    const previous = getLatestSample_(resultsSheet, noteId);
-    const dailyBaseline = getDailyBaseline_(resultsSheet, noteId, new Date(sample.fetchedAt));
+    const previous = getLatestSample_(resultsSheet, targetNoteId);
+    const dailyBaseline = getDailyBaseline_(resultsSheet, targetNoteId, new Date(sample.fetchedAt));
     const hourlyDelta = metricDelta_(sample, previous);
     const dailyDelta = metricDelta_(sample, dailyBaseline);
 
     resultsSheet.appendRow(makeRow_(sample, hourlyDelta, dailyDelta));
     updateTrackStatus_(tracksSheet, trackIndex, 'active', '', sample.fetchedAt);
 
-    return { ok: true, skipped: false, noteId };
+    return { ok: true, skipped: false, noteId: targetNoteId };
   } catch (error) {
     updateTrackStatus_(tracksSheet, trackIndex, 'error', error.message);
     throw error;
@@ -246,7 +247,7 @@ function fetchMetrics_(noteId, submittedUrl) {
   });
 
   if (response.getResponseCode() < 200 || response.getResponseCode() >= 300) {
-    throw new Error(`Apify returned HTTP ${response.getResponseCode()}: ${response.getContentText()}`);
+    throw new Error(`Apify returned HTTP ${response.getResponseCode()} for ${noteUrl}: ${response.getContentText()}`);
   }
 
   const items = JSON.parse(response.getContentText());
@@ -442,7 +443,17 @@ function firstValue_() {
 }
 
 function buildNoteUrl_(noteId, submittedUrl) {
-  return `https://www.xiaohongshu.com/explore/${String(noteId || '').trim()}`;
+  const cleanNoteId = normalizeNoteId_(noteId) || extractNoteId_(submittedUrl);
+  if (!cleanNoteId) {
+    throw new Error(`Invalid Xiaohongshu note ID or URL: ${String(noteId || submittedUrl || '').slice(0, 120)}`);
+  }
+  return `https://www.xiaohongshu.com/explore/${cleanNoteId}`;
+}
+
+function normalizeNoteId_(value) {
+  const text = String(value || '').trim();
+  if (/^[a-f0-9]{24}$/i.test(text)) return text.toLowerCase();
+  return extractNoteId_(text).toLowerCase();
 }
 
 function isEmptyMetricRow_(sample) {
