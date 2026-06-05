@@ -108,14 +108,20 @@ function addTrack(rawInput) {
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   const sheet = ss.getSheetByName(TRACKS_SHEET_NAME);
   const rows = getObjects_(sheet);
-  const existingIds = new Set(rows.map((row) => String(row.note_id)));
+  const existingRowsById = new Map();
+  rows.forEach((row, index) => {
+    existingRowsById.set(String(row.note_id), index + 2);
+  });
   const now = new Date();
   let added = 0;
-  let skipped = 0;
+  let updated = 0;
 
   inputs.forEach((input) => {
-    if (existingIds.has(input.noteId)) {
-      skipped++;
+    const existingRow = existingRowsById.get(input.noteId);
+    if (existingRow) {
+      sheet.getRange(existingRow, 2).setValue(input.raw);
+      sheet.getRange(existingRow, 6, 1, 2).setValues([['queued', 'Updated submitted URL; press refresh to fetch data.']]);
+      updated++;
       return;
     }
 
@@ -129,13 +135,14 @@ function addTrack(rawInput) {
       ''
     ]);
 
-    existingIds.add(input.noteId);
+    existingRowsById.set(input.noteId, sheet.getLastRow());
     added++;
   });
 
   const data = getDashboardData();
   data.added = added;
-  data.skipped = skipped;
+  data.skipped = updated;
+  data.updated = updated;
   return data;
 }
 
