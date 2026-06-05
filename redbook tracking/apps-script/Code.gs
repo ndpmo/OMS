@@ -1,7 +1,7 @@
 const SPREADSHEET_ID = '1W6r0sQaQ96t1x2pF6ZodgVFqt6-odVWu-l1RWJXr7sw';
 const SHEET_NAME = 'Hourly Results';
 const TRACKS_SHEET_NAME = 'Tracked Posts';
-const APIFY_ACTOR_URL = 'https://api.apify.com/v2/acts/sian.agency~xiaohongshu-rednote-scraper/run-sync-get-dataset-items';
+const APIFY_ACTOR_URL = 'https://api.apify.com/v2/acts/habit.zhou~xiaohongshu-pro-scraper/run-sync-get-dataset-items';
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 const REFRESH_PASSWORD = '29768888pmo';
 
@@ -230,8 +230,10 @@ function fetchMetrics_(noteId, submittedUrl) {
 
   const noteUrl = buildNoteUrl_(noteId, submittedUrl);
   const payload = {
-    operation: 'noteDetail',
-    noteId
+    mode: 'notes',
+    noteUrls: [noteUrl],
+    maxItemsPerInput: 1,
+    fetchComments: false
   };
   const cookiesString = PropertiesService.getScriptProperties().getProperty('XHS_COOKIES');
   if (cookiesString) payload.cookiesString = cookiesString;
@@ -274,16 +276,16 @@ function mapApifyItem_(item, noteId, noteUrl) {
     fetchedAt: firstValue_(item.scrapedAt, item._fetchedAt, item.fetchedAt, item.updatedAt, new Date()),
     noteId: firstValue_(item.noteId, item.id, item.note_id, item.noteID, noteId),
     title: firstValue_(item.title, item.noteTitle, item.displayTitle, item.descTitle, item.name, item.shareTitle),
-    author: firstValue_(item.userName, item.nickname, item.authorName, item.creatorName, author.nickname, author.name, author.userName),
-    userId: firstValue_(item.userId, item.user_id, author.userId, author.id),
+    author: firstValue_(item.author, item.userName, item.nickname, item.authorName, item.creatorName, author.nickname, author.name, author.userName),
+    userId: firstValue_(item.authorId, item.userId, item.user_id, author.userId, author.id),
     redId: firstValue_(item.userRedId, item.redId, item.red_id, author.redId, author.red_id),
-    type: firstValue_(item.noteType, item.type, item.note_type),
+    type: firstValue_(item.noteType, item.type, item.note_type, item.isVideo === true ? 'video' : item.isVideo === false ? 'note' : ''),
     likes: numberOrBlank_(firstValue_(item.likedCount, item.likes, item.likeCount, item.liked_count, interact.likedCount, interact.likes, interact.likeCount)),
     comments: numberOrBlank_(firstValue_(item.commentsCount, item.commentCount, item.comments, item.comments_count, interact.commentCount, interact.comments)),
     saves: numberOrBlank_(firstValue_(item.collectedCount, item.collectCount, item.collects, item.saves, item.collected_count, interact.collectedCount, interact.collectCount, interact.collects)),
     shares: numberOrBlank_(firstValue_(item.sharedCount, item.shareCount, item.shares, item.shared_count, interact.sharedCount, interact.shareCount, interact.shares)),
     views: numberOrBlank_(firstValue_(item.viewCount, item.views, item.view_count, interact.viewCount, interact.views)),
-    pageUrl: firstValue_(item.notePageUrl, item.url, item.noteUrl, noteUrl)
+    pageUrl: firstValue_(item.notePageUrl, item.url, item.noteUrl, item.noteURL, noteUrl)
   };
 }
 
