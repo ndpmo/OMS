@@ -254,7 +254,7 @@ function fetchMetrics_(noteId, submittedUrl) {
   });
 
   if (response.getResponseCode() < 200 || response.getResponseCode() >= 300) {
-    throw new Error(`Apify returned HTTP ${response.getResponseCode()} for ${noteUrl}: ${response.getContentText()}`);
+    throw new Error(`Apify returned HTTP ${response.getResponseCode()} for mode=${payload.mode}, noteUrls[0]=${noteUrl}: ${response.getContentText()}`);
   }
 
   const items = JSON.parse(response.getContentText());
@@ -451,7 +451,7 @@ function firstValue_() {
 
 function buildNoteUrl_(noteId, submittedUrl) {
   const raw = String(submittedUrl || '').trim();
-  if (/^https?:\/\/(?:www\.)?xiaohongshu\.com\//i.test(raw) || /^https?:\/\/(?:www\.)?xhslink\.com\//i.test(raw)) {
+  if (/^https?:\/\/(?:www\.)?xhslink\.com\//i.test(raw)) {
     return raw;
   }
 
@@ -459,6 +459,13 @@ function buildNoteUrl_(noteId, submittedUrl) {
   if (!cleanNoteId) {
     throw new Error(`Invalid Xiaohongshu note ID or URL: ${String(noteId || submittedUrl || '').slice(0, 120)}`);
   }
+
+  const xsecToken = getUrlParam_(raw, 'xsec_token');
+  const xsecSource = getUrlParam_(raw, 'xsec_source') || 'app_share';
+  if (xsecToken) {
+    return `https://www.xiaohongshu.com/explore/${cleanNoteId}?xsec_token=${encodeURIComponent(xsecToken)}&xsec_source=${encodeURIComponent(xsecSource)}`;
+  }
+
   return `https://www.xiaohongshu.com/explore/${cleanNoteId}`;
 }
 
@@ -466,6 +473,17 @@ function normalizeNoteId_(value) {
   const text = String(value || '').trim();
   if (/^[a-f0-9]{24}$/i.test(text)) return text.toLowerCase();
   return extractNoteId_(text).toLowerCase();
+}
+
+function getUrlParam_(url, name) {
+  const pattern = new RegExp(`[?&]${name}=([^&]*)`, 'i');
+  const match = String(url || '').match(pattern);
+  if (!match) return '';
+  try {
+    return decodeURIComponent(match[1].replace(/\+/g, ' '));
+  } catch (error) {
+    return match[1];
+  }
 }
 
 function isEmptyMetricRow_(sample) {
