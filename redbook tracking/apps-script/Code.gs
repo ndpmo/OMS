@@ -236,28 +236,32 @@ function fetchMetrics_(noteId, submittedUrl) {
     throw new Error('Set your Apify token first.');
   }
 
-  const noteUrl = buildNoteUrl_(noteId, submittedUrl);
-  const payload = {
-    mode: 'notes',
-    noteUrls: [noteUrl],
-    maxItemsPerInput: 1,
-    fetchComments: false
-  };
-  const cookiesString = PropertiesService.getScriptProperties().getProperty('XHS_COOKIES');
-  if (cookiesString) payload.cookiesString = cookiesString;
+  const attempts = buildApifyAttempts_(noteId, submittedUrl);
+  const errors = [];
+  let items = null;
+  let noteUrl = '';
 
-  const response = UrlFetchApp.fetch(`${APIFY_ACTOR_URL}?token=${encodeURIComponent(token)}`, {
-    method: 'post',
-    contentType: 'application/json',
-    payload: JSON.stringify(payload),
-    muteHttpExceptions: true
-  });
+  for (let i = 0; i < attempts.length; i++) {
+    const attempt = attempts[i];
+    const response = callApify_(token, attempt.payload);
+    noteUrl = attempt.displayUrl;
 
-  if (response.getResponseCode() < 200 || response.getResponseCode() >= 300) {
-    throw new Error(`Apify returned HTTP ${response.getResponseCode()} for mode=${payload.mode}, noteUrls[0]=${noteUrl}: ${response.getContentText()}`);
+    if (response.getResponseCode() >= 200 && response.getResponseCode() < 300) {
+      items = JSON.parse(response.getContentText());
+      break;
+    }
+
+    const errorText = response.getContentText();
+    errors.push(`attempt ${i + 1} ${attempt.label}: HTTP ${response.getResponseCode()} ${errorText}`);
+    if (!isInvalidNoteUrlError_(response, errorText)) {
+      throw new Error(`Apify returned HTTP ${response.getResponseCode()} for ${attempt.label}, ${attempt.displayUrl}: ${errorText}`);
+    }
   }
 
-  const items = JSON.parse(response.getContentText());
+  if (!items) {
+    throw new Error(`Apify rejected every note URL format. ${errors.join(' | ')}`);
+  }
+
   if (!Array.isArray(items) || !items.length) {
     throw new Error('Apify returned no data for this note.');
   }
@@ -467,6 +471,66 @@ function buildNoteUrl_(noteId, submittedUrl) {
   }
 
   return `https://www.xiaohongshu.com/explore/${cleanNoteId}`;
+}
+
+function buildApifyAttempts_(noteId, submittedUrl) {
+  const raw = String(submittedUrl || '').trim();
+  const cleanNoteId = normalizeNoteId_(noteId) || extractNoteId_(submittedUrl);
+  const urls = [];
+
+  addUnique_(urls, buildNoteUrl_(cleanNoteId, submittedUrl));
+  if (/^https?:\/\/(?:www\.)?xiaohongshu\.com\//i.test(raw)) addUnique_(urls, stripQuery_(raw));
+  if (cleanNoteId) {
+    addUnique_(urls, `https://www.xiaohongshu.com/explore/${cleanNoteId}`);
+    addUnique_(urls, `https://www.xiaohongshu.com/discovery/item/${cleanNoteId}`);
+    addUnique_(urls, `https://www.xiaohongshu.com/explore/${cleanNoteId}/`);
+  }
+  if (/^https?:\/\/(?:www\.)?xhslink\.com\//i.test(raw)) addUnique_(urls, raw);
+
+  return urls.map((url) => ({
+    label: 'noteUrls string',
+    displayUrl: url,
+    payload: makeApifyPayload_([url])
+  })).concat(urls.map((url) => ({
+    label: 'noteUrls object',
+    displayUrl: url,
+    payload: makeApifyPayload_([{ url }])
+  })));
+}
+
+function makeApifyPayload_(noteUrls) {
+  const payload = {
+    mode: 'notes',
+    noteUrls,
+    maxItemsPerInput: 1,
+    fetchComments: false
+  };
+  const cookiesString = PropertiesService.getScriptProperties().getProperty('XHS_COOKIES');
+  if (cookiesString) payload.cookiesString = cookiesString;
+  return payload;
+}
+
+function callApify_(token, payload) {
+  return UrlFetchApp.fetch(`${APIFY_ACTOR_URL}?token=${encodeURIComponent(token)}`, {
+    method: 'post',
+    contentType: 'application/json',
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  });
+}
+
+function isInvalidNoteUrlError_(response, errorText) {
+  return response.getResponseCode() === 400 &&
+    /input\.noteUrls/i.test(errorText || '') &&
+    /valid URLs/i.test(errorText || '');
+}
+
+function addUnique_(items, value) {
+  if (value && items.indexOf(value) === -1) items.push(value);
+}
+
+function stripQuery_(url) {
+  return String(url || '').split('?')[0].split('#')[0];
 }
 
 function normalizeNoteId_(value) {
