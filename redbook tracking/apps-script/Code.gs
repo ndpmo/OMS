@@ -442,9 +442,7 @@ function firstValue_() {
 }
 
 function buildNoteUrl_(noteId, submittedUrl) {
-  const raw = String(submittedUrl || '').trim();
-  if (/^https?:\/\//i.test(raw)) return raw;
-  return `https://www.xiaohongshu.com/explore/${noteId}`;
+  return `https://www.xiaohongshu.com/explore/${String(noteId || '').trim()}`;
 }
 
 function isEmptyMetricRow_(sample) {
