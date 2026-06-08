@@ -387,11 +387,8 @@ function ensureSheet_(ss, name, headers) {
     sheet.appendRow(headers);
     sheet.setFrozenRows(1);
   } else {
-    const currentHeaders = sheet.getRange(1, 1, 1, Math.max(sheet.getLastColumn(), 1)).getValues()[0];
-    const missingHeaders = headers.filter((header) => currentHeaders.indexOf(header) === -1);
-    if (missingHeaders.length) {
-      sheet.getRange(1, currentHeaders.length + 1, 1, missingHeaders.length).setValues([missingHeaders]);
-    }
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    sheet.setFrozenRows(1);
   }
   return sheet;
 }
