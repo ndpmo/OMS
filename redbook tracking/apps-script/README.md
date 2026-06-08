@@ -35,7 +35,7 @@ The script creates these tabs automatically:
 
 `Hourly Results` includes:
 
-- post metadata: note id, title, KOL, user id, Red ID, type, URL
+- post metadata: note id, title, KOL, user id, Red ID, type, scraped URL, original submitted URL
 - metrics: likes, comments, saves, shares, views
 - hourly changes: `hourly_likes`, `hourly_comments`, `hourly_saves`, `hourly_shares`
 - daily changes: `daily_likes`, `daily_comments`, `daily_saves`, `daily_shares`

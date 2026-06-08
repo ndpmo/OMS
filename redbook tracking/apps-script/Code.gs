@@ -26,7 +26,8 @@ const HEADERS = [
   'daily_comments',
   'daily_saves',
   'daily_shares',
-  'post_url'
+  'post_url',
+  'submitted_url'
 ];
 
 const TRACK_HEADERS = ['note_id', 'submitted_url', 'created_at', 'last_checked_at', 'next_check_at', 'status', 'error'];
@@ -197,7 +198,7 @@ function refreshOne_(noteId) {
     const hourlyDelta = metricDelta_(sample, previous);
     const dailyDelta = metricDelta_(sample, dailyBaseline);
 
-    resultsSheet.appendRow(makeRow_(sample, hourlyDelta, dailyDelta));
+    resultsSheet.appendRow(makeRow_(sample, hourlyDelta, dailyDelta, track.submitted_url));
     updateTrackStatus_(tracksSheet, trackIndex, 'active', '', sample.fetchedAt);
 
     return { ok: true, skipped: false, noteId: targetNoteId };
@@ -301,7 +302,7 @@ function mapApifyItem_(item, noteId, noteUrl) {
   };
 }
 
-function makeRow_(sample, hourlyDelta, dailyDelta) {
+function makeRow_(sample, hourlyDelta, dailyDelta, submittedUrl) {
   return [
     sample.fetchedAt,
     sample.noteId,
@@ -323,7 +324,8 @@ function makeRow_(sample, hourlyDelta, dailyDelta) {
     dailyDelta.comments,
     dailyDelta.saves,
     dailyDelta.shares,
-    sample.pageUrl
+    sample.pageUrl,
+    submittedUrl || ''
   ];
 }
 
@@ -384,6 +386,12 @@ function ensureSheet_(ss, name, headers) {
   if (sheet.getLastRow() === 0) {
     sheet.appendRow(headers);
     sheet.setFrozenRows(1);
+  } else {
+    const currentHeaders = sheet.getRange(1, 1, 1, Math.max(sheet.getLastColumn(), 1)).getValues()[0];
+    const missingHeaders = headers.filter((header) => currentHeaders.indexOf(header) === -1);
+    if (missingHeaders.length) {
+      sheet.getRange(1, currentHeaders.length + 1, 1, missingHeaders.length).setValues([missingHeaders]);
+    }
   }
   return sheet;
 }
