@@ -1,6 +1,0 @@
-Save the supplied OMS Growth OS poster image in this folder as:
-
-growth-os-login-bg.png
-
-The login page uses it from:
-/growth-os-login-bg.png
