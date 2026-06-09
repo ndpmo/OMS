@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>小紅書每小時追蹤表</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="top-panel">
+        <div class="intro">
+          <p class="eyebrow">小紅書數據追蹤</p>
+          <h1>手動刷新追蹤表</h1>
+          <p class="lede">資料寫入 Google Sheet；輸入刷新密碼並按下刷新時才會更新。</p>
+        </div>
+
+        <div id="token-panel" class="token-panel">
+          <label for="token-input">Apify Token</label>
+          <input id="token-input" type="password" placeholder="apify_api_..." autocomplete="off" />
+          <button id="save-token" type="button">儲存 / 更換 Token</button>
+          <p id="token-status" class="token-status">Token 狀態載入中...</p>
+        </div>
+
+        <form id="track-form" class="submit-box">
+          <label for="url-input">貼上筆記連結或 Note ID（可一次貼多個）</label>
+          <textarea
+            id="url-input"
+            rows="3"
+            placeholder="可貼小紅書完整連結、Note ID、xhslink 短連結；每行一個"
+            required
+          ></textarea>
+          <button type="submit">加入追蹤</button>
+          <p id="form-message" class="message"></p>
+        </form>
+      </section>
+
+      <section class="results">
+        <div class="table-head">
+          <div>
+            <p class="eyebrow">即時結果</p>
+            <h2>追蹤儀表板</h2>
+          </div>
+          <button id="refresh-all" class="ghost" type="button">立即刷新</button>
+        </div>
+        <p id="storage-status" class="storage-status">載入中...</p>
+        <p id="run-status" class="run-status">狀態：等待操作。</p>
+        <div class="override-row">
+          <label for="refresh-password">刷新密碼</label>
+          <input id="refresh-password" type="password" placeholder="輸入密碼才可刷新" autocomplete="off" />
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>筆記</th>
+                <th>KOL</th>
+                <th>讚</th>
+                <th>留言</th>
+                <th>收藏</th>
+                <th>分享</th>
+                <th>每小時變化</th>
+                <th>每日變化</th>
+                <th>上次更新</th>
+                <th>狀態</th>
+              </tr>
+            </thead>
+            <tbody id="tracks-body">
+              <tr class="empty-row">
+                <td colspan="10">連接 Apps Script 後，貼上筆記連結開始追蹤。</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+    <script src="./config.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>

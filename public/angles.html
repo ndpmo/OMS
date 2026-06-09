@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Little Redbook Angle Generator</title>
+    <link rel="stylesheet" href="./angles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <p class="tag">Little Redbook Content Studio</p>
+        <h1>Generate 20 content angles in seconds.</h1>
+        <p class="intro">Enter one idea and get ready-to-write directions: hook angle, wording direction, photo direction, and hashtag suggestions.</p>
+      </section>
+
+      <section class="panel">
+        <form id="generator-form" class="generator-form">
+          <label for="prompt">Your prompt</label>
+          <textarea id="prompt" rows="4" placeholder="Example: A weeknight skincare routine for oily skin in humid weather" required></textarea>
+          <div class="actions">
+            <button type="submit">Generate 20 Angles</button>
+            <button type="button" id="copy-all" class="ghost">Copy All</button>
+          </div>
+          <p id="status" class="status"></p>
+        </form>
+      </section>
+
+      <section class="results-wrap">
+        <div id="results" class="results"></div>
+      </section>
+
+      <section class="panel" style="margin-top:14px;padding:14px;border:1px solid #d9ccbb;border-radius:12px;background:#fffcf6;">
+        <a href="./content-workbench.html">Need 200+ versions with approval flow? Open Content Workbench</a>
+      </section>
+    </main>
+
+    <template id="card-template">
+      <article class="card">
+        <h2></h2>
+        <p class="angle"></p>
+        <div class="block">
+          <h3>Content Direction</h3>
+          <p class="content"></p>
+        </div>
+        <div class="block">
+          <h3>Photo Direction</h3>
+          <p class="photo"></p>
+        </div>
+        <div class="block">
+          <h3>Suggested Hashtags</h3>
+          <p class="hashtags"></p>
+        </div>
+      </article>
+    </template>
+
+    <script src="./angles.js"></script>
+  </body>
+</html>

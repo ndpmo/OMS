@@ -1,0 +1,493 @@
+<!doctype html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      :root {
+        --ink: #17201b;
+        --muted: #68736d;
+        --paper: #f6f0e6;
+        --panel: #fffaf1;
+        --line: #ddcfbb;
+        --red: #c93b35;
+        --teal: #0b6f68;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: var(--ink);
+        font-family: "Avenir Next", "Gill Sans", "Trebuchet MS", sans-serif;
+        background:
+          linear-gradient(135deg, rgba(201, 59, 53, 0.13), transparent 34%),
+          linear-gradient(225deg, rgba(11, 111, 104, 0.16), transparent 34%),
+          repeating-linear-gradient(90deg, rgba(23, 32, 27, 0.035) 0 1px, transparent 1px 72px),
+          var(--paper);
+      }
+
+      .shell {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 28px;
+        min-height: 100vh;
+        padding: 34px;
+      }
+
+      .top-panel,
+      .results {
+        background: rgba(255, 250, 241, 0.92);
+        border: 1px solid rgba(221, 207, 187, 0.95);
+        box-shadow: 0 24px 70px rgba(45, 35, 24, 0.14);
+      }
+
+      .top-panel {
+        display: grid;
+        grid-template-columns: minmax(240px, 0.75fr) minmax(460px, 1.25fr);
+        gap: 24px;
+        align-items: end;
+        padding: 24px;
+      }
+
+      .results {
+        padding: 26px;
+        overflow: hidden;
+      }
+
+      .eyebrow {
+        margin: 0 0 12px;
+        color: var(--teal);
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2 {
+        margin: 0;
+        font-family: Georgia, "Times New Roman", serif;
+      }
+
+      h1 {
+        font-size: 38px;
+        line-height: 1;
+      }
+
+      h2 {
+        font-size: 30px;
+      }
+
+      .lede {
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      .controls {
+        display: grid;
+        gap: 14px;
+      }
+
+      label {
+        display: block;
+        margin: 22px 0 10px;
+        color: var(--muted);
+        font-weight: 700;
+      }
+
+      textarea,
+      input {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 14px;
+        color: var(--ink);
+        background: #fffdf8;
+        font: inherit;
+      }
+
+      textarea {
+        resize: vertical;
+        min-height: 78px;
+      }
+
+      button {
+        display: inline-flex;
+        justify-content: center;
+        min-height: 44px;
+        margin-top: 0;
+        border: 0;
+        border-radius: 6px;
+        padding: 0 18px;
+        color: white;
+        background: var(--red);
+        font: inherit;
+        font-weight: 800;
+        cursor: pointer;
+      }
+
+      .ghost {
+        color: var(--teal);
+        border: 1px solid rgba(11, 111, 104, 0.35);
+        background: transparent;
+      }
+
+      .full {
+        width: 100%;
+      }
+
+      .submit-box {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+      }
+
+      .submit-box label,
+      .submit-box .message {
+        grid-column: 1 / -1;
+      }
+
+      .submit-box button {
+        white-space: nowrap;
+      }
+
+      .token-panel {
+        padding: 16px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(255, 253, 248, 0.72);
+      }
+
+      .token-panel button {
+        margin-top: 10px;
+      }
+
+      .override-row {
+        display: grid;
+        grid-template-columns: auto minmax(220px, 320px);
+        gap: 10px;
+        align-items: center;
+        margin: 0 0 14px;
+      }
+
+      .override-row label {
+        margin: 0;
+      }
+
+      .message,
+      .run-status,
+      .status {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .table-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 18px;
+      }
+
+      .table-wrap {
+        overflow: auto;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fffdf8;
+      }
+
+      table {
+        width: 100%;
+        min-width: 1120px;
+        border-collapse: collapse;
+      }
+
+      th,
+      td {
+        padding: 13px;
+        border-bottom: 1px solid #eadfce;
+        text-align: left;
+        vertical-align: top;
+        font-size: 13px;
+      }
+
+      th {
+        color: #5f5141;
+        background: #f2e7d6;
+        font-size: 11px;
+        text-transform: uppercase;
+      }
+
+      .metric {
+        font-weight: 800;
+      }
+
+      .sub,
+      .change {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        min-height: 24px;
+        border-radius: 999px;
+        padding: 0 9px;
+        font-size: 12px;
+        font-weight: 800;
+        background: #eee6da;
+        color: #5f5141;
+      }
+
+      .status-active {
+        background: rgba(11, 111, 104, 0.14);
+        color: var(--teal);
+      }
+
+      .status-error {
+        background: rgba(201, 59, 53, 0.14);
+        color: var(--red);
+      }
+
+      .status-cooldown {
+        background: rgba(198, 139, 46, 0.18);
+        color: #8d6118;
+      }
+
+      .status-checking {
+        background: rgba(43, 99, 191, 0.14);
+        color: #2b63bf;
+      }
+
+      @media (max-width: 980px) {
+        .shell {
+          padding: 18px;
+        }
+
+        .top-panel,
+        .submit-box,
+        .override-row {
+          grid-template-columns: 1fr;
+        }
+
+        h1 {
+          font-size: 34px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <section class="top-panel">
+        <div class="intro">
+          <p class="eyebrow">小紅書數據追蹤</p>
+          <h1>手動刷新追蹤表</h1>
+          <p class="lede">資料寫入 Google Sheet；只在按下刷新時更新，每篇筆記最多每小時更新一次。</p>
+        </div>
+
+        <div class="controls">
+          <div class="token-panel">
+            <label for="token">Apify Token</label>
+            <input id="token" type="password" placeholder="apify_api_..." />
+            <button class="full" onclick="saveToken()">儲存 Token</button>
+          </div>
+
+          <div class="submit-box">
+            <label for="url">貼上筆記連結或 Note ID（可一次貼多個）</label>
+            <textarea id="url" rows="3" placeholder="可貼小紅書完整連結、Note ID、xhslink 短連結；每行一個"></textarea>
+            <button onclick="addTrack()">加入追蹤</button>
+            <p id="message" class="message"></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="results">
+        <div class="table-head">
+          <div>
+            <p class="eyebrow">即時結果</p>
+            <h2>追蹤儀表板</h2>
+          </div>
+          <button class="ghost" onclick="refreshAll()">立即刷新</button>
+        </div>
+        <p id="status" class="status">載入中...</p>
+        <p id="run-status" class="run-status">狀態：等待操作。</p>
+        <div class="override-row">
+          <label for="override-input">覆蓋一小時限制（選填）</label>
+          <input id="override-input" type="password" placeholder="輸入密碼才會強制刷新" autocomplete="off" />
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>筆記</th>
+                <th>KOL</th>
+                <th>讚</th>
+                <th>留言</th>
+                <th>收藏</th>
+                <th>分享</th>
+                <th>每小時變化</th>
+                <th>每日變化</th>
+                <th>上次更新</th>
+                <th>狀態</th>
+              </tr>
+            </thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      function boot() {
+        google.script.run.withSuccessHandler(render).withFailureHandler(showError).setup();
+      }
+
+      function saveToken() {
+        const token = document.querySelector('#token').value;
+        setMessage('正在儲存 Token...');
+        google.script.run.withSuccessHandler(() => {
+          document.querySelector('#token').value = '';
+          setMessage('Token 已儲存。');
+          boot();
+        }).withFailureHandler(showError).saveApifyToken(token);
+      }
+
+      function addTrack() {
+        const url = document.querySelector('#url').value;
+        setMessage('正在讀取筆記數據...');
+        google.script.run.withSuccessHandler((data) => {
+          document.querySelector('#url').value = '';
+          setMessage(`已加入 ${data.added || 0} 個；略過重複 ${data.skipped || 0} 個。按「立即刷新」才會抓取數據。`);
+          render(data);
+        }).withFailureHandler(showError).addTrack(url);
+      }
+
+      function refreshAll() {
+        setMessage('正在刷新全部筆記...');
+        document.querySelector('#run-status').textContent = '狀態：正在呼叫 Apps Script，請稍候。';
+        const overridePassword = document.querySelector('#override-input').value.trim();
+        google.script.run.withSuccessHandler((summary) => {
+          document.querySelector('#override-input').value = '';
+          const text = `刷新完成：更新 ${summary.refreshed || 0}，略過 ${summary.skipped || 0}，錯誤 ${summary.errors || 0}。`;
+          setMessage(text);
+          document.querySelector('#run-status').textContent = `狀態：${text}`;
+          boot();
+        }).withFailureHandler(showError).refreshAllTrackedPosts(overridePassword ? { overridePassword } : {});
+      }
+
+      function render(data) {
+        document.querySelector('#status').textContent = data.hasToken
+          ? 'Apify Token 已儲存；按「立即刷新」才會更新，每篇筆記最多每小時一次。'
+          : '新增筆記前，請先儲存 Apify Token。';
+        if (!data.hasToken) {
+          document.querySelector('#run-status').textContent = '狀態：缺少 Apify Token，請先儲存 Token。';
+        }
+
+        const rows = data.tracks || [];
+        document.querySelector('#rows').innerHTML = rows.length
+          ? rows.map(renderTrack).join('')
+          : '<tr><td colspan="10">目前沒有追蹤中的筆記。</td></tr>';
+      }
+
+      function renderTrack(track) {
+        const latest = track.latest || {};
+        return `
+          <tr>
+            <td>
+              <strong>${escapeHtml(latest.title || track.note_id)}</strong>
+              <span class="sub">${escapeHtml(track.note_id || '')}</span>
+            </td>
+            <td>
+              <strong>${escapeHtml(latest.kol_name || '-')}</strong>
+              <span class="sub">小紅書號 ${escapeHtml(latest.red_id || '-')}</span>
+            </td>
+            <td class="metric">${num(latest.likes)}</td>
+            <td class="metric">${num(latest.comments)}</td>
+            <td class="metric">${num(latest.saves)}</td>
+            <td class="metric">${num(latest.shares)}</td>
+            <td>${change(latest, 'hourly')}</td>
+            <td>${change(latest, 'daily')}</td>
+            <td>${date(track.last_checked_at || latest.fetched_at)}</td>
+            <td>${statusBadge(track.status)}${statusHint(track, latest)}</td>
+          </tr>
+        `;
+      }
+
+      function statusBadge(status) {
+        const normalized = String(status || 'unknown').toLowerCase();
+        const labels = {
+          queued: '等待刷新',
+          checking: '讀取中',
+          active: '已更新',
+          cooldown: '已略過',
+          error: '錯誤',
+          unknown: '未知'
+        };
+        return `<span class="status-badge status-${normalized}">${labels[normalized] || escapeHtml(status || '未知')}</span>`;
+      }
+
+      function statusHint(track, latest) {
+        const status = String(track.status || '').toLowerCase();
+        if (track.error) return `<span class="sub">${escapeHtml(track.error)}</span>`;
+        if (status === 'queued') return '<span class="sub">已加入清單，按「立即刷新」才會抓取數據。</span>';
+        if (status === 'checking') return '<span class="sub">正在向 Apify 讀取資料。</span>';
+        if (status === 'active') return `<span class="sub">上次成功：${date(track.last_checked_at || latest.fetched_at)}</span>`;
+        if (status === 'cooldown') return '<span class="sub">上次已更新；按刷新時若未滿一小時會自動略過。</span>';
+        return '<span class="sub">等待下一步操作。</span>';
+      }
+
+      function change(row, prefix) {
+        const likes = row[`${prefix}_likes`];
+        if (likes === '' || likes === undefined) return '<span class="sub">等待基準數據</span>';
+        return `
+          <span class="change">讚 ${signed(row[`${prefix}_likes`])}</span>
+          <span class="change">留言 ${signed(row[`${prefix}_comments`])}</span>
+          <span class="change">收藏 ${signed(row[`${prefix}_saves`])}</span>
+          <span class="change">分享 ${signed(row[`${prefix}_shares`])}</span>
+        `;
+      }
+
+      function num(value) {
+        return typeof value === 'number' ? value.toLocaleString() : '-';
+      }
+
+      function signed(value) {
+        return typeof value === 'number' ? `${value >= 0 ? '+' : ''}${value.toLocaleString()}` : '-';
+      }
+
+      function date(value) {
+        if (!value) return '-';
+        return new Intl.DateTimeFormat(undefined, {
+          month: 'short',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        }).format(new Date(value));
+      }
+
+      function setMessage(text) {
+        document.querySelector('#message').textContent = text;
+      }
+
+      function showError(error) {
+        setMessage(error.message || String(error));
+        document.querySelector('#run-status').textContent = `狀態：操作失敗，${error.message || String(error)}`;
+      }
+
+      function escapeHtml(value) {
+        return String(value || '')
+          .replaceAll('&', '&amp;')
+          .replaceAll('<', '&lt;')
+          .replaceAll('>', '&gt;')
+          .replaceAll('"', '&quot;')
+          .replaceAll("'", '&#039;');
+      }
+
+      boot();
+    </script>
+  </body>
+</html>
