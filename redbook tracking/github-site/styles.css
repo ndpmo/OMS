@@ -214,6 +214,25 @@ th {
   text-transform: uppercase;
 }
 
+.select-cell {
+  width: 58px;
+  text-align: center;
+}
+
+.select-cell input[type="checkbox"] {
+  width: auto;
+  min-width: 18px;
+  height: 18px;
+  margin: 0 auto;
+  padding: 0;
+  cursor: pointer;
+}
+
+.select-label {
+  display: block;
+  margin-bottom: 6px;
+}
+
 .metric {
   font-weight: 800;
 }

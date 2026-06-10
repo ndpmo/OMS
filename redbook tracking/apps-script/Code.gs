@@ -479,11 +479,17 @@ function getObjects_(sheet) {
 function setRowValueByHeader_(sheet, rowNumber, header, value) {
   ensureHeaders_(sheet, [header]);
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  const columnIndex = headers.indexOf(header) + 1;
-  if (!columnIndex) {
+  const columnIndexes = headers
+    .map((currentHeader, index) => currentHeader === header ? index + 1 : 0)
+    .filter(Boolean);
+
+  if (!columnIndexes.length) {
     throw new Error(`Missing required column: ${header}`);
   }
-  sheet.getRange(rowNumber, columnIndex).setValue(value);
+
+  columnIndexes.forEach((columnIndex) => {
+    sheet.getRange(rowNumber, columnIndex).setValue(value);
+  });
 }
 
 function appendObjectRow_(sheet, object) {
@@ -692,6 +698,36 @@ function getSubmittedTrackInput_(params, event) {
   const queryString = event && event.queryString ? String(event.queryString) : '';
   const rawUrl = extractRawQueryValue_(queryString, 'url');
   return rawUrl || fromParams;
+}
+
+function getSubmittedTrackRegion_(params, event) {
+  const queryString = event && event.queryString ? String(event.queryString) : '';
+  const rawRegion = extractLastRawQueryValue_(queryString, 'region');
+  return rawRegion || params.region || '';
+}
+
+function extractLastRawQueryValue_(queryString, key) {
+  if (!queryString) return '';
+  const marker = `${key}=`;
+  const prefixedMarker = `&${marker}`;
+  let start = queryString.lastIndexOf(prefixedMarker);
+  if (start !== -1) {
+    start += prefixedMarker.length;
+  } else if (queryString.startsWith(marker)) {
+    start = marker.length;
+  } else {
+    return '';
+  }
+
+  let value = queryString.slice(start);
+  const ampersand = value.indexOf('&');
+  if (ampersand !== -1) value = value.slice(0, ampersand);
+
+  try {
+    return decodeURIComponent(value.replace(/\+/g, ' '));
+  } catch (error) {
+    return value;
+  }
 }
 
 function extractRawQueryValue_(queryString, key) {
