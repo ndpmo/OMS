@@ -27,10 +27,12 @@ const HEADERS = [
   'daily_saves',
   'daily_shares',
   'post_url',
-  'submitted_url'
+  'submitted_url',
+  'original_submitted_url',
+  'region'
 ];
 
-const TRACK_HEADERS = ['note_id', 'submitted_url', 'created_at', 'last_checked_at', 'next_check_at', 'status', 'error'];
+const TRACK_HEADERS = ['note_id', 'submitted_url', 'original_submitted_url', 'region', 'created_at', 'last_checked_at', 'next_check_at', 'status', 'error'];
 
 function doGet(event) {
   const params = (event && event.parameter) || {};
@@ -46,10 +48,10 @@ function doGet(event) {
     });
   }
 
-  return handleApiGet_(params);
+  return handleApiGet_(params, event);
 }
 
-function handleApiGet_(params) {
+function handleApiGet_(params, event) {
   try {
     const action = params.action;
     let data;
@@ -59,9 +61,9 @@ function handleApiGet_(params) {
     } else if (action === 'dashboard') {
       data = getDashboardData();
     } else if (action === 'addTrack') {
-      data = addTrack(params.url || params.noteId || '');
+      data = addTrack(getSubmittedTrackInput_(params, event), params.region || '');
     } else if (action === 'refreshAll') {
-      data = refreshAllTrackedPosts(params.refreshPassword || '');
+      data = refreshAllTrackedPosts(params.refreshPassword || '', params.noteIds || '');
     } else if (action === 'saveToken') {
       data = saveApifyToken(params.token || '');
     } else {
@@ -99,7 +101,7 @@ function removeAutomaticRefreshTriggers() {
   return { ok: true };
 }
 
-function addTrack(rawInput) {
+function addTrack(rawInput, region) {
   setup();
   const inputs = extractNoteInputs_(rawInput);
   if (!inputs.length) {
@@ -109,6 +111,7 @@ function addTrack(rawInput) {
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   const sheet = ss.getSheetByName(TRACKS_SHEET_NAME);
   const rows = getObjects_(sheet);
+  const cleanRegion = normalizeRegion_(region);
   const existingRowsById = new Map();
   rows.forEach((row, index) => {
     existingRowsById.set(String(row.note_id), index + 2);
@@ -120,21 +123,31 @@ function addTrack(rawInput) {
   inputs.forEach((input) => {
     const existingRow = existingRowsById.get(input.noteId);
     if (existingRow) {
-      sheet.getRange(existingRow, 2).setValue(input.raw);
-      sheet.getRange(existingRow, 6, 1, 2).setValues([['queued', 'Updated submitted URL; press refresh to fetch data.']]);
+      const existingTrack = rows.find((row) => String(row.note_id) === input.noteId);
+      const preservedOriginal = String(existingTrack?.original_submitted_url || '').trim();
+
+      setRowValueByHeader_(sheet, existingRow, 'submitted_url', input.resolved);
+      if (!preservedOriginal) {
+        setRowValueByHeader_(sheet, existingRow, 'original_submitted_url', input.original || input.resolved || input.noteId);
+      }
+      setRowValueByHeader_(sheet, existingRow, 'region', cleanRegion);
+      setRowValueByHeader_(sheet, existingRow, 'status', 'queued');
+      setRowValueByHeader_(sheet, existingRow, 'error', 'Updated submitted URL/region; press refresh to fetch data.');
       updated++;
       return;
     }
 
-    sheet.appendRow([
-      input.noteId,
-      input.raw,
-      now,
-      '',
-      now,
-      'queued',
-      ''
-    ]);
+    appendObjectRow_(sheet, {
+      note_id: input.noteId,
+      submitted_url: input.resolved,
+      original_submitted_url: input.original || input.resolved || input.noteId,
+      region: cleanRegion,
+      created_at: now,
+      last_checked_at: '',
+      next_check_at: now,
+      status: 'queued',
+      error: ''
+    });
 
     existingRowsById.set(input.noteId, sheet.getLastRow());
     added++;
@@ -147,19 +160,47 @@ function addTrack(rawInput) {
   return data;
 }
 
-function refreshAllTrackedPosts(refreshPassword) {
+function isPriorityRefreshStatus_(status) {
+  const value = String(status || '').trim().toLowerCase();
+  return value === 'queued' || value === 'checking';
+}
+
+function sortTracksForRefresh_(tracks) {
+  const priority = [];
+  const rest = [];
+
+  tracks.forEach((track) => {
+    if (isPriorityRefreshStatus_(track.status)) {
+      priority.push(track);
+    } else {
+      rest.push(track);
+    }
+  });
+
+  return priority.concat(rest);
+}
+
+function refreshAllTrackedPosts(refreshPassword, selectedNoteIds) {
   validateRefreshPassword_(refreshPassword);
   setup();
 
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   const tracks = getObjects_(ss.getSheetByName(TRACKS_SHEET_NAME));
+  const selected = parseSelectedNoteIds_(selectedNoteIds);
   const summary = { refreshed: 0, skipped: 0, errors: 0, details: [] };
 
-  tracks.forEach((track) => {
-    if (!track.note_id) return;
+  const eligible = tracks.filter((track) => {
+    if (!track.note_id) return false;
+    const normalizedNoteId = normalizeNoteId_(track.note_id);
+    if (selected.size && !selected.has(normalizedNoteId)) return false;
+    return true;
+  });
+
+  sortTracksForRefresh_(eligible).forEach((track) => {
+    const normalizedNoteId = normalizeNoteId_(track.note_id);
 
     try {
-      const result = refreshOne_(track.note_id);
+      const result = refreshOne_(normalizedNoteId);
       if (result.skipped) {
         summary.skipped++;
       } else {
@@ -198,7 +239,13 @@ function refreshOne_(noteId) {
     const hourlyDelta = metricDelta_(sample, previous);
     const dailyDelta = metricDelta_(sample, dailyBaseline);
 
-    resultsSheet.appendRow(makeRow_(sample, hourlyDelta, dailyDelta, track.submitted_url));
+    appendObjectRow_(resultsSheet, makeRowObject_(
+      sample,
+      hourlyDelta,
+      dailyDelta,
+      track,
+      track.region
+    ));
     updateTrackStatus_(tracksSheet, trackIndex, 'active', '', sample.fetchedAt);
 
     return { ok: true, skipped: false, noteId: targetNoteId };
@@ -302,31 +349,42 @@ function mapApifyItem_(item, noteId, noteUrl) {
   };
 }
 
-function makeRow_(sample, hourlyDelta, dailyDelta, submittedUrl) {
-  return [
-    sample.fetchedAt,
-    sample.noteId,
-    sample.title,
-    sample.author,
-    sample.userId,
-    sample.redId,
-    sample.type,
-    sample.likes,
-    sample.comments,
-    sample.saves,
-    sample.shares,
-    sample.views,
-    hourlyDelta.likes,
-    hourlyDelta.comments,
-    hourlyDelta.saves,
-    hourlyDelta.shares,
-    dailyDelta.likes,
-    dailyDelta.comments,
-    dailyDelta.saves,
-    dailyDelta.shares,
-    sample.pageUrl,
-    submittedUrl || ''
-  ];
+function getSubmittedUrlForOutput_(track) {
+  const original = String(track.original_submitted_url || '').trim();
+  if (original) return original;
+  return String(track.submitted_url || '').trim();
+}
+
+function makeRowObject_(sample, hourlyDelta, dailyDelta, track, region) {
+  const originalSubmittedUrl = String(track.original_submitted_url || '').trim();
+  const submittedUrlForOutput = getSubmittedUrlForOutput_(track);
+
+  return {
+    fetched_at: sample.fetchedAt,
+    note_id: sample.noteId,
+    title: sample.title,
+    kol_name: sample.author,
+    user_id: sample.userId,
+    red_id: sample.redId,
+    post_type: sample.type,
+    likes: sample.likes,
+    comments: sample.comments,
+    saves: sample.saves,
+    shares: sample.shares,
+    views: sample.views,
+    hourly_likes: hourlyDelta.likes,
+    hourly_comments: hourlyDelta.comments,
+    hourly_saves: hourlyDelta.saves,
+    hourly_shares: hourlyDelta.shares,
+    daily_likes: dailyDelta.likes,
+    daily_comments: dailyDelta.comments,
+    daily_saves: dailyDelta.saves,
+    daily_shares: dailyDelta.shares,
+    post_url: sample.pageUrl,
+    submitted_url: submittedUrlForOutput,
+    original_submitted_url: originalSubmittedUrl || submittedUrlForOutput,
+    region: normalizeRegion_(region)
+  };
 }
 
 function extractNoteInputs_(input) {
@@ -340,11 +398,12 @@ function extractNoteInputs_(input) {
 
   while ((match = pattern.exec(text)) !== null) {
     const raw = match[0].trim();
+    const original = raw;
     const resolved = resolveShortLink_(raw);
     const noteId = extractNoteId_(resolved);
 
     if (noteId && !seen[noteId]) {
-      matches.push({ noteId, raw: resolved });
+      matches.push({ noteId, resolved, original });
       seen[noteId] = true;
     }
   }
@@ -387,10 +446,21 @@ function ensureSheet_(ss, name, headers) {
     sheet.appendRow(headers);
     sheet.setFrozenRows(1);
   } else {
-    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    ensureHeaders_(sheet, headers);
     sheet.setFrozenRows(1);
   }
   return sheet;
+}
+
+function ensureHeaders_(sheet, headers) {
+  const lastColumn = Math.max(sheet.getLastColumn(), 1);
+  const currentHeaders = sheet.getRange(1, 1, 1, lastColumn).getValues()[0];
+  headers.forEach((header) => {
+    if (currentHeaders.indexOf(header) === -1) {
+      sheet.getRange(1, sheet.getLastColumn() + 1).setValue(header);
+      currentHeaders.push(header);
+    }
+  });
 }
 
 function getObjects_(sheet) {
@@ -404,6 +474,22 @@ function getObjects_(sheet) {
       return object;
     }, {})
   );
+}
+
+function setRowValueByHeader_(sheet, rowNumber, header, value) {
+  ensureHeaders_(sheet, [header]);
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const columnIndex = headers.indexOf(header) + 1;
+  if (!columnIndex) {
+    throw new Error(`Missing required column: ${header}`);
+  }
+  sheet.getRange(rowNumber, columnIndex).setValue(value);
+}
+
+function appendObjectRow_(sheet, object) {
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const row = headers.map((header) => object[header] !== undefined ? object[header] : '');
+  sheet.appendRow(row);
 }
 
 function getLatestSample_(sheet, noteId) {
@@ -581,12 +667,53 @@ function describeReturnedFields_(item) {
 
 function updateTrackStatus_(sheet, zeroBasedDataIndex, status, error, checkedAt) {
   const row = zeroBasedDataIndex + 2;
-  sheet.getRange(row, 4, 1, 4).setValues([[
-    checkedAt || '',
-    '',
-    status,
-    error || ''
-  ]]);
+  setRowValueByHeader_(sheet, row, 'last_checked_at', checkedAt || '');
+  setRowValueByHeader_(sheet, row, 'next_check_at', '');
+  setRowValueByHeader_(sheet, row, 'status', status);
+  setRowValueByHeader_(sheet, row, 'error', error || '');
+}
+
+function parseSelectedNoteIds_(selectedNoteIds) {
+  const selected = new Set();
+  String(selectedNoteIds || '').split(',').forEach((value) => {
+    const noteId = normalizeNoteId_(value);
+    if (noteId) selected.add(noteId);
+  });
+  return selected;
+}
+
+function normalizeRegion_(region) {
+  const value = String(region || '').trim().toUpperCase();
+  return value === 'SH' ? 'SH' : 'HK';
+}
+
+function getSubmittedTrackInput_(params, event) {
+  const fromParams = params.url || params.noteId || '';
+  const queryString = event && event.queryString ? String(event.queryString) : '';
+  const rawUrl = extractRawQueryValue_(queryString, 'url');
+  return rawUrl || fromParams;
+}
+
+function extractRawQueryValue_(queryString, key) {
+  if (!queryString) return '';
+  const marker = `${key}=`;
+  const start = queryString.indexOf(marker);
+  if (start === -1) return '';
+
+  let value = queryString.slice(start + marker.length);
+  const knownNextParams = ['&callback=', '&action=', '&noteId=', '&region=', '&noteIds=', '&refreshPassword=', '&token='];
+  let end = value.length;
+  knownNextParams.forEach((param) => {
+    const index = value.indexOf(param);
+    if (index !== -1 && index < end) end = index;
+  });
+  value = value.slice(0, end);
+
+  try {
+    return decodeURIComponent(value.replace(/\+/g, ' '));
+  } catch (error) {
+    return value;
+  }
 }
 
 function jsonp_(callback, payload) {

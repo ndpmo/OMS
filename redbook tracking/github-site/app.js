@@ -1,5 +1,6 @@
 const form = document.querySelector('#track-form');
 const input = document.querySelector('#url-input');
+const regionSelect = document.querySelector('#region-select');
 const message = document.querySelector('#form-message');
 const body = document.querySelector('#tracks-body');
 const storageStatus = document.querySelector('#storage-status');
@@ -10,7 +11,7 @@ const tokenPanel = document.querySelector('#token-panel');
 const tokenInput = document.querySelector('#token-input');
 const saveToken = document.querySelector('#save-token');
 const tokenStatus = document.querySelector('#token-status');
-
+const selectedTrackIds = new Set();
 const apiUrl = window.TRACKER_API_URL || '';
 const REFRESH_PASSWORD = '29768888pmo';
 
@@ -18,7 +19,7 @@ form.addEventListener('submit', async (event) => {
   event.preventDefault();
   setMessage('正在讀取筆記數據...');
   try {
-    const data = await callApi('addTrack', { url: input.value });
+    const data = await callApi('addTrack', { url: input.value, region: regionSelect.value });
     input.value = '';
     setMessage(`已加入 ${data.added || 0} 個；更新連結 ${data.updated || 0} 個。按「立即刷新」才會抓取數據。`);
     render(data);
@@ -35,13 +36,23 @@ refreshAll.addEventListener('click', async () => {
     return;
   }
 
-  setMessage('正在刷新全部筆記...');
+  const selectedNoteIds = Array.from(selectedTrackIds);
+  if (!selectedNoteIds.length) {
+    setMessage('請先勾選要刷新的筆記，避免刷新未選取的列。', true);
+    runStatus.textContent = '狀態：刷新已取消，沒有勾選任何筆記。';
+    return;
+  }
+
+  setMessage(`正在刷新 ${selectedNoteIds.length} 個已勾選筆記...`);
   runStatus.textContent = '狀態：正在呼叫 Apps Script，請稍候。';
   try {
-    const summary = await callApi('refreshAll', { refreshPassword: refreshPassword.value.trim() });
+    const summary = await callApi('refreshAll', {
+      refreshPassword: refreshPassword.value.trim(),
+      noteIds: selectedNoteIds.join(',')
+    });
     refreshPassword.value = '';
     await loadDashboard();
-    const text = `刷新完成：更新 ${summary.refreshed || 0}，略過 ${summary.skipped || 0}，錯誤 ${summary.errors || 0}。`;
+    const text = `已勾選刷新完成：更新 ${summary.refreshed || 0}，略過 ${summary.skipped || 0}，錯誤 ${summary.errors || 0}。`;
     setMessage(text);
     runStatus.textContent = `狀態：${text}`;
   } catch (error) {
@@ -85,19 +96,30 @@ function render(data) {
   }
 
   const rows = data.tracks || [];
+  const currentIds = new Set(rows.map((track) => String(track.note_id || '')));
+  Array.from(selectedTrackIds).forEach((noteId) => {
+    if (!currentIds.has(noteId)) selectedTrackIds.delete(noteId);
+  });
+
   body.innerHTML = rows.length
     ? rows.map(renderTrack).join('')
-    : '<tr class="empty-row"><td colspan="10">目前沒有追蹤中的筆記。</td></tr>';
+    : '<tr class="empty-row"><td colspan="12">目前沒有追蹤中的筆記。</td></tr>';
+  bindTrackSelection(rows);
 }
 
 function renderTrack(track) {
   const latest = track.latest || {};
+  const noteId = String(track.note_id || '');
   return `
     <tr>
+      <td>
+        <input class="track-select" type="checkbox" value="${escapeHtml(noteId)}" aria-label="選取 ${escapeHtml(noteId)}" ${selectedTrackIds.has(noteId) ? 'checked' : ''} />
+      </td>
       <td>
         <strong>${escapeHtml(latest.title || track.note_id)}</strong>
         <span class="sub">${escapeHtml(track.note_id || '')}</span>
       </td>
+      <td>${escapeHtml(track.region || '-')}</td>
       <td>
         <strong>${escapeHtml(latest.kol_name || '-')}</strong>
         <span class="sub">小紅書號 ${escapeHtml(latest.red_id || '-')}</span>
@@ -112,6 +134,45 @@ function renderTrack(track) {
       <td>${statusBadge(track.status)}${statusHint(track, latest)}</td>
     </tr>
   `;
+}
+
+
+function bindTrackSelection(rows) {
+  const selectAll = document.querySelector('#select-all-tracks');
+  const checkboxes = Array.from(document.querySelectorAll('.track-select'));
+
+  checkboxes.forEach((checkbox) => {
+    checkbox.addEventListener('change', () => {
+      if (checkbox.checked) {
+        selectedTrackIds.add(checkbox.value);
+      } else {
+        selectedTrackIds.delete(checkbox.value);
+      }
+      updateSelectAllState(selectAll, checkboxes);
+    });
+  });
+
+  if (!selectAll) return;
+  selectAll.onchange = () => {
+    checkboxes.forEach((checkbox) => {
+      checkbox.checked = selectAll.checked;
+      if (checkbox.checked) {
+        selectedTrackIds.add(checkbox.value);
+      } else {
+        selectedTrackIds.delete(checkbox.value);
+      }
+    });
+    updateSelectAllState(selectAll, checkboxes);
+  };
+
+  updateSelectAllState(selectAll, checkboxes);
+}
+
+function updateSelectAllState(selectAll, checkboxes) {
+  if (!selectAll) return;
+  const checkedCount = checkboxes.filter((checkbox) => checkbox.checked).length;
+  selectAll.checked = checkboxes.length > 0 && checkedCount === checkboxes.length;
+  selectAll.indeterminate = checkedCount > 0 && checkedCount < checkboxes.length;
 }
 
 function statusBadge(status) {

@@ -23,6 +23,11 @@
         </div>
 
         <form id="track-form" class="submit-box">
+          <label for="region-select">選擇連結地區</label>
+          <select id="region-select" required>
+            <option value="HK">HK</option>
+            <option value="SH">SH</option>
+          </select>
           <label for="url-input">貼上筆記連結或 Note ID（可一次貼多個）</label>
           <textarea
             id="url-input"
@@ -53,7 +58,11 @@
           <table>
             <thead>
               <tr>
+                <th>
+                  <input id="select-all-tracks" type="checkbox" aria-label="選取全部筆記" />
+                </th>
                 <th>筆記</th>
+                <th>地區</th>
                 <th>KOL</th>
                 <th>讚</th>
                 <th>留言</th>
@@ -67,7 +76,7 @@
             </thead>
             <tbody id="tracks-body">
               <tr class="empty-row">
-                <td colspan="10">連接 Apps Script 後，貼上筆記連結開始追蹤。</td>
+                <td colspan="12">連接 Apps Script 後，貼上筆記連結開始追蹤。</td>
               </tr>
             </tbody>
           </table>
