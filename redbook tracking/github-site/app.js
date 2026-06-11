@@ -117,16 +117,18 @@ function render(data) {
 function renderTrack(track) {
   const latest = track.latest || {};
   const noteId = String(track.note_id || '');
+  const region = normalizeRegion(track.region || latest.region);
+  const status = normalizeStatus(track.status);
   return `
     <tr>
-      <td>
-        <input class="track-select" type="checkbox" value="${escapeHtml(noteId)}" aria-label="選取 ${escapeHtml(noteId)}" ${selectedTrackIds.has(noteId) ? 'checked' : ''} />
+      <td class="select-cell">
+        <input class="track-select" type="checkbox" value="${escapeHtml(noteId)}" data-region="${escapeHtml(region)}" data-status="${escapeHtml(status)}" aria-label="選取 ${escapeHtml(noteId)}" ${selectedTrackIds.has(noteId) ? 'checked' : ''} />
       </td>
       <td>
         <strong>${escapeHtml(latest.title || track.note_id)}</strong>
         <span class="sub">${escapeHtml(track.note_id || '')}</span>
       </td>
-      <td>${escapeHtml(track.region || '-')}</td>
+      <td>${escapeHtml(region || '-')}</td>
       <td>
         <strong>${escapeHtml(latest.kol_name || '-')}</strong>
         <span class="sub">小紅書號 ${escapeHtml(latest.red_id || '-')}</span>
@@ -144,25 +146,27 @@ function renderTrack(track) {
 }
 
 
-function applyBulkSelection(selection) {
+function applyBulkSelection(selection, showMessage = true) {
   if (!selection) return;
 
+  const checkboxes = Array.from(document.querySelectorAll('.track-select'));
   selectedTrackIds.clear();
-  dashboardTracks.forEach((track) => {
-    const noteId = String(track.note_id || '');
-    if (noteId && matchesBulkSelection(track, selection)) {
-      selectedTrackIds.add(noteId);
-    }
+  checkboxes.forEach((checkbox) => {
+    const shouldSelect = matchesBulkSelection(checkbox, selection);
+    checkbox.checked = shouldSelect;
+    if (shouldSelect) selectedTrackIds.add(checkbox.value);
   });
 
-  syncSelectionCheckboxes();
-  const selectedCount = selectedTrackIds.size;
-  setMessage(`已根據「${bulkSelectTracks.options[bulkSelectTracks.selectedIndex].text}」選取 ${selectedCount} 筆。`);
+  updateSelectAllState(document.querySelector('#select-all-tracks'), checkboxes);
+  if (showMessage) {
+    const selectedCount = selectedTrackIds.size;
+    setMessage(`已根據「${bulkSelectTracks.options[bulkSelectTracks.selectedIndex].text}」選取 ${selectedCount} 筆。`);
+  }
 }
 
-function matchesBulkSelection(track, selection) {
-  const region = String(track.region || '').trim().toUpperCase();
-  const status = String(track.status || '').trim().toLowerCase();
+function matchesBulkSelection(checkbox, selection) {
+  const region = normalizeRegion(checkbox.dataset.region);
+  const status = normalizeStatus(checkbox.dataset.status);
 
   if (selection === 'hk') return region === 'HK';
   if (selection === 'sh') return region === 'SH';
@@ -170,6 +174,26 @@ function matchesBulkSelection(track, selection) {
   if (selection === 'active') return status === 'active';
   if (selection === 'error') return status === 'error';
   return false;
+}
+
+function normalizeRegion(value) {
+  const region = String(value || '').trim().toUpperCase();
+  return region === 'SH' ? 'SH' : region === 'HK' ? 'HK' : '';
+}
+
+function normalizeStatus(value) {
+  const status = String(value || '').trim().toLowerCase();
+  const statusAliases = {
+    '等待刷新': 'queued',
+    '讀取中': 'checking',
+    '已更新': 'active',
+    '錯誤': 'error'
+  };
+  return statusAliases[status] || status;
+}
+
+function resetBulkSelectionControl() {
+  if (bulkSelectTracks.value) bulkSelectTracks.value = '';
 }
 
 function syncSelectionCheckboxes() {
@@ -187,6 +211,7 @@ function bindTrackSelection(rows) {
 
   checkboxes.forEach((checkbox) => {
     checkbox.addEventListener('change', () => {
+      resetBulkSelectionControl();
       if (checkbox.checked) {
         selectedTrackIds.add(checkbox.value);
       } else {
@@ -198,6 +223,7 @@ function bindTrackSelection(rows) {
 
   if (!selectAll) return;
   selectAll.onchange = () => {
+    resetBulkSelectionControl();
     checkboxes.forEach((checkbox) => {
       checkbox.checked = selectAll.checked;
       if (checkbox.checked) {
@@ -218,7 +244,6 @@ function updateSelectAllState(selectAll, checkboxes) {
   selectAll.checked = checkboxes.length > 0 && checkedCount === checkboxes.length;
   selectAll.indeterminate = checkedCount > 0 && checkedCount < checkboxes.length;
 }
-
 
 function statusBadge(status) {
   const normalized = String(status || 'unknown').toLowerCase();
