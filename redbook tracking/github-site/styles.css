@@ -103,7 +103,8 @@ label {
 }
 
 textarea,
-input {
+input,
+select {
   width: 100%;
   border: 1px solid var(--line);
   border-radius: 6px;
@@ -159,6 +160,7 @@ button {
   margin-top: 10px;
 }
 
+.selection-row,
 .override-row {
   display: grid;
   grid-template-columns: auto minmax(220px, 320px);
@@ -167,6 +169,7 @@ button {
   margin: 0 0 14px;
 }
 
+.selection-row label,
 .override-row label {
   margin: 0;
 }
@@ -289,6 +292,7 @@ th {
 
   .top-panel,
   .submit-box,
+  .selection-row,
   .override-row {
     grid-template-columns: 1fr;
   }

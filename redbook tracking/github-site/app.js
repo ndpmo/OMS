@@ -7,11 +7,13 @@ const storageStatus = document.querySelector('#storage-status');
 const runStatus = document.querySelector('#run-status');
 const refreshAll = document.querySelector('#refresh-all');
 const refreshPassword = document.querySelector('#refresh-password');
+const bulkSelectTracks = document.querySelector('#bulk-select-tracks');
 const tokenPanel = document.querySelector('#token-panel');
 const tokenInput = document.querySelector('#token-input');
 const saveToken = document.querySelector('#save-token');
 const tokenStatus = document.querySelector('#token-status');
 const selectedTrackIds = new Set();
+let dashboardTracks = [];
 const apiUrl = window.TRACKER_API_URL || '';
 const REFRESH_PASSWORD = '29768888pmo';
 
@@ -26,6 +28,10 @@ form.addEventListener('submit', async (event) => {
   } catch (error) {
     setMessage(error.message, true);
   }
+});
+
+bulkSelectTracks.addEventListener('change', () => {
+  applyBulkSelection(bulkSelectTracks.value);
 });
 
 refreshAll.addEventListener('click', async () => {
@@ -96,6 +102,7 @@ function render(data) {
   }
 
   const rows = data.tracks || [];
+  dashboardTracks = rows;
   const currentIds = new Set(rows.map((track) => String(track.note_id || '')));
   Array.from(selectedTrackIds).forEach((noteId) => {
     if (!currentIds.has(noteId)) selectedTrackIds.delete(noteId);
@@ -137,6 +144,43 @@ function renderTrack(track) {
 }
 
 
+function applyBulkSelection(selection) {
+  if (!selection) return;
+
+  selectedTrackIds.clear();
+  dashboardTracks.forEach((track) => {
+    const noteId = String(track.note_id || '');
+    if (noteId && matchesBulkSelection(track, selection)) {
+      selectedTrackIds.add(noteId);
+    }
+  });
+
+  syncSelectionCheckboxes();
+  const selectedCount = selectedTrackIds.size;
+  setMessage(`已根據「${bulkSelectTracks.options[bulkSelectTracks.selectedIndex].text}」選取 ${selectedCount} 筆。`);
+}
+
+function matchesBulkSelection(track, selection) {
+  const region = String(track.region || '').trim().toUpperCase();
+  const status = String(track.status || '').trim().toLowerCase();
+
+  if (selection === 'hk') return region === 'HK';
+  if (selection === 'sh') return region === 'SH';
+  if (selection === 'queued-checking') return status === 'queued' || status === 'checking';
+  if (selection === 'active') return status === 'active';
+  if (selection === 'error') return status === 'error';
+  return false;
+}
+
+function syncSelectionCheckboxes() {
+  const selectAll = document.querySelector('#select-all-tracks');
+  const checkboxes = Array.from(document.querySelectorAll('.track-select'));
+  checkboxes.forEach((checkbox) => {
+    checkbox.checked = selectedTrackIds.has(checkbox.value);
+  });
+  updateSelectAllState(selectAll, checkboxes);
+}
+
 function bindTrackSelection(rows) {
   const selectAll = document.querySelector('#select-all-tracks');
   const checkboxes = Array.from(document.querySelectorAll('.track-select'));
@@ -174,6 +218,7 @@ function updateSelectAllState(selectAll, checkboxes) {
   selectAll.checked = checkboxes.length > 0 && checkedCount === checkboxes.length;
   selectAll.indeterminate = checkedCount > 0 && checkedCount < checkboxes.length;
 }
+
 
 function statusBadge(status) {
   const normalized = String(status || 'unknown').toLowerCase();
