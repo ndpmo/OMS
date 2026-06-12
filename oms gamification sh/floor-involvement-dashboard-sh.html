@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>OMS Growth Engine Dashboard</title>
+  <style>
+    :root{
+      --ink:#2e1739; --muted:#8c6d91; --pink:#ee67b2; --purple:#8a3ee6;
+      --deep:#24105f; --gold:#f4b940; --card:rgba(255,255,255,.82); --line:rgba(94,43,116,.14);
+    }
+    *{box-sizing:border-box} body{margin:0;width:100vw;height:100vh;font-family:Avenir Next,Inter,Arial,sans-serif;color:var(--ink);background:radial-gradient(circle at 20% 8%,#ffd9ed,transparent 32%),radial-gradient(circle at 82% 10%,#cbb5ff,transparent 34%),linear-gradient(135deg,#fff5fb,#f7d6ec 48%,#eee4ff);overflow:hidden}
+    .stage{width:100vw;height:100vh;display:block;padding:0}.dashboard{width:100vw;height:100vh;display:grid;grid-template-rows:auto 1fr;gap:.65vh;padding:.75vh;border-radius:0;background:linear-gradient(145deg,rgba(255,255,255,.62),rgba(255,240,249,.72));box-shadow:none;overflow:hidden}
+    header{display:flex;justify-content:space-between;align-items:flex-start;gap:1.2vw;padding:0 .25vh}.brandmark{display:flex;gap:1vw;align-items:center}.logo{width:4.4vh;height:4.4vh;border-radius:1.4vh;display:grid;place-items:center;color:#fff;font-weight:900;background:linear-gradient(135deg,var(--pink),var(--purple));box-shadow:0 14px 30px rgba(121,55,174,.3)}h1{margin:0;font-size:2.45vh;line-height:1}.subtitle{margin:.45vh 0 0;color:var(--muted);font-weight:800;font-size:1.05vh}.status{padding:.65vh 1vh;border-radius:999px;color:#6a35c8;font-size:1.25vh;font-weight:900;background:#fff8;box-shadow:inset 0 0 0 1px #fff}
+    .content{display:grid;grid-template-columns:1fr;gap:.55vh;min-height:0}.panel{min-height:0;padding:.55vh;border-radius:1.4vh;background:var(--card);box-shadow:0 10px 28px rgba(88,41,110,.10);overflow:hidden}.panel h2{margin:0 0 .65vh;font-size:1.45vh}.brand-list{display:grid;gap:.65vh}.brand-card{padding:.85vh;border-radius:1.8vh;background:linear-gradient(135deg,#fff,#fff5fb);border:1px solid var(--line)}.brand-top{display:flex;justify-content:space-between;gap:1vh;align-items:center}.brand-top strong{font-size:1.42vh}.pill{padding:.55vh .85vh;border-radius:999px;color:#fff;font-size:.92vh;font-weight:900;background:linear-gradient(135deg,var(--pink),var(--purple))}.minirow{display:grid;grid-template-columns:1fr auto;gap:.8vh;margin-top:.45vh;color:var(--muted);font-size:.98vh;font-weight:800}.bar{height:.55vh;margin-top:.45vh;border-radius:999px;background:#ead8ed;overflow:hidden}.bar i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--pink),var(--purple))}
+    .floor-grid{height:100%;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(var(--floor-rows,7),minmax(0,1fr));grid-auto-rows:minmax(0,1fr);gap:.42vh;overflow:hidden;padding-right:0}.floor{position:relative;display:grid;grid-template-columns:1fr auto;grid-template-rows:auto auto 1fr;align-content:stretch;gap:.16vh;padding:.42vh .62vh;border:1px solid var(--line);border-radius:1.25vh;background:linear-gradient(135deg,#ffffff,#fff7fc)}.floor.dermes{background:linear-gradient(135deg,#fff6ea,#ffdba9);border-color:#f1a34466}.floor.elyze{background:linear-gradient(135deg,#f5fff5,#c9f3cf);border-color:#7bc98a66}.floor.reenex{background:linear-gradient(135deg,#f5eee9,#c9a78d);border-color:#8a5a3d66}.floor:before{content:"";position:absolute;left:0;top:0;bottom:0;width:.38vh;border-radius:inherit;background:linear-gradient(180deg,var(--pink),var(--purple))}.floor.dermes:before{background:linear-gradient(180deg,#ff9a2f,#f26a21)}.floor.elyze:before{background:linear-gradient(180deg,#79d98b,#38a85c)}.floor.reenex:before{background:linear-gradient(180deg,#9b6949,#5b3828)}.floor h3{margin:0;font-size:1.05vh;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.floor .rate{font-size:1.22vh;font-weight:950;color:var(--purple);text-align:right}.floor .rate small{display:block;color:#7b5f82;font-size:.68vh;line-height:1}.floor p{grid-column:1/-1;margin:0;color:var(--muted);font-size:.78vh;font-weight:800;line-height:1.05}.floor .bar{display:none}.branch-chips{grid-column:1/-1;align-self:stretch;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));grid-auto-rows:1fr;gap:.24vh;margin-top:.12vh} .engine-label{display:none}.branch-chip{min-height:0;display:flex;align-items:center;justify-content:center;padding:.14vh .22vh;border-radius:.62vh;color:#6d3c76;font-size:.78vh;font-weight:900;background:#f3e4f5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.branch-chip.invite{background:#ece4ff;color:#574293}.branch-chip.hot{color:#fff;background:linear-gradient(135deg,var(--pink),var(--purple))}.branch-chip.invite.hot{background:linear-gradient(135deg,#8a3ee6,#5b63ff)}.empty{height:100%;display:grid;place-items:center;color:var(--muted);font-weight:900}.footer-note{display:none}
+  </style>
+</head>
+<body>
+  <main class="stage">
+    <section class="dashboard">
+      <header>
+        <div class="brandmark"><div class="logo">∞</div><div><h1>SH Growth Engine Involvement</h1><p class="subtitle">留人 Build 30 ACB + 请人 Invite / Recruitment · · 按品牌及中心分组</p></div></div>
+        <div id="status" class="status">Connecting…</div>
+      </header>
+      <section class="content">
+        <div class="panel"><h2>Floor Growth Engine Branches</h2><div class="floor-grid" id="floorGrid"></div></div>
+      </section>
+    </section>
+  </main>
+  <div class="footer-note">OMS Growth OS · 16:9 dashboard</div>
+<script>
+const API_URL='https://script.google.com/macros/s/AKfycbxnqmofICkJzhqMuHOReJsATggnoctWt18uy0RZvZzHOiCg1zmow_oAd2wq9WJ6Yo_8WA/exec';
+const SPREADSHEET_ID='1_eUW8v86dqLOj9mLEUE8mEXrnoYbhLWJzOzUR0_RbXU';
+const SHEET='RAW DATA';
+const MOCK=[
+  {Brand:'Dermes',Center:'D 23-24/F PP (A)',Therapist:'amber.aulk','Reward point':100,'Reach 30 ACB':1,'Redeemed Welcome Product Pack':1},
+  {Brand:'Dermes',Center:'D 23-24/F PP (A)',Therapist:'cherry.liu','Reward point':0},
+  {Brand:'Dermes',Center:'D 35/F TS (A)',Therapist:'cy.li','Reward point':850,'Head Paid Trial Purchase':2,'ACB View Livestream':1},
+  {Brand:'E',Center:'E 18/F MK (B)',Therapist:'demo.e','Reward point':2400,'Tail Giftcard Book':3,'ICB View Livestream':1},
+  {Brand:'Reenex',Center:'R 12/F CWB (C)',Therapist:'demo.r','Reward point':500,'WeBuy Paid Trial Purchase':1,'Referee accepted offer 龙头':1,'Referee Onboarded with contract Signed':1}
+];
+const buildActions=[
+  {key:'acb30',label:'30ACB',names:['建立30个ACB','Reach 30 ACB','Reach 30 customer base','Reach 30 ACB']},
+  {key:'welcome',label:'欢迎礼包',names:['到店领取欢迎礼包','Redeemed Welcome Product Pack']},
+  {key:'trial',label:'付费体驗',names:['客人购买付费体驗','Head Paid Trial Purchase']},
+  {key:'giftcard',label:'礼品卡',names:['龙尾预约礼品卡免费疗程','Tail Giftcard Book']},
+  {key:'webuy',label:'团购体驗',names:['龙尾团购购买付费体驗','WeBuy Paid Trial Purchase','ＷeBuy Paid Trial Purchase']},
+  {key:'acbLive',label:'ACB直播',names:['ACB观看直播','ACB View Livestream']},
+  {key:'icbLive',label:'ICB直播',names:['ICB观看直播','ICB View Livestream']}
+];
+const inviteActions=[
+  {key:'offerHead',label:'龙头Offer',names:['Referee accepted offer 龙头']},
+  {key:'offerTail',label:'龙尾Offer',names:['Referee accepted offer (refer by NJ) 龙尾']},
+  {key:'onboard',label:'签约',names:['Referee Onboarded with contract Signed']},
+  {key:'onsale',label:'上数',names:['Referee onsales']},
+  {key:'complete75k',label:'75K/30CB',names:['Referee Complete 75k or 30 CB (within 1st 3 months)','新治疗师完成$75,000 / 建立30个ACB']}
+];
+const branchActions=[...buildActions,...inviteActions];
+function rowObject(row){return Array.isArray(row)?{Brand:row[0],Center:row[1],Therapist:row[2],'staff no':row[3],...Object.fromEntries(row.map((v,i)=>['col'+i,v]))}:row}
+function val(row,names){return names.reduce((sum,name)=>sum+(row[name]==='Y'?1:Number(row[name]||0)),0)}
+function branchCounts(row){return Object.fromEntries(branchActions.map(a=>[a.key,val(row,a.names)]))}
+function buildActive(row){return Object.values(branchCounts(row)).some(v=>v>0)}
+function summarize(rows){const floors=new Map(), brands=new Map(); rows.forEach(raw=>{const r=rowObject(raw); const brand=String(r.Brand||'Unknown').trim()||'Unknown'; const center=String(r.Center||'Unknown Center').trim()||'Unknown Center'; const counts=branchCounts(r); const bp=Number(r['Reward point']||r['Reward Point']||0); const isActive=Object.values(counts).some(v=>v>0); const key=brand+'|'+center; if(!floors.has(key)) floors.set(key,{brand,center,total:0,active:0,bp:0,branches:Object.fromEntries(branchActions.map(a=>[a.key,0]))}); const f=floors.get(key); f.total++; f.active+=isActive?1:0; f.bp+=bp; branchActions.forEach(a=>f.branches[a.key]+=counts[a.key]); if(!brands.has(brand)) brands.set(brand,{brand,total:0,active:0,bp:0,floors:0,branches:Object.fromEntries(branchActions.map(a=>[a.key,0]))}); const b=brands.get(brand); b.total++; b.active+=isActive?1:0; b.bp+=bp; branchActions.forEach(a=>b.branches[a.key]+=counts[a.key]);}); floors.forEach(f=>brands.get(f.brand).floors++); return {floors:[...floors.values()],brands:[...brands.values()]}}
+function pct(a,b){return b?Math.round(a/b*100):0} function fmt(n){return Number(n||0).toLocaleString()} function sumBranches(x){return Object.values(x.branches).reduce((a,b)=>a+b,0)}
+function brandClass(brand){const b=String(brand||'').toLowerCase(); if(b.includes('dermes')) return 'dermes'; if(b.includes('elyze')||b==='e') return 'elyze'; if(b.includes('reenex')||b==='r') return 'reenex'; return ''}
+function branchHtml(branches){return buildActions.map(a=>`<span class="branch-chip ${branches[a.key]>0?'hot':''}">${a.label} ${fmt(branches[a.key])}</span>`).join('')+inviteActions.map(a=>`<span class="branch-chip invite ${branches[a.key]>0?'hot':''}">${a.label} ${fmt(branches[a.key])}</span>`).join('')}
+function render(rows, source){const normalized=rows.map(rowObject); const {floors,brands}=summarize(normalized); const total=normalized.length, activeCount=normalized.filter(buildActive).length, buildActiveCount=normalized.filter(r=>buildActions.some(a=>branchCounts(r)[a.key]>0)).length, inviteActiveCount=normalized.filter(r=>inviteActions.some(a=>branchCounts(r)[a.key]>0)).length, acbDone=normalized.reduce((s,r)=>s+branchCounts(r).acb30,0), totalActions=floors.reduce((s,f)=>s+sumBranches(f),0); document.getElementById('status').textContent=source==='api'?'Connected':'Demo data';  const floorGrid=document.getElementById('floorGrid'); floorGrid.style.setProperty('--floor-rows',Math.max(1,Math.ceil(floors.length/4))); floorGrid.innerHTML=floors.sort((a,b)=>a.brand.localeCompare(b.brand)||pct(b.active,b.total)-pct(a.active,a.total)||sumBranches(b)-sumBranches(a)).map(f=>`<article class="floor ${brandClass(f.brand)}"><h3>${f.center}</h3><div class="rate">${pct(f.active,f.total)}%<small>${fmt(f.bp)} BP</small></div><p>${f.brand} · ${f.active}/${f.total} active · ${fmt(sumBranches(f))} actions</p><div class="branch-chips">${branchHtml(f.branches)}</div></article>`).join('')||'<div class="empty">No floor data</div>';}
+async function load(){try{const url=new URL(API_URL); url.searchParams.set('spreadsheetId',SPREADSHEET_ID); url.searchParams.set('sheet',SHEET); const res=await fetch(url); if(!res.ok) throw new Error(res.status); const json=await res.json(); const data=(json.data||[]).filter(r=>{const o=rowObject(r); return o.Center&&o.Therapist}); render(data.length?data:MOCK,data.length?'api':'mock')}catch(e){render(MOCK,'mock')}}
+load();
+</script>
+</body>
+</html>
