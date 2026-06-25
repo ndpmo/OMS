@@ -17,6 +17,8 @@
         --connector: #6e8580;
         --teal: #0f766e;
         --teal-soft: #d9f0ec;
+        --tiffany: #0ab8b6;
+        --tiffany-soft: #d7fbfa;
         --coral: #d9654f;
         --coral-soft: #ffe5df;
         --amber: #b98219;
@@ -95,6 +97,30 @@
         gap: 8px;
         flex-wrap: wrap;
         justify-content: flex-end;
+      }
+
+      .legend-ribbon {
+        grid-column: 1 / -1;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 36px;
+        padding: 8px 12px;
+        border: 1px solid rgba(10, 184, 182, 0.42);
+        border-radius: 8px;
+        background: var(--tiffany-soft);
+        color: #07564f;
+        font-size: 0.86rem;
+        font-weight: 850;
+      }
+
+      .legend-swatch {
+        width: 18px;
+        height: 18px;
+        flex: 0 0 auto;
+        border: 2px solid var(--tiffany);
+        border-radius: 5px;
+        background: var(--tiffany-soft);
       }
 
       .btn,
@@ -623,17 +649,28 @@
       }
 
       .org-node.potential {
-        border-color: #e18a21;
-        background: #ffe3bd;
-        box-shadow: 0 14px 30px rgba(177, 104, 21, 0.16);
+        border-color: var(--tiffany);
+        background: var(--tiffany-soft);
+        box-shadow: 0 14px 30px rgba(10, 184, 182, 0.16);
       }
 
       .org-node.as.potential,
       .org-node.tl.potential,
       .org-node.tl.over.potential,
       .org-node.therapist.potential {
-        border-color: #e18a21;
-        background: #ffe3bd;
+        border-color: var(--tiffany);
+        background: var(--tiffany-soft);
+      }
+
+      .org-node.terminated,
+      .org-node.as.terminated,
+      .org-node.tl.terminated,
+      .org-node.tl.over.terminated,
+      .org-node.therapist.terminated,
+      .org-node.potential.terminated {
+        border-color: #d64532;
+        background: #ffe2dd;
+        box-shadow: 0 14px 30px rgba(182, 58, 42, 0.18);
       }
 
       .org-node.direct {
@@ -701,6 +738,16 @@
         color: #76500b;
       }
 
+      .stat-pill.terminated {
+        background: #f9b8af;
+        color: #812b21;
+      }
+
+      .stat-pill.hire {
+        background: #d7fbfa;
+        color: #07564f;
+      }
+
       .chip {
         display: inline-flex;
         align-items: center;
@@ -714,6 +761,12 @@
         font-size: 0.82rem;
         font-weight: 750;
         overflow-wrap: anywhere;
+      }
+
+      .chip.terminated {
+        border-color: #d64532;
+        background: #ffe2dd;
+        color: #812b21;
       }
 
       .lane-board {
@@ -890,13 +943,17 @@
     <div class="shell">
       <header class="topbar">
         <div class="title-block">
-          <h1>Org Chart Planner</h1>
-          <p>按 Brand、Center、AS、TL、Therapist 自動生成組織圖同排位方案</p>
+          <h1>Neoderm Leadership Planner</h1>
+          <p>Orgchart</p>
         </div>
         <div class="toolbar">
-          <button class="btn primary" id="refreshBtn" type="button">↻ 重新讀 Sheet</button>
+          <button class="btn primary" id="refreshBtn" type="button">↻ 重新讀 Apps Script</button>
           <button class="btn" id="printBtn" type="button">⎙ 列印</button>
           <button class="btn" id="exportBtn" type="button">⇩ 匯出 CSV</button>
+        </div>
+        <div class="legend-ribbon" aria-label="Org chart color legend">
+          <span class="legend-swatch"></span>
+          <span>Tiffany blue = High Potential Network Team Leader</span>
         </div>
       </header>
 
@@ -909,17 +966,13 @@
           <section class="side-section">
             <h2>資料來源</h2>
             <div class="field">
-              <label for="sheetUrl">Google Sheet Link</label>
-              <input id="sheetUrl" value="https://docs.google.com/spreadsheets/d/1Hc-U6YnTrFxIfeG_wjwLpbYV-ghR0XGDSjuXGyMtSCg/edit?gid=162962768#gid=162962768">
-            </div>
-            <div class="field">
-              <label for="gidInput">Tab GID</label>
-              <input id="gidInput" value="162962768">
+              <label for="appsScriptUrl">Apps Script Web App URL</label>
+              <input id="appsScriptUrl" value="https://script.google.com/macros/s/AKfycbxQ2MV6YSf2kYiYvrc4B6yxTrT6AihKh47ddlfhDwX_XBWtaWKvbGWOemUuG78W2v-j/exec" placeholder="Optional: paste /exec URL here">
             </div>
             <div class="field">
               <div class="status" id="statusBox">
                 <span class="status-dot"></span>
-                <span id="statusText">準備讀取 30+2 Summary Master 的 B/C/D/E/G/L 欄。</span>
+                <span id="statusText">準備讀取 30+2 Summary Master 的 B/C/D/E/G/I/L/P/T/Y/Z/AY/AZ 欄。</span>
               </div>
             </div>
           </section>
@@ -970,8 +1023,8 @@
           <section class="side-section">
             <h2>手動貼資料</h2>
             <div class="field">
-              <label for="pasteBox">貼上 B,C,D,E,G,L,P,T,Y,Z 或 CSV/TSV</label>
-              <textarea id="pasteBox" placeholder="Brand,Center,AS NAME,TL NAME,Therapist,Position,High Po,MTD Sales%,ACB Current,ACB Net Change"></textarea>
+              <label for="pasteBox">貼上 B,C,D,E,G,I,L,P,T,Y,Z,AY,AZ 或 CSV/TSV</label>
+              <textarea id="pasteBox" placeholder="Brand,Center,AS NAME,TL NAME,Therapist,Termination Date,Position,High Po,MTD Sales%,ACB Current,ACB Net Change,Hires Onboarded,Hires Pending"></textarea>
             </div>
             <div class="field">
               <button class="btn" id="pasteBtn" type="button">套用貼上資料</button>
@@ -988,7 +1041,7 @@
             <div class="metric"><span>Therapists</span><strong id="therapistCount">0</strong></div>
           </section>
 
-          <div class="content-grid" id="contentGrid">
+          <div class="content-grid insights-collapsed" id="contentGrid">
             <section class="panel">
               <div class="panel-head">
                 <div class="panel-title">
@@ -1004,13 +1057,13 @@
               </div>
             </section>
 
-            <section class="panel insight-panel" id="insightPanel">
+            <section class="panel insight-panel collapsed" id="insightPanel">
               <div class="panel-head">
                 <div class="panel-title">
                   <h2>規劃提示</h2>
                   <p>由現有人數同目標 span 自動計。</p>
                 </div>
-                <button class="collapse-btn" id="insightToggle" type="button" title="收合 / 展開規劃提示">−</button>
+                <button class="collapse-btn" id="insightToggle" type="button" title="收合 / 展開規劃提示" aria-expanded="false">+</button>
               </div>
               <div class="insight-list" id="insights"></div>
             </section>
@@ -1021,20 +1074,20 @@
 
     <script>
       const DEFAULT_ROWS = [
-        ["dermes","D 23-24/F PP (A)","amber.aulk","","amber.aulk","AS/S","","99%","66","0"],
-        ["dermes","D 23-24/F PP (A)","katy.laiky","","katy.laiky","AS/S","","154%","98","-1"],
-        ["dermes","D 23-24/F PP (A)","katy.laiky","ka.ho","ka.ho","TL","","150%","103","3"],
-        ["dermes","D 23-24/F PP (A)","katy.laiky","ka.ho","panda.liu","75000-3","Y","0%","8","8"],
-        ["dermes","D 23-24/F PP (A)","katy.laiky","ka.ho","sandy.leung","E1","","165%","48","-1"],
-        ["dermes","D 23-24/F PP (A)","katy.laiky","may.huang","may.huang","TL","","168%","107","10"],
-        ["dermes","D 23-24/F PP (A)","katy.laiky","may.huang","pinky.leehy","E1","Y","130%","77","-7"],
-        ["elyze","E 23-24/F PP (A)","betty.chan","","betty.chan","AS/S","","120%","80","2"],
-        ["elyze","E 23-24/F PP (A)","betty.chan","natalie.mak","natalie.mak","TL","","112%","74","1"],
-        ["elyze","E 23-24/F PP (A)","betty.chan","natalie.mak","emily.chanyc","100000-2","Y","96%","61","-3"],
-        ["elyze","E 23-24/F PP (A)","betty.chan","natalie.mak","kay.wong.kk","E1","","101%","70","0"],
-        ["reenex","R 23-24/F PP (A)","manyee.lo","","manyee.lo","AS/S","","108%","91","4"],
-        ["reenex","R 23-24/F PP (A)","manyee.lo","kiki.ting","kiki.ting","TL","","103%","69","-2"],
-        ["reenex","R 23-24/F PP (A)","manyee.lo","kiki.ting","venus.yu","E1","","88%","44","1"]
+        ["dermes","D 23-24/F PP (A)","amber.aulk","","amber.aulk","","AS/S","","99%","66","0"],
+        ["dermes","D 23-24/F PP (A)","katy.laiky","","katy.laiky","","AS/S","","154%","98","-1"],
+        ["dermes","D 23-24/F PP (A)","katy.laiky","ka.ho","ka.ho","","TL","","150%","103","3"],
+        ["dermes","D 23-24/F PP (A)","katy.laiky","ka.ho","panda.liu","08/05/2026","75000-3","Y","0%","8","8"],
+        ["dermes","D 23-24/F PP (A)","katy.laiky","ka.ho","sandy.leung","","E1","","165%","48","-1"],
+        ["dermes","D 23-24/F PP (A)","katy.laiky","may.huang","may.huang","","TL","","168%","107","10"],
+        ["dermes","D 23-24/F PP (A)","katy.laiky","may.huang","pinky.leehy","","E1","Y","130%","77","-7"],
+        ["elyze","E 23-24/F PP (A)","betty.chan","","betty.chan","","AS/S","","120%","80","2"],
+        ["elyze","E 23-24/F PP (A)","betty.chan","natalie.mak","natalie.mak","","TL","","112%","74","1"],
+        ["elyze","E 23-24/F PP (A)","betty.chan","natalie.mak","emily.chanyc","","100000-2","Y","96%","61","-3"],
+        ["elyze","E 23-24/F PP (A)","betty.chan","natalie.mak","kay.wong.kk","","E1","","101%","70","0"],
+        ["reenex","R 23-24/F PP (A)","manyee.lo","","manyee.lo","","AS/S","","108%","91","4"],
+        ["reenex","R 23-24/F PP (A)","manyee.lo","kiki.ting","kiki.ting","","TL","","103%","69","-2"],
+        ["reenex","R 23-24/F PP (A)","manyee.lo","kiki.ting","venus.yu","","E1","","88%","44","1"]
       ];
 
       const state = {
@@ -1042,12 +1095,11 @@
         rows: [],
         currentView: "chart",
         planAssignments: new Map(),
-        dataSource: "sample"
+        dataSource: "apps-script"
       };
 
       const els = {
-        sheetUrl: document.querySelector("#sheetUrl"),
-        gidInput: document.querySelector("#gidInput"),
+        appsScriptUrl: document.querySelector("#appsScriptUrl"),
         statusBox: document.querySelector("#statusBox"),
         statusText: document.querySelector("#statusText"),
         refreshBtn: document.querySelector("#refreshBtn"),
@@ -1087,7 +1139,7 @@
       }
 
       function rowKey(row) {
-        return [row.brand, row.center, row.asName, row.tlName, row.therapist, row.position, row.highPo, row.salesMtd, row.acbCurrent, row.acbNetChange].join("|");
+        return [row.brand, row.center, row.asName, row.tlName, row.therapist, row.terminationDate, row.position, row.highPo, row.salesMtd, row.acbCurrent, row.acbNetChange, row.hiresOnboarded, row.hiresPending].join("|");
       }
 
       function escapeHtml(value) {
@@ -1104,6 +1156,10 @@
         els.statusText.textContent = text;
       }
 
+      function hasHireValues(rows) {
+        return rows.some(row => valid(row.hiresOnboarded) || valid(row.hiresPending));
+      }
+
       function normalizeRows(values) {
         const output = [];
         const seen = new Set();
@@ -1114,11 +1170,14 @@
             asName: clean(source[2]),
             tlName: clean(source[3]),
             therapist: clean(source[4]),
-            position: clean(source[5]),
-            highPo: clean(source[6]),
-            salesMtd: clean(source[7]),
-            acbCurrent: clean(source[8]),
-            acbNetChange: clean(source[9])
+            terminationDate: clean(source[5]),
+            position: clean(source[6]),
+            highPo: clean(source[7]),
+            salesMtd: clean(source[8]),
+            acbCurrent: clean(source[9]),
+            acbNetChange: clean(source[10]),
+            hiresOnboarded: clean(source[11]),
+            hiresPending: clean(source[12])
           };
           if (!valid(row.brand) || !valid(row.center) || !valid(row.therapist)) continue;
           if (row.brand === "brand" || row.therapist.toLowerCase() === "therapist") continue;
@@ -1148,70 +1207,188 @@
           row[2],
           row[3],
           row[5],
+          row[7],
           row[10],
           row[14],
           row[18],
           row[23],
-          row[24]
+          row[24],
+          row[49],
+          row[50]
         ];
       }
 
-      function loadFromGoogleSheet() {
-        const id = extractSheetId(els.sheetUrl.value);
-        const gid = clean(els.gidInput.value) || "162962768";
-        const callback = `__orgChart_${Date.now()}`;
-        const src = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?gid=${gid}&range=B1:Z260&headers=2&tqx=responseHandler:${callback}`;
-        let settled = false;
-
-        setStatus("正在讀取 Google Sheet live data...", "");
-
-        window[callback] = response => {
-          settled = true;
-          try {
-            const rows = (response.table.rows || []).map(row => pickSourceColumns((row.c || []).map(readCell)));
-            state.rawRows = normalizeRows(rows);
-            state.dataSource = "live";
-            if (!state.rawRows.length) throw new Error("No usable rows found.");
-            state.planAssignments.clear();
-            setStatus(`已讀取 live Sheet：${state.rawRows.length} 位有效人員。`, "live");
-            syncAll();
-          } catch (error) {
-            useFallback(`讀取到回應，但未能解析資料：${error.message}`);
-          } finally {
-            cleanup();
-          }
-        };
-
-        const script = document.createElement("script");
-        script.src = src;
-        script.onerror = () => {
-          if (!settled) useFallback("瀏覽器未能讀取 Google Sheet，已載入 sample。可確認分享權限或使用貼上資料。");
-          cleanup();
-        };
-        document.body.appendChild(script);
-
-        const timer = window.setTimeout(() => {
-          if (!settled) {
-            useFallback("讀取逾時，已載入 sample。Google Sheet 如未公開，請用上方貼上資料。");
-            cleanup();
-          }
-        }, 8000);
-
-        function cleanup() {
-          window.clearTimeout(timer);
-          window.setTimeout(() => {
-            delete window[callback];
-            script.remove();
-          }, 0);
-        }
+      function normalizeHeader(value) {
+        return clean(value).toLowerCase().replace(/\s+/g, " ");
       }
 
-      function useFallback(message) {
-        state.rawRows = normalizeRows(DEFAULT_ROWS);
-        state.dataSource = "sample";
-        state.planAssignments.clear();
-        setStatus(message, "error");
-        syncAll();
+      function parseCsv(text) {
+        const rows = [];
+        let row = [];
+        let cell = "";
+        let quoted = false;
+        for (let index = 0; index < text.length; index += 1) {
+          const char = text[index];
+          const next = text[index + 1];
+          if (quoted) {
+            if (char === '"' && next === '"') {
+              cell += '"';
+              index += 1;
+            } else if (char === '"') {
+              quoted = false;
+            } else {
+              cell += char;
+            }
+          } else if (char === '"') {
+            quoted = true;
+          } else if (char === ",") {
+            row.push(clean(cell));
+            cell = "";
+          } else if (char === "\n") {
+            row.push(clean(cell));
+            rows.push(row);
+            row = [];
+            cell = "";
+          } else if (char !== "\r") {
+            cell += char;
+          }
+        }
+        if (cell || row.length) {
+          row.push(clean(cell));
+          rows.push(row);
+        }
+        return rows;
+      }
+
+      function pickRowsByHeader(rows) {
+        const headerIndex = rows.findIndex(row => {
+          const headers = row.map(normalizeHeader);
+          return headers.includes("brand") && headers.includes("center") && headers.includes("therapist");
+        });
+        if (headerIndex < 0) return [];
+
+        const headers = rows[headerIndex].map(normalizeHeader);
+        const findColumn = names => {
+          const targets = names.map(normalizeHeader);
+          return headers.findIndex(header => targets.includes(header));
+        };
+        const columns = {
+          brand: findColumn(["Brand"]),
+          center: findColumn(["Center"]),
+          asName: findColumn(["AS NAME"]),
+          tlName: findColumn(["TL NAME"]),
+          therapist: findColumn(["Therapist"]),
+          terminationDate: findColumn(["Termination Date"]),
+          position: findColumn(["Therapist Postion", "Therapist Position"]),
+          highPo: findColumn(["High Po"]),
+          salesMtd: findColumn(["MTD Sales%"]),
+          acbCurrent: findColumn(["ACB Current"]),
+          acbNetChange: findColumn(["ACB Net Change"]),
+          hiresOnboarded: findColumn(["Hires Onboarded", "Onboarded Hires", "Onboarded", "已 Onboard", "已經 onboard", "已經 onboard 咗"]),
+          hiresPending: findColumn(["Hires Pending Onboard", "Pending Onboard", "Pending Onboarded", "尚未 Onboard", "尚未 onboard", "尚未 onboard 咗"])
+        };
+
+        if ([columns.brand, columns.center, columns.therapist].some(index => index < 0)) return [];
+
+        return rows.slice(headerIndex + 1).map(row => [
+          row[columns.brand],
+          row[columns.center],
+          columns.asName >= 0 ? row[columns.asName] : "",
+          columns.tlName >= 0 ? row[columns.tlName] : "",
+          row[columns.therapist],
+          columns.terminationDate >= 0 ? row[columns.terminationDate] : "",
+          columns.position >= 0 ? row[columns.position] : "",
+          columns.highPo >= 0 ? row[columns.highPo] : "",
+          columns.salesMtd >= 0 ? row[columns.salesMtd] : "",
+          columns.acbCurrent >= 0 ? row[columns.acbCurrent] : "",
+          columns.acbNetChange >= 0 ? row[columns.acbNetChange] : "",
+          columns.hiresOnboarded >= 0 ? row[columns.hiresOnboarded] : row[49],
+          columns.hiresPending >= 0 ? row[columns.hiresPending] : row[50]
+        ]);
+      }
+
+      function jsonp(src, timeoutMs = 12000) {
+        return new Promise((resolve, reject) => {
+          const callback = `__orgChart_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+          const script = document.createElement("script");
+          const separator = src.includes("?") ? "&" : "?";
+          let settled = false;
+
+          function cleanup() {
+            window.clearTimeout(timer);
+            window.setTimeout(() => {
+              delete window[callback];
+              script.remove();
+            }, 0);
+          }
+
+          window[callback] = payload => {
+            settled = true;
+            resolve(payload);
+            cleanup();
+          };
+
+          script.onerror = () => {
+            if (!settled) reject(new Error("JSONP request was blocked."));
+            cleanup();
+          };
+
+          const timer = window.setTimeout(() => {
+            if (!settled) {
+              reject(new Error("JSONP request timed out."));
+              cleanup();
+            }
+          }, timeoutMs);
+
+          script.src = `${src}${separator}callback=${encodeURIComponent(callback)}&cachebust=${Date.now()}`;
+          document.body.appendChild(script);
+        });
+      }
+
+      async function loadAppsScriptRows(url) {
+        const payload = await jsonp(url);
+        if (payload?.error) throw new Error(payload.error);
+        const values = Array.isArray(payload?.values) ? payload.values : Array.isArray(payload) ? payload : [];
+        const rows = normalizeRows(pickRowsByHeader(values));
+        if (!rows.length) throw new Error("Apps Script response did not contain usable rows.");
+        return {
+          rows,
+          source: clean(payload?.source),
+          columnCount: values.reduce((max, row) => Math.max(max, Array.isArray(row) ? row.length : 0), 0)
+        };
+      }
+
+      async function loadFromAppsScript() {
+        const appsScriptUrl = clean(els.appsScriptUrl.value);
+        if (!appsScriptUrl) {
+          state.rawRows = [];
+          state.dataSource = "apps-script";
+          state.planAssignments.clear();
+          setStatus("請先填入 Apps Script Web App URL。此工具只使用 Apps Script。", "error");
+          syncAll();
+          return;
+        }
+
+        setStatus("正在透過 Apps Script 讀取資料...", "");
+
+        try {
+          const result = await loadAppsScriptRows(appsScriptUrl);
+          const rows = result.rows;
+          const sourceText = result.source || "unknown range";
+          const widthText = `${result.columnCount} columns`;
+          const includesAyAzRange = /AZ/i.test(sourceText) || result.columnCount >= 51;
+          state.rawRows = rows;
+          state.dataSource = "apps-script";
+          state.planAssignments.clear();
+          setStatus(hasHireValues(state.rawRows) ? `已透過 Apps Script 讀取：${state.rawRows.length} 位有效人員，包含 AY/AZ。` : includesAyAzRange ? `Apps Script 已回傳 ${sourceText}（${widthText}），但 AY/AZ 目前未見數值。` : `Apps Script 仍未回傳 AY/AZ：${sourceText}（${widthText}）。請 Deploy new version 到 B1:AZ260。`, hasHireValues(state.rawRows) ? "live" : "error");
+          syncAll();
+        } catch (error) {
+          state.rawRows = [];
+          state.dataSource = "apps-script";
+          state.planAssignments.clear();
+          setStatus(`Apps Script 未能讀取：${error.message}`, "error");
+          syncAll();
+        }
       }
 
       function applyFilters() {
@@ -1224,7 +1401,7 @@
           if (center && row.center !== center) return false;
           if (asName && row.asName !== asName) return false;
           if (!search) return true;
-          return [row.brand, row.center, row.asName, row.tlName, row.therapist, row.position, row.highPo, row.salesMtd, row.acbCurrent, row.acbNetChange].some(value => clean(value).toLowerCase().includes(search));
+          return [row.brand, row.center, row.asName, row.tlName, row.therapist, row.terminationDate, row.position, row.highPo, row.salesMtd, row.acbCurrent, row.acbNetChange, row.hiresOnboarded, row.hiresPending].some(value => clean(value).toLowerCase().includes(search));
         });
       }
 
@@ -1279,18 +1456,24 @@
         };
         const personPayload = row => ({
           name: row.therapist,
+          terminationDate: row.terminationDate,
           position: row.position,
           highPo: row.highPo,
           salesMtd: row.salesMtd,
           acbCurrent: row.acbCurrent,
-          acbNetChange: row.acbNetChange
+          acbNetChange: row.acbNetChange,
+          hiresOnboarded: row.hiresOnboarded,
+          hiresPending: row.hiresPending
         });
         const copyMetrics = (target, row) => {
+          target.terminationDate = row.terminationDate || target.terminationDate || "";
           target.position = row.position || target.position || "";
           target.highPo = row.highPo || target.highPo || "";
           target.salesMtd = row.salesMtd || target.salesMtd || "";
           target.acbCurrent = row.acbCurrent || target.acbCurrent || "";
           target.acbNetChange = row.acbNetChange || target.acbNetChange || "";
+          target.hiresOnboarded = row.hiresOnboarded || target.hiresOnboarded || "";
+          target.hiresPending = row.hiresPending || target.hiresPending || "";
         };
         const addPerson = (map, row) => {
           if (!map.has(row.therapist)) map.set(row.therapist, personPayload(row));
@@ -1305,7 +1488,7 @@
           center.people.add(row.therapist);
           if (!isRealAs(row)) {
             if (valid(row.tlName)) {
-              if (!center.tls.has(row.tlName)) center.tls.set(row.tlName, { name: row.tlName, people: new Map(), position: "", highPo: "", salesMtd: "", acbCurrent: "", acbNetChange: "" });
+              if (!center.tls.has(row.tlName)) center.tls.set(row.tlName, { name: row.tlName, people: new Map(), terminationDate: "", position: "", highPo: "", salesMtd: "", acbCurrent: "", acbNetChange: "", hiresOnboarded: "", hiresPending: "" });
               const tlNode = center.tls.get(row.tlName);
               if (row.therapist === row.tlName) copyMetrics(tlNode, row);
               if (row.therapist !== row.tlName) addPerson(tlNode.people, row);
@@ -1315,11 +1498,11 @@
             continue;
           }
           const asName = valid(row.asName) ? row.asName : "Unassigned AS";
-          if (!center.as.has(asName)) center.as.set(asName, { name: asName, tls: new Map(), direct: new Map(), people: new Set(), position: "", highPo: "", salesMtd: "", acbCurrent: "", acbNetChange: "" });
+          if (!center.as.has(asName)) center.as.set(asName, { name: asName, tls: new Map(), direct: new Map(), people: new Set(), terminationDate: "", position: "", highPo: "", salesMtd: "", acbCurrent: "", acbNetChange: "", hiresOnboarded: "", hiresPending: "" });
           const asNode = center.as.get(asName);
           if (row.therapist === asName) copyMetrics(asNode, row);
           if (valid(row.tlName)) {
-            if (!asNode.tls.has(row.tlName)) asNode.tls.set(row.tlName, { name: row.tlName, people: new Map(), position: "", highPo: "", salesMtd: "", acbCurrent: "", acbNetChange: "" });
+            if (!asNode.tls.has(row.tlName)) asNode.tls.set(row.tlName, { name: row.tlName, people: new Map(), terminationDate: "", position: "", highPo: "", salesMtd: "", acbCurrent: "", acbNetChange: "", hiresOnboarded: "", hiresPending: "" });
             const tlNode = asNode.tls.get(row.tlName);
             if (row.therapist === row.tlName) copyMetrics(tlNode, row);
             if (row.therapist !== row.tlName) {
@@ -1367,10 +1550,14 @@
             const changeText = valid(rawChange) ? ` (${numericChange > 0 ? "+" : ""}${escapeHtml(rawChange)})` : "";
             stats.push(`<span class="stat-pill acb">ACB ${escapeHtml(item.acbCurrent)}${changeText}</span>`);
           }
+          if (valid(item?.terminationDate)) stats.push(`<span class="stat-pill terminated">Last day ${escapeHtml(item.terminationDate)}</span>`);
+          if (valid(item?.hiresOnboarded)) stats.push(`<span class="stat-pill hire">ONB ${escapeHtml(item.hiresOnboarded)}</span>`);
+          if (valid(item?.hiresPending)) stats.push(`<span class="stat-pill hire">PEND ${escapeHtml(item.hiresPending)}</span>`);
           return stats.length ? `<div class="org-node-stats">${stats.join("")}</div>` : "";
         };
         const isPotential = item => clean(item?.highPo).toUpperCase() === "Y";
-        const node = (type, name, meta, count, extraClass = "", item = null) => `<div class="org-node ${type} ${extraClass} ${isPotential(item) ? "potential" : ""}">
+        const isTerminated = item => valid(item?.terminationDate);
+        const node = (type, name, meta, count, extraClass = "", item = null) => `<div class="org-node ${type} ${extraClass} ${isPotential(item) ? "potential" : ""} ${isTerminated(item) ? "terminated" : ""}">
           <small>${escapeHtml(meta)}</small>
           <strong>${escapeHtml(name)}</strong>
           ${statPills(item)}
@@ -1457,7 +1644,7 @@
             </div>
             <div class="lane-body">`;
           for (const person of lane.people) {
-            html += `<span class="chip draggable" draggable="true" data-person="${escapeHtml(rowKey(person))}">${escapeHtml(person.therapist)}</span>`;
+            html += `<span class="chip draggable ${valid(person.terminationDate) ? "terminated" : ""}" draggable="true" data-person="${escapeHtml(rowKey(person))}">${escapeHtml(person.therapist)}</span>`;
           }
           html += `</div></section>`;
         }
@@ -1496,22 +1683,25 @@
           els.tableView.innerHTML = `<div class="empty">沒有資料。</div>`;
           return;
         }
-        const body = rows.map(row => `<tr>
+        const body = rows.map(row => `<tr style="${valid(row.terminationDate) ? "background:#ffe2dd" : ""}">
           <td>${escapeHtml(row.brand)}</td>
           <td>${escapeHtml(row.center)}</td>
           <td>${escapeHtml(row.asName)}</td>
           <td>${escapeHtml(row.tlName || "Direct")}</td>
           <td>${escapeHtml(row.plannedTl)}</td>
           <td>${escapeHtml(row.therapist)}</td>
+          <td>${escapeHtml(row.terminationDate)}</td>
           <td>${escapeHtml(row.position)}</td>
           <td>${escapeHtml(row.highPo)}</td>
           <td>${escapeHtml(row.salesMtd)}</td>
           <td>${escapeHtml(row.acbCurrent)}</td>
           <td>${escapeHtml(row.acbNetChange)}</td>
+          <td>${escapeHtml(row.hiresOnboarded)}</td>
+          <td>${escapeHtml(row.hiresPending)}</td>
         </tr>`).join("");
         els.tableView.innerHTML = `<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:.9rem">
           <thead><tr>
-            ${["Brand","Center","AS","Current TL","Planned TL","Therapist","Position","High Po","MTD Sales%","ACB Current","ACB Net Change"].map(item => `<th style="text-align:left;padding:10px;border-bottom:1px solid var(--line);background:#fbfaf7">${item}</th>`).join("")}
+            ${["Brand","Center","AS","Current TL","Planned TL","Therapist","Last day","Position","High Po","MTD Sales%","ACB Current","ACB Net Change","Hires Onboarded","Hires Pending"].map(item => `<th style="text-align:left;padding:10px;border-bottom:1px solid var(--line);background:#fbfaf7">${item}</th>`).join("")}
           </tr></thead>
           <tbody>${body}</tbody>
         </table></div>`;
@@ -1579,8 +1769,8 @@
       }
 
       function exportCsv() {
-        const header = ["Brand","Center","AS","Current TL","Planned TL","Therapist","Position","High Po","MTD Sales%","ACB Current","ACB Net Change"];
-        const rows = getPlanRows().map(row => [row.brand, row.center, row.asName, row.tlName || "Direct", row.plannedTl, row.therapist, row.position, row.highPo, row.salesMtd, row.acbCurrent, row.acbNetChange]);
+        const header = ["Brand","Center","AS","Current TL","Planned TL","Therapist","Last day","Position","High Po","MTD Sales%","ACB Current","ACB Net Change","Hires Onboarded","Hires Pending"];
+        const rows = getPlanRows().map(row => [row.brand, row.center, row.asName, row.tlName || "Direct", row.plannedTl, row.therapist, row.terminationDate, row.position, row.highPo, row.salesMtd, row.acbCurrent, row.acbNetChange, row.hiresOnboarded, row.hiresPending]);
         const csv = [header, ...rows].map(row => row.map(value => `"${clean(value).replaceAll('"', '""')}"`).join(",")).join("\n");
         const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
         const url = URL.createObjectURL(blob);
@@ -1630,7 +1820,7 @@
         });
       });
 
-      els.refreshBtn.addEventListener("click", loadFromGoogleSheet);
+      els.refreshBtn.addEventListener("click", loadFromAppsScript);
       els.printBtn.addEventListener("click", () => window.print());
       els.exportBtn.addEventListener("click", exportCsv);
       els.sideToggle.addEventListener("click", () => {
@@ -1664,7 +1854,7 @@
         syncAll();
       });
 
-      loadFromGoogleSheet();
+      loadFromAppsScript();
     </script>
   </body>
 </html>
