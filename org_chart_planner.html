@@ -941,8 +941,8 @@
           <section class="side-section">
             <h2>手動貼資料</h2>
             <div class="field">
-              <label for="pasteBox">貼上 B,C,D,E,G,L,T,Y 或 CSV/TSV</label>
-              <textarea id="pasteBox" placeholder="Brand,Center,AS NAME,TL NAME,Therapist,Position,MTD Sales%,ACB Current"></textarea>
+              <label for="pasteBox">貼上 B,C,D,E,G,L,T,Y,Z 或 CSV/TSV</label>
+              <textarea id="pasteBox" placeholder="Brand,Center,AS NAME,TL NAME,Therapist,Position,MTD Sales%,ACB Current,ACB Net Change"></textarea>
             </div>
             <div class="field">
               <button class="btn" id="pasteBtn" type="button">套用貼上資料</button>
@@ -992,20 +992,20 @@
 
     <script>
       const DEFAULT_ROWS = [
-        ["dermes","D 23-24/F PP (A)","amber.aulk","","amber.aulk","AS/S","99%","66"],
-        ["dermes","D 23-24/F PP (A)","katy.laiky","","katy.laiky","AS/S","154%","98"],
-        ["dermes","D 23-24/F PP (A)","katy.laiky","ka.ho","ka.ho","TL","150%","103"],
-        ["dermes","D 23-24/F PP (A)","katy.laiky","ka.ho","panda.liu","75000-3","0%","8"],
-        ["dermes","D 23-24/F PP (A)","katy.laiky","ka.ho","sandy.leung","E1","165%","48"],
-        ["dermes","D 23-24/F PP (A)","katy.laiky","may.huang","may.huang","TL","168%","107"],
-        ["dermes","D 23-24/F PP (A)","katy.laiky","may.huang","pinky.leehy","E1","130%","77"],
-        ["elyze","E 23-24/F PP (A)","betty.chan","","betty.chan","AS/S","120%","80"],
-        ["elyze","E 23-24/F PP (A)","betty.chan","natalie.mak","natalie.mak","TL","112%","74"],
-        ["elyze","E 23-24/F PP (A)","betty.chan","natalie.mak","emily.chanyc","100000-2","96%","61"],
-        ["elyze","E 23-24/F PP (A)","betty.chan","natalie.mak","kay.wong.kk","E1","101%","70"],
-        ["reenex","R 23-24/F PP (A)","manyee.lo","","manyee.lo","AS/S","108%","91"],
-        ["reenex","R 23-24/F PP (A)","manyee.lo","kiki.ting","kiki.ting","TL","103%","69"],
-        ["reenex","R 23-24/F PP (A)","manyee.lo","kiki.ting","venus.yu","E1","88%","44"]
+        ["dermes","D 23-24/F PP (A)","amber.aulk","","amber.aulk","AS/S","99%","66","0"],
+        ["dermes","D 23-24/F PP (A)","katy.laiky","","katy.laiky","AS/S","154%","98","-1"],
+        ["dermes","D 23-24/F PP (A)","katy.laiky","ka.ho","ka.ho","TL","150%","103","3"],
+        ["dermes","D 23-24/F PP (A)","katy.laiky","ka.ho","panda.liu","75000-3","0%","8","8"],
+        ["dermes","D 23-24/F PP (A)","katy.laiky","ka.ho","sandy.leung","E1","165%","48","-1"],
+        ["dermes","D 23-24/F PP (A)","katy.laiky","may.huang","may.huang","TL","168%","107","10"],
+        ["dermes","D 23-24/F PP (A)","katy.laiky","may.huang","pinky.leehy","E1","130%","77","-7"],
+        ["elyze","E 23-24/F PP (A)","betty.chan","","betty.chan","AS/S","120%","80","2"],
+        ["elyze","E 23-24/F PP (A)","betty.chan","natalie.mak","natalie.mak","TL","112%","74","1"],
+        ["elyze","E 23-24/F PP (A)","betty.chan","natalie.mak","emily.chanyc","100000-2","96%","61","-3"],
+        ["elyze","E 23-24/F PP (A)","betty.chan","natalie.mak","kay.wong.kk","E1","101%","70","0"],
+        ["reenex","R 23-24/F PP (A)","manyee.lo","","manyee.lo","AS/S","108%","91","4"],
+        ["reenex","R 23-24/F PP (A)","manyee.lo","kiki.ting","kiki.ting","TL","103%","69","-2"],
+        ["reenex","R 23-24/F PP (A)","manyee.lo","kiki.ting","venus.yu","E1","88%","44","1"]
       ];
 
       const state = {
@@ -1058,7 +1058,7 @@
       }
 
       function rowKey(row) {
-        return [row.brand, row.center, row.asName, row.tlName, row.therapist, row.position, row.salesMtd, row.acbCurrent].join("|");
+        return [row.brand, row.center, row.asName, row.tlName, row.therapist, row.position, row.salesMtd, row.acbCurrent, row.acbNetChange].join("|");
       }
 
       function escapeHtml(value) {
@@ -1087,7 +1087,8 @@
             therapist: clean(source[4]),
             position: clean(source[5]),
             salesMtd: clean(source[6]),
-            acbCurrent: clean(source[7])
+            acbCurrent: clean(source[7]),
+            acbNetChange: clean(source[8])
           };
           if (!valid(row.brand) || !valid(row.center) || !valid(row.therapist)) continue;
           if (row.brand === "brand" || row.therapist.toLowerCase() === "therapist") continue;
@@ -1110,12 +1111,25 @@
         return cell.f ?? cell.v ?? "";
       }
 
+      function pickSourceColumns(row) {
+        return [
+          row[0],
+          row[1],
+          row[2],
+          row[3],
+          row[5],
+          row[10],
+          row[18],
+          row[23],
+          row[24]
+        ];
+      }
+
       function loadFromGoogleSheet() {
         const id = extractSheetId(els.sheetUrl.value);
         const gid = clean(els.gidInput.value) || "162962768";
-        const query = encodeURIComponent("select B,C,D,E,G,L,T,Y where B is not null");
         const callback = `__orgChart_${Date.now()}`;
-        const src = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?gid=${gid}&headers=2&tqx=responseHandler:${callback}&tq=${query}`;
+        const src = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?gid=${gid}&range=B1:Z260&headers=2&tqx=responseHandler:${callback}`;
         let settled = false;
 
         setStatus("正在讀取 Google Sheet live data...", "");
@@ -1123,7 +1137,7 @@
         window[callback] = response => {
           settled = true;
           try {
-            const rows = (response.table.rows || []).map(row => (row.c || []).map(readCell));
+            const rows = (response.table.rows || []).map(row => pickSourceColumns((row.c || []).map(readCell)));
             state.rawRows = normalizeRows(rows);
             state.dataSource = "live";
             if (!state.rawRows.length) throw new Error("No usable rows found.");
@@ -1179,7 +1193,7 @@
           if (center && row.center !== center) return false;
           if (asName && row.asName !== asName) return false;
           if (!search) return true;
-          return [row.brand, row.center, row.asName, row.tlName, row.therapist, row.position, row.salesMtd, row.acbCurrent].some(value => clean(value).toLowerCase().includes(search));
+          return [row.brand, row.center, row.asName, row.tlName, row.therapist, row.position, row.salesMtd, row.acbCurrent, row.acbNetChange].some(value => clean(value).toLowerCase().includes(search));
         });
       }
 
@@ -1236,12 +1250,14 @@
           name: row.therapist,
           position: row.position,
           salesMtd: row.salesMtd,
-          acbCurrent: row.acbCurrent
+          acbCurrent: row.acbCurrent,
+          acbNetChange: row.acbNetChange
         });
         const copyMetrics = (target, row) => {
           target.position = row.position || target.position || "";
           target.salesMtd = row.salesMtd || target.salesMtd || "";
           target.acbCurrent = row.acbCurrent || target.acbCurrent || "";
+          target.acbNetChange = row.acbNetChange || target.acbNetChange || "";
         };
         const addPerson = (map, row) => {
           if (!map.has(row.therapist)) map.set(row.therapist, personPayload(row));
@@ -1256,7 +1272,7 @@
           center.people.add(row.therapist);
           if (!isRealAs(row)) {
             if (valid(row.tlName)) {
-              if (!center.tls.has(row.tlName)) center.tls.set(row.tlName, { name: row.tlName, people: new Map(), position: "", salesMtd: "", acbCurrent: "" });
+              if (!center.tls.has(row.tlName)) center.tls.set(row.tlName, { name: row.tlName, people: new Map(), position: "", salesMtd: "", acbCurrent: "", acbNetChange: "" });
               const tlNode = center.tls.get(row.tlName);
               if (row.therapist === row.tlName) copyMetrics(tlNode, row);
               if (row.therapist !== row.tlName) addPerson(tlNode.people, row);
@@ -1266,11 +1282,11 @@
             continue;
           }
           const asName = valid(row.asName) ? row.asName : "Unassigned AS";
-          if (!center.as.has(asName)) center.as.set(asName, { name: asName, tls: new Map(), direct: new Map(), people: new Set(), position: "", salesMtd: "", acbCurrent: "" });
+          if (!center.as.has(asName)) center.as.set(asName, { name: asName, tls: new Map(), direct: new Map(), people: new Set(), position: "", salesMtd: "", acbCurrent: "", acbNetChange: "" });
           const asNode = center.as.get(asName);
           if (row.therapist === asName) copyMetrics(asNode, row);
           if (valid(row.tlName)) {
-            if (!asNode.tls.has(row.tlName)) asNode.tls.set(row.tlName, { name: row.tlName, people: new Map(), position: "", salesMtd: "", acbCurrent: "" });
+            if (!asNode.tls.has(row.tlName)) asNode.tls.set(row.tlName, { name: row.tlName, people: new Map(), position: "", salesMtd: "", acbCurrent: "", acbNetChange: "" });
             const tlNode = asNode.tls.get(row.tlName);
             if (row.therapist === row.tlName) copyMetrics(tlNode, row);
             if (row.therapist !== row.tlName) {
@@ -1305,7 +1321,12 @@
         const statPills = item => {
           const stats = [];
           if (valid(item?.salesMtd)) stats.push(`<span class="stat-pill sales">MTD ${escapeHtml(item.salesMtd)}</span>`);
-          if (valid(item?.acbCurrent)) stats.push(`<span class="stat-pill acb">ACB ${escapeHtml(item.acbCurrent)}</span>`);
+          if (valid(item?.acbCurrent)) {
+            const rawChange = clean(item?.acbNetChange);
+            const numericChange = Number(rawChange.replaceAll(",", ""));
+            const changeText = valid(rawChange) ? ` (${numericChange > 0 ? "+" : ""}${escapeHtml(rawChange)})` : "";
+            stats.push(`<span class="stat-pill acb">ACB ${escapeHtml(item.acbCurrent)}${changeText}</span>`);
+          }
           return stats.length ? `<div class="org-node-stats">${stats.join("")}</div>` : "";
         };
         const node = (type, name, meta, count, extraClass = "", item = null) => `<div class="org-node ${type} ${extraClass}">
@@ -1444,10 +1465,11 @@
           <td>${escapeHtml(row.position)}</td>
           <td>${escapeHtml(row.salesMtd)}</td>
           <td>${escapeHtml(row.acbCurrent)}</td>
+          <td>${escapeHtml(row.acbNetChange)}</td>
         </tr>`).join("");
         els.tableView.innerHTML = `<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:.9rem">
           <thead><tr>
-            ${["Brand","Center","AS","Current TL","Planned TL","Therapist","Position","MTD Sales%","ACB Current"].map(item => `<th style="text-align:left;padding:10px;border-bottom:1px solid var(--line);background:#fbfaf7">${item}</th>`).join("")}
+            ${["Brand","Center","AS","Current TL","Planned TL","Therapist","Position","MTD Sales%","ACB Current","ACB Net Change"].map(item => `<th style="text-align:left;padding:10px;border-bottom:1px solid var(--line);background:#fbfaf7">${item}</th>`).join("")}
           </tr></thead>
           <tbody>${body}</tbody>
         </table></div>`;
@@ -1515,8 +1537,8 @@
       }
 
       function exportCsv() {
-        const header = ["Brand","Center","AS","Current TL","Planned TL","Therapist","Position","MTD Sales%","ACB Current"];
-        const rows = getPlanRows().map(row => [row.brand, row.center, row.asName, row.tlName || "Direct", row.plannedTl, row.therapist, row.position, row.salesMtd, row.acbCurrent]);
+        const header = ["Brand","Center","AS","Current TL","Planned TL","Therapist","Position","MTD Sales%","ACB Current","ACB Net Change"];
+        const rows = getPlanRows().map(row => [row.brand, row.center, row.asName, row.tlName || "Direct", row.plannedTl, row.therapist, row.position, row.salesMtd, row.acbCurrent, row.acbNetChange]);
         const csv = [header, ...rows].map(row => row.map(value => `"${clean(value).replaceAll('"', '""')}"`).join(",")).join("\n");
         const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
         const url = URL.createObjectURL(blob);
