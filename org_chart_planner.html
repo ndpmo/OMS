@@ -1251,11 +1251,18 @@
           if (!brands.has(row.brand)) brands.set(row.brand, { name: row.brand, centers: new Map(), people: new Set() });
           const brand = brands.get(row.brand);
           brand.people.add(row.therapist);
-          if (!brand.centers.has(row.center)) brand.centers.set(row.center, { name: row.center, as: new Map(), direct: new Map(), people: new Set() });
+          if (!brand.centers.has(row.center)) brand.centers.set(row.center, { name: row.center, as: new Map(), tls: new Map(), direct: new Map(), people: new Set() });
           const center = brand.centers.get(row.center);
           center.people.add(row.therapist);
           if (!isRealAs(row)) {
-            addPerson(center.direct, row);
+            if (valid(row.tlName)) {
+              if (!center.tls.has(row.tlName)) center.tls.set(row.tlName, { name: row.tlName, people: new Map(), position: "", salesMtd: "", acbCurrent: "" });
+              const tlNode = center.tls.get(row.tlName);
+              if (row.therapist === row.tlName) copyMetrics(tlNode, row);
+              if (row.therapist !== row.tlName) addPerson(tlNode.people, row);
+            } else {
+              addPerson(center.direct, row);
+            }
             continue;
           }
           const asName = valid(row.asName) ? row.asName : "Unassigned AS";
@@ -1322,6 +1329,13 @@
               html += `<section class="org-tl-section org-direct-section">
                 <div class="org-section-head">${node("tl direct", "Center Direct", "Direct", `${center.direct.size} people`, "direct")}</div>
                 ${peopleGrid(center.direct)}
+              </section>`;
+            }
+            for (const tl of center.tls.values()) {
+              const extraClass = tl.people.size > Number(els.tlTarget.value) ? "over" : "";
+              html += `<section class="org-tl-section">
+                <div class="org-section-head">${node("tl", tl.name, tl.position || "TL", `${tl.people.size} people`, extraClass, tl)}</div>
+                ${peopleGrid(tl.people)}
               </section>`;
             }
             for (const asNode of center.as.values()) {
