@@ -681,6 +681,21 @@
         color: #234d78;
       }
 
+      .stat-pill.sales.good {
+        background: #daf2e4;
+        color: #16633a;
+      }
+
+      .stat-pill.sales.watch {
+        background: #fff1c7;
+        color: #755107;
+      }
+
+      .stat-pill.sales.low {
+        background: #ffe0dc;
+        color: #9a2c1f;
+      }
+
       .stat-pill.acb {
         background: #f8ecd2;
         color: #76500b;
@@ -1338,7 +1353,14 @@
         }
         const statPills = item => {
           const stats = [];
-          if (valid(item?.salesMtd)) stats.push(`<span class="stat-pill sales">MTD ${escapeHtml(item.salesMtd)}</span>`);
+          const salesClass = value => {
+            const number = Number(clean(value).replace("%", "").replaceAll(",", ""));
+            if (!Number.isFinite(number)) return "";
+            if (number >= 100) return "good";
+            if (number >= 90) return "watch";
+            return "low";
+          };
+          if (valid(item?.salesMtd)) stats.push(`<span class="stat-pill sales ${salesClass(item.salesMtd)}">MTD ${escapeHtml(item.salesMtd)}</span>`);
           if (valid(item?.acbCurrent)) {
             const rawChange = clean(item?.acbNetChange);
             const numericChange = Number(rawChange.replaceAll(",", ""));
