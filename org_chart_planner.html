@@ -1070,19 +1070,22 @@
             <div class="field">
               <label for="brandFilter">Brand</label>
               <select id="brandFilter" multiple size="4"></select>
+              <p class="field-hint">Click 可多選；揀「全部」會清除其他選項。</p>
             </div>
             <div class="field">
               <label for="centerFilter">Center</label>
               <select id="centerFilter" multiple size="4"></select>
+              <p class="field-hint">Click 可多選；揀「全部」會清除其他選項。</p>
             </div>
             <div class="field">
               <label for="asFilter">AS</label>
               <select id="asFilter" multiple size="4"></select>
+              <p class="field-hint">Click 可多選；揀「全部」會清除其他選項。</p>
             </div>
             <div class="field">
               <label for="networkFilter">Network Team</label>
               <select id="networkFilter" multiple size="5"></select>
-              <p class="field-hint">Cmd / Shift 可多選；「所有 Team」顯示全部人，「全部 Network Team」只顯示 network team 人員。</p>
+              <p class="field-hint">Click 可多選；「所有 Team」顯示全部人，「全部 Network Team」只顯示 network team 人員。</p>
             </div>
             <div class="field">
               <label for="searchInput">搜尋人名 / Center</label>
@@ -1598,6 +1601,40 @@
         }
       }
 
+      function normalizeMultiSelect(select, changedOption = null) {
+        if (changedOption && changedOption.value === "") {
+          [...select.options].forEach(option => {
+            option.selected = option === changedOption;
+          });
+          return;
+        }
+        if (changedOption && changedOption.value === "__all_teams__") {
+          [...select.options].forEach(option => {
+            option.selected = option === changedOption;
+          });
+          return;
+        }
+        if (changedOption && changedOption.value !== "__all_network__") {
+          const allTeam = [...select.options].find(option => option.value === "__all_teams__");
+          if (allTeam) allTeam.selected = false;
+        }
+        if (changedOption && changedOption.value !== "") {
+          const allOption = [...select.options].find(option => option.value === "");
+          if (allOption) allOption.selected = false;
+        }
+      }
+
+      function bindClickMultiSelect(select) {
+        select.addEventListener("mousedown", event => {
+          if (event.target.tagName !== "OPTION") return;
+          event.preventDefault();
+          const option = event.target;
+          option.selected = !option.selected;
+          normalizeMultiSelect(select, option);
+          select.dispatchEvent(new Event("change", { bubbles: true }));
+        });
+      }
+
       function refreshFilters() {
         const selectedBrands = selectedValues(els.brandFilter);
         const selectedCenters = selectedValues(els.centerFilter);
@@ -2048,6 +2085,7 @@
       }
 
       [els.brandFilter, els.centerFilter, els.asFilter, els.networkFilter].forEach(select => {
+        bindClickMultiSelect(select);
         select.addEventListener("change", () => {
           refreshFilters();
           applyFilters();
