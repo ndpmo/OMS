@@ -123,12 +123,6 @@
         background: var(--tiffany-soft);
       }
 
-      .legend-swatch.network-ring {
-        border-radius: 999px;
-        border-style: dashed;
-        background: conic-gradient(#0ab8b6, #7c5cff, #e0569b, #f2994a, #0ab8b6);
-      }
-
       .btn,
       .icon-btn,
       .segmented button {
@@ -186,7 +180,7 @@
         display: none;
       }
 
-      .side-toggle {
+      .side-toggle {x
         width: 100%;
         min-height: 42px;
         border: 1px solid var(--line-strong);
@@ -281,17 +275,6 @@
         background: #fff;
         color: var(--ink);
         padding: 8px 10px;
-      }
-
-      select[multiple] {
-        min-height: 104px;
-      }
-
-      .field-hint {
-        margin: 0;
-        color: var(--muted);
-        font-size: 0.72rem;
-        line-height: 1.35;
       }
 
       textarea {
@@ -562,15 +545,8 @@
 
       .org-center-grid {
         display: grid;
-        gap: 14px;
-        width: 100%;
-      }
-
-      .org-center-row {
-        display: grid;
         grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
         gap: 14px;
-        align-items: start;
         width: 100%;
       }
 
@@ -697,23 +673,6 @@
         box-shadow: 0 14px 30px rgba(182, 58, 42, 0.18);
       }
 
-      .org-node.network-member::after,
-      .org-node.network-leader::after {
-        content: "";
-        position: absolute;
-        inset: -8px;
-        border: 3px dashed var(--network-color, var(--tiffany));
-        border-radius: 999px;
-        pointer-events: none;
-      }
-
-      .org-node.network-leader::after {
-        inset: -11px;
-        border-style: solid;
-        border-width: 4px;
-        box-shadow: 0 0 0 5px var(--network-halo, rgba(10, 184, 182, 0.1));
-      }
-
       .org-node.direct {
         border-style: dashed;
       }
@@ -787,12 +746,6 @@
       .stat-pill.hire {
         background: #d7fbfa;
         color: #07564f;
-      }
-
-      .stat-pill.network {
-        background: var(--network-soft, var(--tiffany-soft));
-        color: var(--network-text, #07564f);
-        border: 1px solid var(--network-color, rgba(10, 184, 182, 0.38));
       }
 
       .chip {
@@ -1001,8 +954,6 @@
         <div class="legend-ribbon" aria-label="Org chart color legend">
           <span class="legend-swatch"></span>
           <span>Tiffany blue = High Potential Network Team Leader</span>
-          <span class="legend-swatch network-ring"></span>
-          <span>Colored circle = Network Team</span>
         </div>
       </header>
 
@@ -1030,20 +981,15 @@
             <h2>篩選</h2>
             <div class="field">
               <label for="brandFilter">Brand</label>
-              <select id="brandFilter" multiple size="4"></select>
+              <select id="brandFilter"></select>
             </div>
             <div class="field">
               <label for="centerFilter">Center</label>
-              <select id="centerFilter" multiple size="4"></select>
+              <select id="centerFilter"></select>
             </div>
             <div class="field">
               <label for="asFilter">AS</label>
-              <select id="asFilter" multiple size="4"></select>
-            </div>
-            <div class="field">
-              <label for="networkFilter">Network Team</label>
-              <select id="networkFilter" multiple size="5"></select>
-              <p class="field-hint">Cmd / Shift 可多選；「全部 Network Team」只顯示 network team 人員。</p>
+              <select id="asFilter"></select>
             </div>
             <div class="field">
               <label for="searchInput">搜尋人名 / Center</label>
@@ -1077,8 +1023,8 @@
           <section class="side-section">
             <h2>手動貼資料</h2>
             <div class="field">
-              <label for="pasteBox">貼上 B,C,D,E,G,I,L,P,AB,T,Y,Z,AY,AZ 或 CSV/TSV</label>
-              <textarea id="pasteBox" placeholder="Brand,Center,AS NAME,TL NAME,Therapist,Termination Date,Position,High Po,Network Team Leader Name,MTD Sales%,ACB Current,ACB Net Change,Hires Onboarded,Hires Pending"></textarea>
+              <label for="pasteBox">貼上 B,C,D,E,G,I,L,P,T,Y,Z,AY,AZ 或 CSV/TSV</label>
+              <textarea id="pasteBox" placeholder="Brand,Center,AS NAME,TL NAME,Therapist,Termination Date,Position,High Po,MTD Sales%,ACB Current,ACB Net Change,Hires Onboarded,Hires Pending"></textarea>
             </div>
             <div class="field">
               <button class="btn" id="pasteBtn" type="button">套用貼上資料</button>
@@ -1128,20 +1074,20 @@
 
     <script>
       const DEFAULT_ROWS = [
-        ["dermes","D 23-24/F PP (A)","amber.aulk","","amber.aulk","","AS/S","","","99%","66","0"],
-        ["dermes","D 23-24/F PP (A)","katy.laiky","","katy.laiky","","AS/S","","","154%","98","-1"],
-        ["dermes","D 23-24/F PP (A)","katy.laiky","ka.ho","ka.ho","","TL","","","150%","103","3"],
-        ["dermes","D 23-24/F PP (A)","katy.laiky","ka.ho","panda.liu","08/05/2026","75000-3","Y","","0%","8","8"],
-        ["dermes","D 23-24/F PP (A)","katy.laiky","ka.ho","sandy.leung","","E1","","","165%","48","-1"],
-        ["dermes","D 23-24/F PP (A)","katy.laiky","may.huang","may.huang","","TL","","","168%","107","10"],
-        ["dermes","D 23-24/F PP (A)","katy.laiky","may.huang","pinky.leehy","","E1","Y","","130%","77","-7"],
-        ["elyze","E 23-24/F PP (A)","betty.chan","","betty.chan","","AS/S","","","120%","80","2"],
-        ["elyze","E 23-24/F PP (A)","betty.chan","natalie.mak","natalie.mak","","TL","","","112%","74","1"],
-        ["elyze","E 23-24/F PP (A)","betty.chan","natalie.mak","emily.chanyc","","100000-2","Y","","96%","61","-3"],
-        ["elyze","E 23-24/F PP (A)","betty.chan","natalie.mak","kay.wong.kk","","E1","","","101%","70","0"],
-        ["reenex","R 23-24/F PP (A)","manyee.lo","","manyee.lo","","AS/S","","","108%","91","4"],
-        ["reenex","R 23-24/F PP (A)","manyee.lo","kiki.ting","kiki.ting","","TL","","","103%","69","-2"],
-        ["reenex","R 23-24/F PP (A)","manyee.lo","kiki.ting","venus.yu","","E1","","","88%","44","1"]
+        ["dermes","D 23-24/F PP (A)","amber.aulk","","amber.aulk","","AS/S","","99%","66","0"],
+        ["dermes","D 23-24/F PP (A)","katy.laiky","","katy.laiky","","AS/S","","154%","98","-1"],
+        ["dermes","D 23-24/F PP (A)","katy.laiky","ka.ho","ka.ho","","TL","","150%","103","3"],
+        ["dermes","D 23-24/F PP (A)","katy.laiky","ka.ho","panda.liu","08/05/2026","75000-3","Y","0%","8","8"],
+        ["dermes","D 23-24/F PP (A)","katy.laiky","ka.ho","sandy.leung","","E1","","165%","48","-1"],
+        ["dermes","D 23-24/F PP (A)","katy.laiky","may.huang","may.huang","","TL","","168%","107","10"],
+        ["dermes","D 23-24/F PP (A)","katy.laiky","may.huang","pinky.leehy","","E1","Y","130%","77","-7"],
+        ["elyze","E 23-24/F PP (A)","betty.chan","","betty.chan","","AS/S","","120%","80","2"],
+        ["elyze","E 23-24/F PP (A)","betty.chan","natalie.mak","natalie.mak","","TL","","112%","74","1"],
+        ["elyze","E 23-24/F PP (A)","betty.chan","natalie.mak","emily.chanyc","","100000-2","Y","96%","61","-3"],
+        ["elyze","E 23-24/F PP (A)","betty.chan","natalie.mak","kay.wong.kk","","E1","","101%","70","0"],
+        ["reenex","R 23-24/F PP (A)","manyee.lo","","manyee.lo","","AS/S","","108%","91","4"],
+        ["reenex","R 23-24/F PP (A)","manyee.lo","kiki.ting","kiki.ting","","TL","","103%","69","-2"],
+        ["reenex","R 23-24/F PP (A)","manyee.lo","kiki.ting","venus.yu","","E1","","88%","44","1"]
       ];
 
       const state = {
@@ -1162,7 +1108,6 @@
         brandFilter: document.querySelector("#brandFilter"),
         centerFilter: document.querySelector("#centerFilter"),
         asFilter: document.querySelector("#asFilter"),
-        networkFilter: document.querySelector("#networkFilter"),
         searchInput: document.querySelector("#searchInput"),
         tlTarget: document.querySelector("#tlTarget"),
         tlTargetValue: document.querySelector("#tlTargetValue"),
@@ -1194,7 +1139,7 @@
       }
 
       function rowKey(row) {
-        return [row.brand, row.center, row.asName, row.tlName, row.therapist, row.terminationDate, row.position, row.highPo, row.networkLeaderName, row.salesMtd, row.acbCurrent, row.acbNetChange, row.hiresOnboarded, row.hiresPending].join("|");
+        return [row.brand, row.center, row.asName, row.tlName, row.therapist, row.terminationDate, row.position, row.highPo, row.salesMtd, row.acbCurrent, row.acbNetChange, row.hiresOnboarded, row.hiresPending].join("|");
       }
 
       function escapeHtml(value) {
@@ -1215,14 +1160,6 @@
         return rows.some(row => valid(row.hiresOnboarded) || valid(row.hiresPending));
       }
 
-      function selectedValues(select) {
-        return [...select.selectedOptions].map(option => clean(option.value)).filter(valid);
-      }
-
-      function hasSelected(rowValue, selected) {
-        return !selected.length || selected.includes(clean(rowValue));
-      }
-
       function normalizeRows(values) {
         const output = [];
         const seen = new Set();
@@ -1236,12 +1173,11 @@
             terminationDate: clean(source[5]),
             position: clean(source[6]),
             highPo: clean(source[7]),
-            networkLeaderName: clean(source[8]),
-            salesMtd: clean(source[9]),
-            acbCurrent: clean(source[10]),
-            acbNetChange: clean(source[11]),
-            hiresOnboarded: clean(source[12]),
-            hiresPending: clean(source[13])
+            salesMtd: clean(source[8]),
+            acbCurrent: clean(source[9]),
+            acbNetChange: clean(source[10]),
+            hiresOnboarded: clean(source[11]),
+            hiresPending: clean(source[12])
           };
           if (!valid(row.brand) || !valid(row.center) || !valid(row.therapist)) continue;
           if (row.brand === "brand" || row.therapist.toLowerCase() === "therapist") continue;
@@ -1274,7 +1210,6 @@
           row[7],
           row[10],
           row[14],
-          row[26],
           row[18],
           row[23],
           row[24],
@@ -1346,7 +1281,6 @@
           terminationDate: findColumn(["Termination Date"]),
           position: findColumn(["Therapist Postion", "Therapist Position"]),
           highPo: findColumn(["High Po"]),
-          networkLeaderName: findColumn(["Network Team Leader Name"]),
           salesMtd: findColumn(["MTD Sales%"]),
           acbCurrent: findColumn(["ACB Current"]),
           acbNetChange: findColumn(["ACB Net Change"]),
@@ -1365,7 +1299,6 @@
           columns.terminationDate >= 0 ? row[columns.terminationDate] : "",
           columns.position >= 0 ? row[columns.position] : "",
           columns.highPo >= 0 ? row[columns.highPo] : "",
-          columns.networkLeaderName >= 0 ? row[columns.networkLeaderName] : row[26],
           columns.salesMtd >= 0 ? row[columns.salesMtd] : "",
           columns.acbCurrent >= 0 ? row[columns.acbCurrent] : "",
           columns.acbNetChange >= 0 ? row[columns.acbNetChange] : "",
@@ -1459,25 +1392,16 @@
       }
 
       function applyFilters() {
-        const brands = selectedValues(els.brandFilter);
-        const centers = selectedValues(els.centerFilter);
-        const asNames = selectedValues(els.asFilter);
-        const networkTeams = selectedValues(els.networkFilter);
-        const showAllNetworkTeams = networkTeams.includes("__all_network__");
-        const selectedNetworkTeams = networkTeams.filter(value => value !== "__all_network__");
-        const networkTeamKeys = new Set(selectedNetworkTeams.map(value => value.toLowerCase()));
-        const allNetworkLeaderKeys = new Set(state.rawRows.map(row => clean(row.networkLeaderName).toLowerCase()).filter(valid));
+        const brand = els.brandFilter.value;
+        const center = els.centerFilter.value;
+        const asName = els.asFilter.value;
         const search = clean(els.searchInput.value).toLowerCase();
         state.rows = state.rawRows.filter(row => {
-          if (!hasSelected(row.brand, brands)) return false;
-          if (!hasSelected(row.center, centers)) return false;
-          if (!hasSelected(row.asName, asNames)) return false;
-          const rowNetworkKey = clean(row.networkLeaderName).toLowerCase();
-          const therapistKey = clean(row.therapist).toLowerCase();
-          if (showAllNetworkTeams && !valid(row.networkLeaderName) && !allNetworkLeaderKeys.has(therapistKey)) return false;
-          if (selectedNetworkTeams.length && !networkTeamKeys.has(rowNetworkKey) && !networkTeamKeys.has(therapistKey)) return false;
+          if (brand && row.brand !== brand) return false;
+          if (center && row.center !== center) return false;
+          if (asName && row.asName !== asName) return false;
           if (!search) return true;
-          return [row.brand, row.center, row.asName, row.tlName, row.therapist, row.terminationDate, row.position, row.highPo, row.networkLeaderName, row.salesMtd, row.acbCurrent, row.acbNetChange, row.hiresOnboarded, row.hiresPending].some(value => clean(value).toLowerCase().includes(search));
+          return [row.brand, row.center, row.asName, row.tlName, row.therapist, row.terminationDate, row.position, row.highPo, row.salesMtd, row.acbCurrent, row.acbNetChange, row.hiresOnboarded, row.hiresPending].some(value => clean(value).toLowerCase().includes(search));
         });
       }
 
@@ -1499,31 +1423,20 @@
           .map(group => group.name);
       }
 
-      function fillSelect(select, values, label, extraOptions = [], includeAll = true) {
-        const current = selectedValues(select);
-        const options = [
-          ...(includeAll ? [{ value: "", label: `全部 ${label}` }] : []),
-          ...extraOptions,
-          ...values.map(value => ({ value, label: value }))
-        ];
-        select.innerHTML = options.map(option => `<option value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</option>`).join("");
-        const available = new Set(options.map(option => option.value));
-        [...select.options].forEach(option => {
-          option.selected = current.includes(option.value) && available.has(option.value);
-        });
+      function fillSelect(select, values, label) {
+        const current = select.value;
+        select.innerHTML = `<option value="">全部 ${label}</option>` + values.map(value => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join("");
+        if (values.includes(current)) select.value = current;
       }
 
       function refreshFilters() {
-        const selectedBrands = selectedValues(els.brandFilter);
-        const selectedCenters = selectedValues(els.centerFilter);
-        const selectedAsNames = selectedValues(els.asFilter);
-        const brandRows = selectedBrands.length ? state.rawRows.filter(row => selectedBrands.includes(row.brand)) : state.rawRows;
-        const centerRows = selectedCenters.length ? brandRows.filter(row => selectedCenters.includes(row.center)) : brandRows;
-        const asRows = selectedAsNames.length ? centerRows.filter(row => selectedAsNames.includes(row.asName)) : centerRows;
+        const selectedBrand = els.brandFilter.value;
+        const selectedCenter = els.centerFilter.value;
+        const brandRows = selectedBrand ? state.rawRows.filter(row => row.brand === selectedBrand) : state.rawRows;
+        const centerRows = selectedCenter ? brandRows.filter(row => row.center === selectedCenter) : brandRows;
         fillSelect(els.brandFilter, unique(state.rawRows.map(row => row.brand)), "Brand");
         fillSelect(els.centerFilter, unique(brandRows.map(row => row.center)), "Center");
         fillSelect(els.asFilter, unique(realAsNames(centerRows)), "AS");
-        fillSelect(els.networkFilter, unique(asRows.map(row => row.networkLeaderName)), "Network Team", [{ value: "__all_network__", label: "全部 Network Team" }], false);
       }
 
       function buildTree(rows) {
@@ -1546,7 +1459,6 @@
           terminationDate: row.terminationDate,
           position: row.position,
           highPo: row.highPo,
-          networkLeaderName: row.networkLeaderName,
           salesMtd: row.salesMtd,
           acbCurrent: row.acbCurrent,
           acbNetChange: row.acbNetChange,
@@ -1557,7 +1469,6 @@
           target.terminationDate = row.terminationDate || target.terminationDate || "";
           target.position = row.position || target.position || "";
           target.highPo = row.highPo || target.highPo || "";
-          target.networkLeaderName = row.networkLeaderName || target.networkLeaderName || "";
           target.salesMtd = row.salesMtd || target.salesMtd || "";
           target.acbCurrent = row.acbCurrent || target.acbCurrent || "";
           target.acbNetChange = row.acbNetChange || target.acbNetChange || "";
@@ -1577,7 +1488,7 @@
           center.people.add(row.therapist);
           if (!isRealAs(row)) {
             if (valid(row.tlName)) {
-              if (!center.tls.has(row.tlName)) center.tls.set(row.tlName, { name: row.tlName, people: new Map(), terminationDate: "", position: "", highPo: "", networkLeaderName: "", salesMtd: "", acbCurrent: "", acbNetChange: "", hiresOnboarded: "", hiresPending: "" });
+              if (!center.tls.has(row.tlName)) center.tls.set(row.tlName, { name: row.tlName, people: new Map(), terminationDate: "", position: "", highPo: "", salesMtd: "", acbCurrent: "", acbNetChange: "", hiresOnboarded: "", hiresPending: "" });
               const tlNode = center.tls.get(row.tlName);
               if (row.therapist === row.tlName) copyMetrics(tlNode, row);
               if (row.therapist !== row.tlName) addPerson(tlNode.people, row);
@@ -1587,11 +1498,11 @@
             continue;
           }
           const asName = valid(row.asName) ? row.asName : "Unassigned AS";
-          if (!center.as.has(asName)) center.as.set(asName, { name: asName, tls: new Map(), direct: new Map(), people: new Set(), terminationDate: "", position: "", highPo: "", networkLeaderName: "", salesMtd: "", acbCurrent: "", acbNetChange: "", hiresOnboarded: "", hiresPending: "" });
+          if (!center.as.has(asName)) center.as.set(asName, { name: asName, tls: new Map(), direct: new Map(), people: new Set(), terminationDate: "", position: "", highPo: "", salesMtd: "", acbCurrent: "", acbNetChange: "", hiresOnboarded: "", hiresPending: "" });
           const asNode = center.as.get(asName);
           if (row.therapist === asName) copyMetrics(asNode, row);
           if (valid(row.tlName)) {
-            if (!asNode.tls.has(row.tlName)) asNode.tls.set(row.tlName, { name: row.tlName, people: new Map(), terminationDate: "", position: "", highPo: "", networkLeaderName: "", salesMtd: "", acbCurrent: "", acbNetChange: "", hiresOnboarded: "", hiresPending: "" });
+            if (!asNode.tls.has(row.tlName)) asNode.tls.set(row.tlName, { name: row.tlName, people: new Map(), terminationDate: "", position: "", highPo: "", salesMtd: "", acbCurrent: "", acbNetChange: "", hiresOnboarded: "", hiresPending: "" });
             const tlNode = asNode.tls.get(row.tlName);
             if (row.therapist === row.tlName) copyMetrics(tlNode, row);
             if (row.therapist !== row.tlName) {
@@ -1623,29 +1534,6 @@
           els.chartView.innerHTML = `<div class="empty">沒有符合篩選的資料。</div>`;
           return;
         }
-        const networkLeaderNames = new Set(state.rows.map(row => clean(row.networkLeaderName).toLowerCase()).filter(valid));
-        const networkPalette = [
-          { color: "#0ab8b6", soft: "#d7fbfa", text: "#07564f", halo: "rgba(10, 184, 182, 0.12)" },
-          { color: "#7c5cff", soft: "#ece7ff", text: "#3b2b86", halo: "rgba(124, 92, 255, 0.12)" },
-          { color: "#e0569b", soft: "#ffe3f1", text: "#7b2450", halo: "rgba(224, 86, 155, 0.12)" },
-          { color: "#2f80ed", soft: "#e4f0ff", text: "#174a86", halo: "rgba(47, 128, 237, 0.12)" },
-          { color: "#11a36a", soft: "#dff7ed", text: "#0f5b3e", halo: "rgba(17, 163, 106, 0.12)" },
-          { color: "#f2994a", soft: "#fff0df", text: "#7a4113", halo: "rgba(242, 153, 74, 0.14)" },
-          { color: "#9b51e0", soft: "#f1e3ff", text: "#51267a", halo: "rgba(155, 81, 224, 0.12)" },
-          { color: "#eb5757", soft: "#ffe5e5", text: "#842626", halo: "rgba(235, 87, 87, 0.12)" }
-        ];
-        const networkKey = (item, name) => isNetworkLeaderName(name) ? clean(name) : networkLeader(item);
-        const networkColor = key => {
-          const text = clean(key).toLowerCase();
-          let hash = 0;
-          for (let index = 0; index < text.length; index += 1) hash = (hash * 31 + text.charCodeAt(index)) >>> 0;
-          return networkPalette[hash % networkPalette.length];
-        };
-        const networkStyle = key => {
-          if (!valid(key)) return "";
-          const color = networkColor(key);
-          return ` style="--network-color:${color.color};--network-soft:${color.soft};--network-text:${color.text};--network-halo:${color.halo}"`;
-        };
         const statPills = item => {
           const stats = [];
           const salesClass = value => {
@@ -1663,84 +1551,62 @@
             stats.push(`<span class="stat-pill acb">ACB ${escapeHtml(item.acbCurrent)}${changeText}</span>`);
           }
           if (valid(item?.terminationDate)) stats.push(`<span class="stat-pill terminated">Last day ${escapeHtml(item.terminationDate)}</span>`);
-          if (valid(item?.networkLeaderName)) stats.push(`<span class="stat-pill network">NTL: ${escapeHtml(item.networkLeaderName)}</span>`);
           if (valid(item?.hiresOnboarded)) stats.push(`<span class="stat-pill hire">ONB ${escapeHtml(item.hiresOnboarded)}</span>`);
           if (valid(item?.hiresPending)) stats.push(`<span class="stat-pill hire">PEND ${escapeHtml(item.hiresPending)}</span>`);
           return stats.length ? `<div class="org-node-stats">${stats.join("")}</div>` : "";
         };
         const isPotential = item => clean(item?.highPo).toUpperCase() === "Y";
         const isTerminated = item => valid(item?.terminationDate);
-        const networkLeader = item => clean(item?.networkLeaderName);
-        const isNetworkLeaderName = name => networkLeaderNames.has(clean(name).toLowerCase());
-        const networkClass = (item, name) => isNetworkLeaderName(name) ? "network-leader" : valid(networkLeader(item)) ? "network-member" : "";
-        const node = (type, name, meta, count, extraClass = "", item = null) => `<div class="org-node ${type} ${extraClass} ${isPotential(item) ? "potential" : ""} ${isTerminated(item) ? "terminated" : ""} ${networkClass(item, name)}"${networkStyle(networkKey(item, name))}>
+        const node = (type, name, meta, count, extraClass = "", item = null) => `<div class="org-node ${type} ${extraClass} ${isPotential(item) ? "potential" : ""} ${isTerminated(item) ? "terminated" : ""}">
           <small>${escapeHtml(meta)}</small>
           <strong>${escapeHtml(name)}</strong>
           ${statPills(item)}
-          ${isNetworkLeaderName(name) ? `<span class="stat-pill network">NTL Leader</span>` : ""}
           ${count ? `<span class="tag org-count">${escapeHtml(count)}</span>` : ""}
         </div>`;
         const leaf = person => node("therapist", person.name, person.position || "Therapist", "", "", person);
         const peopleGrid = people => `<div class="org-leaf-grid">${[...people.values()].map(person => leaf(person)).join("")}</div>`;
-        const centerGroupKey = name => clean(name)
-          .replace(/\s*\([A-Z0-9]+\)\s*$/i, "")
-          .replace(/\s+/g, " ")
-          .trim();
-        const groupCenters = centers => {
-          const groups = new Map();
-          for (const center of centers) {
-            const key = centerGroupKey(center.name) || center.name;
-            if (!groups.has(key)) groups.set(key, []);
-            groups.get(key).push(center);
-          }
-          return [...groups.values()];
-        };
-        const centerSection = center => {
-          let section = `<section class="org-center-section">
-            <div class="org-section-head">${node("center", center.name, "Center", `${center.people.size} people`)}</div>
-            <div class="org-as-grid">`;
-          if (center.direct.size) {
-            section += `<section class="org-tl-section org-direct-section">
-              <div class="org-section-head">${node("tl direct", "Center Direct", "Direct", `${center.direct.size} people`, "direct")}</div>
-              ${peopleGrid(center.direct)}
-            </section>`;
-          }
-          for (const tl of center.tls.values()) {
-            const extraClass = tl.people.size > Number(els.tlTarget.value) ? "over" : "";
-            section += `<section class="org-tl-section">
-              <div class="org-section-head">${node("tl", tl.name, tl.position || "TL", `${tl.people.size} people`, extraClass, tl)}</div>
-              ${peopleGrid(tl.people)}
-            </section>`;
-          }
-          for (const asNode of center.as.values()) {
-            section += `<section class="org-as-section">
-              <div class="org-section-head">${node("as", asNode.name, asNode.position || "AS", `${asNode.people.size} people`, "", asNode)}</div>
-              <div class="org-tl-grid">`;
-            if (asNode.direct.size) {
-              section += `<section class="org-tl-section org-direct-section">
-                <div class="org-section-head">${node("tl direct", "AS Direct", "Direct", `${asNode.direct.size} people`, "direct")}</div>
-                ${peopleGrid(asNode.direct)}
-              </section>`;
-            }
-            for (const tl of asNode.tls.values()) {
-              const extraClass = tl.people.size > Number(els.tlTarget.value) ? "over" : "";
-              section += `<section class="org-tl-section">
-                <div class="org-section-head">${node("tl", tl.name, tl.position || "TL", `${tl.people.size} people`, extraClass, tl)}</div>
-                ${peopleGrid(tl.people)}
-              </section>`;
-            }
-            section += `</div></section>`;
-          }
-          section += `</div></section>`;
-          return section;
-        };
         let html = `<div class="org-tree-board">`;
         for (const brand of tree.values()) {
           html += `<section class="org-brand-section">
             <div class="org-section-head">${node("brand", brand.name, "Brand", `${brand.people.size} people`)}</div>
             <div class="org-center-grid">`;
-          for (const rowCenters of groupCenters(brand.centers.values())) {
-            html += `<div class="org-center-row">${rowCenters.map(centerSection).join("")}</div>`;
+          for (const center of brand.centers.values()) {
+            html += `<section class="org-center-section">
+              <div class="org-section-head">${node("center", center.name, "Center", `${center.people.size} people`)}</div>
+              <div class="org-as-grid">`;
+            if (center.direct.size) {
+              html += `<section class="org-tl-section org-direct-section">
+                <div class="org-section-head">${node("tl direct", "Center Direct", "Direct", `${center.direct.size} people`, "direct")}</div>
+                ${peopleGrid(center.direct)}
+              </section>`;
+            }
+            for (const tl of center.tls.values()) {
+              const extraClass = tl.people.size > Number(els.tlTarget.value) ? "over" : "";
+              html += `<section class="org-tl-section">
+                <div class="org-section-head">${node("tl", tl.name, tl.position || "TL", `${tl.people.size} people`, extraClass, tl)}</div>
+                ${peopleGrid(tl.people)}
+              </section>`;
+            }
+            for (const asNode of center.as.values()) {
+              html += `<section class="org-as-section">
+                <div class="org-section-head">${node("as", asNode.name, asNode.position || "AS", `${asNode.people.size} people`, "", asNode)}</div>
+                <div class="org-tl-grid">`;
+              if (asNode.direct.size) {
+                html += `<section class="org-tl-section org-direct-section">
+                  <div class="org-section-head">${node("tl direct", "AS Direct", "Direct", `${asNode.direct.size} people`, "direct")}</div>
+                  ${peopleGrid(asNode.direct)}
+                </section>`;
+              }
+              for (const tl of asNode.tls.values()) {
+                const extraClass = tl.people.size > Number(els.tlTarget.value) ? "over" : "";
+                html += `<section class="org-tl-section">
+                  <div class="org-section-head">${node("tl", tl.name, tl.position || "TL", `${tl.people.size} people`, extraClass, tl)}</div>
+                  ${peopleGrid(tl.people)}
+                </section>`;
+              }
+              html += `</div></section>`;
+            }
+            html += `</div></section>`;
           }
           html += `</div></section>`;
         }
@@ -1827,7 +1693,6 @@
           <td>${escapeHtml(row.terminationDate)}</td>
           <td>${escapeHtml(row.position)}</td>
           <td>${escapeHtml(row.highPo)}</td>
-          <td>${escapeHtml(row.networkLeaderName)}</td>
           <td>${escapeHtml(row.salesMtd)}</td>
           <td>${escapeHtml(row.acbCurrent)}</td>
           <td>${escapeHtml(row.acbNetChange)}</td>
@@ -1836,7 +1701,7 @@
         </tr>`).join("");
         els.tableView.innerHTML = `<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:.9rem">
           <thead><tr>
-            ${["Brand","Center","AS","Current TL","Planned TL","Therapist","Last day","Position","High Po","Network Team Leader Name","MTD Sales%","ACB Current","ACB Net Change","Hires Onboarded","Hires Pending"].map(item => `<th style="text-align:left;padding:10px;border-bottom:1px solid var(--line);background:#fbfaf7">${item}</th>`).join("")}
+            ${["Brand","Center","AS","Current TL","Planned TL","Therapist","Last day","Position","High Po","MTD Sales%","ACB Current","ACB Net Change","Hires Onboarded","Hires Pending"].map(item => `<th style="text-align:left;padding:10px;border-bottom:1px solid var(--line);background:#fbfaf7">${item}</th>`).join("")}
           </tr></thead>
           <tbody>${body}</tbody>
         </table></div>`;
@@ -1904,8 +1769,8 @@
       }
 
       function exportCsv() {
-        const header = ["Brand","Center","AS","Current TL","Planned TL","Therapist","Last day","Position","High Po","Network Team Leader Name","MTD Sales%","ACB Current","ACB Net Change","Hires Onboarded","Hires Pending"];
-        const rows = getPlanRows().map(row => [row.brand, row.center, row.asName, row.tlName || "Direct", row.plannedTl, row.therapist, row.terminationDate, row.position, row.highPo, row.networkLeaderName, row.salesMtd, row.acbCurrent, row.acbNetChange, row.hiresOnboarded, row.hiresPending]);
+        const header = ["Brand","Center","AS","Current TL","Planned TL","Therapist","Last day","Position","High Po","MTD Sales%","ACB Current","ACB Net Change","Hires Onboarded","Hires Pending"];
+        const rows = getPlanRows().map(row => [row.brand, row.center, row.asName, row.tlName || "Direct", row.plannedTl, row.therapist, row.terminationDate, row.position, row.highPo, row.salesMtd, row.acbCurrent, row.acbNetChange, row.hiresOnboarded, row.hiresPending]);
         const csv = [header, ...rows].map(row => row.map(value => `"${clean(value).replaceAll('"', '""')}"`).join(",")).join("\n");
         const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
         const url = URL.createObjectURL(blob);
@@ -1916,9 +1781,8 @@
         URL.revokeObjectURL(url);
       }
 
-      [els.brandFilter, els.centerFilter, els.asFilter, els.networkFilter].forEach(select => {
+      [els.brandFilter, els.centerFilter, els.asFilter].forEach(select => {
         select.addEventListener("change", () => {
-          refreshFilters();
           applyFilters();
           renderMetrics();
           renderChart();
