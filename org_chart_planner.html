@@ -1060,7 +1060,7 @@
             <div class="field">
               <div class="status" id="statusBox">
                 <span class="status-dot"></span>
-                <span id="statusText">準備讀取 30+2 Summary Master 的 B/C/D/E/G/I/L/P/T/Y/Z/AY/AZ 欄。</span>
+                <span id="statusText">準備讀取 30+2 Summary Master 的 B/C/D/E/G/I/L/P/AB/T/Y/Z/AY/AZ 欄。</span>
               </div>
             </div>
           </section>
@@ -1275,7 +1275,23 @@
       }
 
       function networkLeaderSet(rows) {
-        return new Set(rows.map(row => clean(row.networkLeaderName).toLowerCase()).filter(valid));
+        return new Set(networkLeaderList(rows).map(name => name.toLowerCase()));
+      }
+
+      function networkLeaderList(rows) {
+        const leaders = new Map();
+        for (const row of rows) {
+          if (clean(row.highPo).toUpperCase() === "Y" && valid(row.therapist)) {
+            leaders.set(clean(row.therapist).toLowerCase(), clean(row.therapist));
+          }
+        }
+        for (const row of rows) {
+          const leader = clean(row.networkLeaderName);
+          if (valid(leader) && !leaders.has(leader.toLowerCase())) {
+            leaders.set(leader.toLowerCase(), leader);
+          }
+        }
+        return [...leaders.values()].sort((a, b) => a.localeCompare(b));
       }
 
       function networkTeamNameForRow(row, leaderKeys = networkLeaderSet(state.rows)) {
@@ -1449,7 +1465,7 @@
           row[columns.therapist],
           columns.terminationDate >= 0 ? row[columns.terminationDate] : "",
           columns.position >= 0 ? row[columns.position] : "",
-          columns.highPo >= 0 ? row[columns.highPo] : "",
+          columns.highPo >= 0 ? row[columns.highPo] : row[14],
           columns.networkLeaderName >= 0 ? row[columns.networkLeaderName] : row[26],
           columns.salesMtd >= 0 ? row[columns.salesMtd] : "",
           columns.acbCurrent >= 0 ? row[columns.acbCurrent] : "",
@@ -1645,7 +1661,7 @@
         fillSelect(els.brandFilter, unique(state.rawRows.map(row => row.brand)), "Brand");
         fillSelect(els.centerFilter, unique(brandRows.map(row => row.center)), "Center");
         fillSelect(els.asFilter, unique(realAsNames(centerRows)), "AS");
-        fillSelect(els.networkFilter, unique(asRows.map(row => row.networkLeaderName)), "Network Team", [
+        fillSelect(els.networkFilter, networkLeaderList(asRows), "Network Team", [
           { value: "__all_teams__", label: "所有 Team" },
           { value: "__all_network__", label: "全部 Network Team" }
         ], false);
@@ -1739,7 +1755,7 @@
         document.querySelector("#centerCount").textContent = unique(rows.map(row => row.center)).length;
         document.querySelector("#asCount").textContent = realAsNames(rows).length;
         document.querySelector("#tlCount").textContent = unique(rows.map(row => row.tlName)).length;
-        document.querySelector("#networkTeamCount").textContent = unique(rows.map(row => row.networkLeaderName)).length;
+        document.querySelector("#networkTeamCount").textContent = networkLeaderList(rows).length;
         document.querySelector("#therapistCount").textContent = unique(rows.map(row => row.therapist)).length;
       }
 
@@ -1749,7 +1765,7 @@
           els.chartView.innerHTML = `<div class="empty">沒有符合篩選的資料。</div>`;
           return;
         }
-        const networkLeaderNames = new Set(state.rows.map(row => clean(row.networkLeaderName).toLowerCase()).filter(valid));
+        const networkLeaderNames = networkLeaderSet(state.rows);
         const networkPalette = [
           { color: "#0ab8b6", soft: "#d7fbfa", text: "#07564f", halo: "rgba(10, 184, 182, 0.12)" },
           { color: "#7c5cff", soft: "#ece7ff", text: "#3b2b86", halo: "rgba(124, 92, 255, 0.12)" },
